@@ -1,5 +1,9 @@
-import { Router, type Router as IRouter } from "express";
+import { Router, type Router as IRouter, type Request, type Response } from "express";
 import bcrypt from "bcrypt";
+// @ts-ignore
+import { authenticator } from "otplib";
+import qrcode from "qrcode";
+import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { prisma } from "../lib/db.js";
 import { 
@@ -76,6 +80,18 @@ router.post("/login", async (req, res): Promise<void> => {
     const isValid = await bcrypt.compare(payload.password, user.passwordHash);
     if (!isValid) {
       res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    // Require TOTP for elevated roles
+    if (user.role !== "STUDENT" && user.isTotpEnabled) {
+      // Issue a 5-minute temporary token instead of full access
+      const tempToken = jwt.sign(
+        { userId: user.id, role: user.role, requireTotp: true },
+        process.env.JWT_SECRET || "super_secret_fallback_key",
+        { expiresIn: "5m" }
+      );
+      res.json({ requireTotp: true, tempToken });
       return;
     }
 
@@ -180,6 +196,113 @@ router.post("/logout", requireAuth, async (req, res): Promise<void> => {
 
   clearAuthCookies(res);
   res.json({ message: "Logged out" });
+});
+
+router.post("/login/totp", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tempToken, code } = req.body;
+    
+    // Verify temp token
+    const payload = jwt.verify(
+      tempToken,
+      process.env.JWT_SECRET || "super_secret_fallback_key"
+    ) as any;
+
+    if (!payload.requireTotp) {
+      res.status(400).json({ error: "Invalid token type" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+    if (!user || !user.totpSecret) {
+      res.status(400).json({ error: "2FA not set up" });
+      return;
+    }
+
+    // Verify 6-digit code natively using otplib
+    const isValid = authenticator.check(code, user.totpSecret);
+    if (!isValid) {
+      res.status(401).json({ error: "Invalid 2FA code" });
+      return;
+    }
+
+    // Success! Mint the real tokens
+    const accessToken = generateAccessToken(user.id, user.role);
+    const refreshToken = generateRefreshToken();
+    const hashedToken = hashToken(refreshToken);
+    const familyId = crypto.randomBytes(16).toString("hex");
+
+    await prisma.refreshToken.create({
+      data: {
+        hashedToken,
+        userId: user.id,
+        familyId,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    setAuthCookies(res, accessToken, refreshToken);
+    res.json({ message: "Login successful via 2FA" });
+  } catch {
+    res.status(401).json({ error: "Invalid or expired temporary token" });
+  }
+});
+
+router.post("/2fa/setup", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user || user.role === "STUDENT") {
+      res.status(403).json({ error: "Only admins/teachers can set up 2FA" });
+      return;
+    }
+
+    if (user.isTotpEnabled) {
+      res.status(400).json({ error: "2FA is already fully enabled" });
+      return;
+    }
+
+    const secret = authenticator.generateSecret();
+    const otpauth = authenticator.keyuri(user.email, "Cryptid", secret);
+    
+    // Save secret temporarily (not fully enabled yet until verified)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { totpSecret: secret }
+    });
+
+    // Generate the QR code image for Google Authenticator / Authy
+    const qrCodeUrl = await qrcode.toDataURL(otpauth);
+    res.json({ secret, qrCodeUrl });
+  } catch {
+    res.status(500).json({ error: "Failed to generate 2FA setup" });
+  }
+});
+
+router.post("/2fa/verify-setup", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { code } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    
+    if (!user || !user.totpSecret) {
+      res.status(400).json({ error: "2FA setup not initiated" });
+      return;
+    }
+
+    const isValid = authenticator.check(code, user.totpSecret);
+    if (!isValid) {
+      res.status(400).json({ error: "Invalid code" });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isTotpEnabled: true }
+    });
+
+    res.json({ message: "2FA successfully enabled!" });
+  } catch {
+    res.status(500).json({ error: "Failed to verify 2FA" });
+  }
 });
 
 export default router;
