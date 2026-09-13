@@ -1,7 +1,7 @@
 import { Router, type Router as IRouter, type Request, type Response } from "express";
 import bcrypt from "bcrypt";
-// @ts-ignore
-import { authenticator } from "otplib";
+import * as otplib from "otplib";
+const { authenticator } = otplib;
 import qrcode from "qrcode";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -196,6 +196,24 @@ router.post("/logout", requireAuth, async (req, res): Promise<void> => {
 
   clearAuthCookies(res);
   res.json({ message: "Logged out" });
+});
+
+router.get("/me", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { id: true, email: true, name: true, role: true, house: true, points: true, isTotpEnabled: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json(user);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/login/totp", async (req: Request, res: Response): Promise<void> => {

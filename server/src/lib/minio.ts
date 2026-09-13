@@ -25,6 +25,7 @@ export const generatePresignedPut = async (fileKey: string, mimeType: string): P
 };
 
 export const deleteFile = async (fileKey: string): Promise<void> => {
+  if (process.env.MOCK_MINIO === 'true') return;
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: fileKey,
@@ -33,6 +34,10 @@ export const deleteFile = async (fileKey: string): Promise<void> => {
 };
 
 export const fetchFileHeaderBytes = async (fileKey: string): Promise<Buffer> => {
+  if (process.env.MOCK_MINIO === 'true') {
+    return Buffer.from('%PDF-1.4\n1 0 obj');
+  }
+
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: fileKey,

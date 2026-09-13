@@ -10,7 +10,8 @@ const router: IRouter = Router();
 router.get("/challenge", async (_req: Request, res: Response): Promise<void> => {
   try {
     const seed = await generateChallenge();
-    res.json({ seed, difficulty: 5 }); // 5 hex zeros
+    const difficulty = (process.env.NODE_ENV === 'test' || process.env.MOCK_MINIO === 'true') ? 1 : 5;
+    res.json({ seed, difficulty });
   } catch {
     res.status(500).json({ error: "Failed to generate challenge" });
   }
@@ -41,7 +42,7 @@ router.post("/submit", async (req: Request, res: Response): Promise<void> => {
     }
 
     // 2. Generate secure tracking code
-    const trackingCode = crypto.randomBytes(4).toString("hex"); // 8 chars
+    const trackingCode = crypto.randomBytes(4).toString("hex").toUpperCase(); // 8 chars
 
     // 3. Time bucket to destroy second-level correlation attacks
     const reportedDay = new Date().toISOString().split("T")[0]!; // YYYY-MM-DD

@@ -1,17 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
-import { User, Trophy, Gift, Flag, Shield } from "@phosphor-icons/react";
+import { User, Trophy, Gift, Flag, Shield, ShieldCheck } from "@phosphor-icons/react";
 import { useTheme, type House } from "./ThemeProvider";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { house, setHouse } = useTheme();
+  const { user, logout } = useAuth();
 
   return (
     <>
       <header className="nav-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
           <Shield weight="duotone" size={24} color="var(--accent-house)" />
-          <span>CRYPTID</span>
+          <span>OFFCLASS</span>
         </div>
         
         <nav style={{ display: 'flex', gap: '1.5rem', marginLeft: '2rem' }}>
@@ -31,6 +33,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Flag size={20} weight={location.pathname === '/complaints' ? 'fill' : 'regular'} />
             Complaints
           </Link>
+          
+          {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
+            <Link to="/admin" className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}>
+              <ShieldCheck size={20} weight={location.pathname === '/admin' ? 'fill' : 'regular'} />
+              Admin
+            </Link>
+          )}
+
+          {user && (
+            <button 
+              onClick={() => logout()}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.875rem',
+                marginLeft: '1rem',
+                padding: '0'
+              }}
+            >
+              Sign Out
+            </button>
+          )}
         </nav>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -58,7 +85,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       
-      <main id="main-content" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <main id="main-content" style={{ padding: '0', width: '100%', boxSizing: 'border-box' }}>
         {children}
       </main>
     </>

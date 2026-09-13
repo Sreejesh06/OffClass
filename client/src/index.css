@@ -125,6 +125,7 @@ code, .mono {
   padding: 1rem 2rem;
   border-bottom: 1px solid var(--border-subtle);
   background-color: var(--bg-surface);
+  flex-wrap: wrap; /* Added for mobile responsiveness */
 }
 
 .nav-link {
@@ -135,10 +136,17 @@ code, .mono {
   align-items: center;
   gap: 0.5rem;
   transition: color 0.2s ease;
+  white-space: nowrap; /* Prevent icon wrapping */
 }
 
 .nav-link:hover, .nav-link.active {
   color: var(--text-primary);
+}
+
+.responsive-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {
@@ -154,5 +162,20 @@ code, .mono {
 @media (min-width: 1024px) {
   .desktop-only {
     display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-bar {
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: space-between;
+  }
+  
+  .nav-bar nav {
+    margin-left: 0 !important;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
   }
 }

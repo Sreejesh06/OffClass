@@ -35,6 +35,57 @@ router.get("/house/:house", async (req: Request, res: Response): Promise<void> =
   }
 });
 
+router.get("/hall-of-fame", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const topStudents = await prisma.user.findMany({
+      where: { role: "STUDENT" },
+      orderBy: { points: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        name: true,
+        house: true,
+        points: true,
+        badges: {
+          include: { badge: true }
+        }
+      }
+    });
+
+    const housePoints = await prisma.user.groupBy({
+      by: ['house'],
+      where: { role: "STUDENT" },
+      _sum: { points: true }
+    });
+
+    const houseMap = housePoints.reduce((acc, h) => {
+      acc[h.house] = h._sum.points || 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const houseStandings = [
+      { name: 'Red', points: houseMap.RED || 0 },
+      { name: 'Blue', points: houseMap.BLUE || 0 },
+      { name: 'Green', points: houseMap.GREEN || 0 },
+      { name: 'Purple', points: houseMap.PURPLE || 0 },
+    ].sort((a, b) => b.points - a.points);
+
+    res.json({
+      topStudents: topStudents.map((s, idx) => ({
+        id: s.id,
+        name: s.name,
+        house: s.house,
+        points: s.points,
+        rank: idx + 1,
+        badges: s.badges.length
+      })),
+      houseStandings
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch hall of fame" });
+  }
+});
+
 // Admin ONLY: Panic button to completely rebuild Redis from Postgres
 router.post(
   "/admin/rebuild",

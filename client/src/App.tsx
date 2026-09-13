@@ -1,12 +1,30 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouteChangeFocus } from "./components/RouteChangeFocus";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
-import { Login } from "./pages/Login";
-import { Profile } from "./pages/Profile";
 import './App.css'
+
+const Login = React.lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Profile = React.lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const ProfilePortfolio = React.lazy(() => import('./pages/ProfilePortfolio').then(m => ({ default: m.ProfilePortfolio })));
+const HallOfFame = React.lazy(() => import('./pages/HallOfFame').then(m => ({ default: m.HallOfFame })));
+const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
+const Redeem = React.lazy(() => import('./pages/Redeem').then(m => ({ default: m.Redeem })));
+const Complaints = React.lazy(() => import('./pages/Complaints').then(m => ({ default: m.Complaints })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedLayout() {
   return (
@@ -20,24 +38,33 @@ function ProtectedLayout() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <RouteChangeFocus />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            <Route element={<ProtectedLayout />}>
-              <Route path="/" element={<Navigate to="/profile" replace />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/leaderboard" element={<h1>House Leaderboards</h1>} />
-              <Route path="/redeem" element={<h1>Redeem Perks</h1>} />
-              <Route path="/complaints" element={<h1>Anonymous Complaints</h1>} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <RouteChangeFocus />
+            <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/hall-of-fame" element={<HallOfFame />} />
+                <Route path="/complaints" element={<Complaints />} />
+                {/* Public shareable profile — no login needed */}
+                <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />
+                
+                <Route element={<ProtectedLayout />}>
+                  <Route path="/" element={<Navigate to="/profile" replace />} />
+                  {/* Own profile — redirect to portfolio view */}
+                  <Route path="/profile" element={<ProfilePortfolio />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/redeem" element={<Redeem />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 

@@ -90,10 +90,10 @@ export function Login() {
     }
 
     try {
-      await login(email);
+      await login(email, password);
       navigate(from, { replace: true });
-    } catch (err) {
-      setError("Authentication failed.");
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Authentication failed. Please check your credentials.");
     }
   };
 

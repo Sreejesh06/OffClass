@@ -10,6 +10,8 @@ import complaintsRoutes from "./routes/complaints.js";
 import adminRoutes from "./routes/admin.js";
 import perksRoutes from "./routes/perks.js";
 import badgesRoutes from "./routes/badges.js";
+import ledgerRoutes from "./routes/ledger.js";
+import usersRoutes from "./routes/users.js";
 import "./workers/syncWorker.js"; // Boot the background worker
 
 const app = express();
@@ -37,6 +39,8 @@ app.use("/api/perks", perksRoutes);
 app.use("/api/badges", badgesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/integrations", integrationsRoutes);
+app.use("/api/ledger", ledgerRoutes);
+app.use("/api/users", usersRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
