@@ -8,7 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// User representation tied to Houses
 model User {
   id               String         @id @default(uuid())
   email            String         @unique
@@ -17,28 +16,26 @@ model User {
   house            House
   role             Role           @default(STUDENT)
   points           Int            @default(0)
-  
+
   bio              String?
-  githubHandle     String?
-  codeforcesHandle String?
-  htbHandle        String?
 
   refreshTokens        RefreshToken[]
   leaderboardSnapshots LeaderboardSnapshot[]
-  platformSyncStates   PlatformSyncState[]
+  profileLinks         ProfileLink[]
+  profileSyncs         ProfileSync[]
   certificates         Certificate[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
 
   createdAt            DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  updatedAt            DateTime       @updatedAt
 }
 
 model RefreshToken {
   id          String   @id @default(uuid())
   hashedToken String   @unique
-  familyId    String   // Connects rotated tokens together
+  familyId    String
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isRevoked   Boolean  @default(false)
@@ -58,31 +55,49 @@ model LeaderboardSnapshot {
   snapshotDate DateTime @default(now())
 }
 
-model PlatformSyncState {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform     Platform
-  snapshotData Json
-  updatedAt    DateTime @updatedAt
+model ProfileLink {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       Provider
+  externalHandle String
+  verified       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
 
-  @@unique([userId, platform])
+  @@unique([userId, provider])
+}
+
+model ProfileSync {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     Provider
+  rawSnapshot  Json
+  parsedStats  Json
+  lastSyncedAt DateTime  @default(now())
+  lastError    String?
+  status       String    @default("PENDING")
+
+  @@unique([userId, provider])
 }
 
 model Certificate {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileKey   String   @unique
-  mimeType  String
-  status    String   @default("PENDING_VERIFICATION")
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String   @default("")
+  fileKey    String   @unique
+  mimeType   String
+  status     String   @default("PENDING_VERIFICATION")
+  reviewedBy String?
+  createdAt  DateTime @default(now())
 }
 
-enum Platform {
+enum Provider {
   GITHUB
   CODEFORCES
   LEETCODE
+  GFG
   HTB
   THM
 }
@@ -120,7 +135,7 @@ model Complaint {
   category     ComplaintCategory
   content      String
   status       ComplaintStatus   @default(SUBMITTED)
-  reportedDay  String            // YYYY-MM-DD
+  reportedDay  String
   adminNotes   String?
 }
 

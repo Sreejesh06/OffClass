@@ -20,10 +20,8 @@ router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), a
         email: true,
         house: true,
         points: true,
-        githubHandle: true,
-        codeforcesHandle: true,
-        htbHandle: true
-      }
+        profileLinks: { select: { provider: true, externalHandle: true, verified: true } },
+      },
     });
 
     // Immutable forensic trail

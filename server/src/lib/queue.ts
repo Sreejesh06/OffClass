@@ -1,18 +1,47 @@
 import { Queue } from "bullmq";
 import { redis } from "./redis.js";
-import type { Platform } from "@prisma/client";
+import type { Provider } from "@prisma/client";
 
 export interface SyncJobData {
   userId: string;
-  platform: Platform;
+  provider: Provider;
   handle: string;
 }
 
-export const syncQueue = new Queue<SyncJobData>("platform-sync", {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3, // Retry up to 3 times
-    backoff: { type: "exponential", delay: 1000 }, // Wait 1s, 2s, 4s...
-    removeOnComplete: true, // Keep Redis memory clean
-  },
-});
+interface QueueConfig {
+  concurrency: number;
+  rateMax: number;
+  rateDuration: number;
+}
+
+const QUEUE_CONFIGS: Record<string, QueueConfig> = {
+  codeforces: { concurrency: 5, rateMax: 10, rateDuration: 1000 },
+  leetcode:   { concurrency: 3, rateMax: 5,  rateDuration: 1000 },
+  gfg:        { concurrency: 3, rateMax: 5,  rateDuration: 1000 },
+  htb:        { concurrency: 2, rateMax: 3,  rateDuration: 1000 },
+  thm:        { concurrency: 3, rateMax: 5,  rateDuration: 1000 },
+};
+
+const defaultJobOptions = {
+  attempts: 3,
+  backoff: { type: "exponential" as const, delay: 2000 },
+  removeOnComplete: true,
+};
+
+const queues = new Map<string, Queue<SyncJobData>>();
+
+for (const name of Object.keys(QUEUE_CONFIGS)) {
+  queues.set(
+    name,
+    new Queue<SyncJobData>(`sync:${name}`, { connection: redis, defaultJobOptions })
+  );
+}
+
+export const getQueue = (provider: Provider): Queue<SyncJobData> => {
+  const key = provider.toLowerCase();
+  const queue = queues.get(key);
+  if (!queue) throw new Error(`No sync queue configured for provider: ${provider}`);
+  return queue;
+};
+
+export { QUEUE_CONFIGS };
