@@ -1,0 +1,305 @@
+{
+  "communities": {
+    "0": [
+      "client_tsconfig_app",
+      "client_tsconfig_app_compileroptions",
+      "client_tsconfig_app_compileroptions_allowarbitraryextensions",
+      "client_tsconfig_app_compileroptions_allowimportingtsextensions",
+      "client_tsconfig_app_compileroptions_erasablesyntaxonly",
+      "client_tsconfig_app_compileroptions_jsx",
+      "client_tsconfig_app_compileroptions_lib",
+      "client_tsconfig_app_compileroptions_module",
+      "client_tsconfig_app_compileroptions_moduledetection",
+      "client_tsconfig_app_compileroptions_moduleresolution",
+      "client_tsconfig_app_compileroptions_noemit",
+      "client_tsconfig_app_compileroptions_nofallthroughcasesinswitch",
+      "client_tsconfig_app_compileroptions_nounusedlocals",
+      "client_tsconfig_app_compileroptions_nounusedparameters",
+      "client_tsconfig_app_compileroptions_skiplibcheck",
+      "client_tsconfig_app_compileroptions_target",
+      "client_tsconfig_app_compileroptions_tsbuildinfofile",
+      "client_tsconfig_app_compileroptions_types",
+      "client_tsconfig_app_compileroptions_verbatimmodulesyntax",
+      "client_tsconfig_app_include"
+    ],
+    "1": [
+      "ref_cors",
+      "ref_dotenv",
+      "ref_shared",
+      "ref_tsx",
+      "ref_types_cors",
+      "ref_types_express",
+      "server_package",
+      "server_package_author",
+      "server_package_description",
+      "server_package_json_ref_zod",
+      "server_package_keywords",
+      "server_package_license",
+      "server_package_main",
+      "server_package_name",
+      "server_package_packagemanager",
+      "server_package_scripts",
+      "server_package_scripts_dev",
+      "server_package_scripts_test",
+      "server_package_version"
+    ],
+    "2": [
+      "client_package_json_ref_typescript",
+      "shared_package",
+      "shared_package_author",
+      "shared_package_dependencies",
+      "shared_package_dependencies_zod",
+      "shared_package_description",
+      "shared_package_devdependencies",
+      "shared_package_devdependencies_typescript",
+      "shared_package_json_ref_zod",
+      "shared_package_keywords",
+      "shared_package_license",
+      "shared_package_main",
+      "shared_package_name",
+      "shared_package_packagemanager",
+      "shared_package_scripts",
+      "shared_package_scripts_test",
+      "shared_package_types",
+      "shared_package_version"
+    ],
+    "3": [
+      "client_tsconfig_node",
+      "client_tsconfig_node_compileroptions",
+      "client_tsconfig_node_compileroptions_allowimportingtsextensions",
+      "client_tsconfig_node_compileroptions_erasablesyntaxonly",
+      "client_tsconfig_node_compileroptions_lib",
+      "client_tsconfig_node_compileroptions_module",
+      "client_tsconfig_node_compileroptions_moduledetection",
+      "client_tsconfig_node_compileroptions_noemit",
+      "client_tsconfig_node_compileroptions_nofallthroughcasesinswitch",
+      "client_tsconfig_node_compileroptions_nounusedlocals",
+      "client_tsconfig_node_compileroptions_nounusedparameters",
+      "client_tsconfig_node_compileroptions_skiplibcheck",
+      "client_tsconfig_node_compileroptions_target",
+      "client_tsconfig_node_compileroptions_tsbuildinfofile",
+      "client_tsconfig_node_compileroptions_types",
+      "client_tsconfig_node_compileroptions_verbatimmodulesyntax",
+      "client_tsconfig_node_include"
+    ],
+    "4": [
+      "server_tsconfig",
+      "server_tsconfig_compileroptions",
+      "server_tsconfig_compileroptions_declaration",
+      "server_tsconfig_compileroptions_declarationmap",
+      "server_tsconfig_compileroptions_exactoptionalpropertytypes",
+      "server_tsconfig_compileroptions_isolatedmodules",
+      "server_tsconfig_compileroptions_jsx",
+      "server_tsconfig_compileroptions_module",
+      "server_tsconfig_compileroptions_moduledetection",
+      "server_tsconfig_compileroptions_nouncheckedindexedaccess",
+      "server_tsconfig_compileroptions_nouncheckedsideeffectimports",
+      "server_tsconfig_compileroptions_skiplibcheck",
+      "server_tsconfig_compileroptions_sourcemap",
+      "server_tsconfig_compileroptions_strict",
+      "server_tsconfig_compileroptions_target",
+      "server_tsconfig_compileroptions_types",
+      "server_tsconfig_compileroptions_verbatimmodulesyntax"
+    ],
+    "5": [
+      "client_package",
+      "client_package_dependencies",
+      "client_package_dependencies_react",
+      "client_package_dependencies_react_dom",
+      "client_package_json_ref_types_node",
+      "client_package_name",
+      "client_package_private",
+      "client_package_type",
+      "client_package_version",
+      "client_vite_config",
+      "ref_oxlint",
+      "ref_react_dom",
+      "ref_types_react",
+      "ref_types_react_dom",
+      "ref_vite",
+      "ref_vitejs_plugin_react"
+    ],
+    "6": [
+      "package",
+      "package_author",
+      "package_description",
+      "package_keywords",
+      "package_license",
+      "package_main",
+      "package_name",
+      "package_packagemanager",
+      "package_private",
+      "package_scripts",
+      "package_scripts_test",
+      "package_version"
+    ],
+    "7": [
+      "client_package_devdependencies",
+      "client_package_devdependencies_oxlint",
+      "client_package_devdependencies_types_node",
+      "client_package_devdependencies_types_react",
+      "client_package_devdependencies_types_react_dom",
+      "client_package_devdependencies_typescript",
+      "client_package_devdependencies_vite",
+      "client_package_devdependencies_vitejs_plugin_react"
+    ],
+    "8": [
+      "ref_express",
+      "server_src_index",
+      "server_src_index_app",
+      "shared_src_index",
+      "shared_src_schemas_user",
+      "shared_src_schemas_user_createuserinput",
+      "shared_src_schemas_user_createuserschema"
+    ],
+    "9": [
+      "client_oxlintrc",
+      "client_oxlintrc_plugins",
+      "client_oxlintrc_rules",
+      "client_oxlintrc_rules_react_only_export_components",
+      "client_oxlintrc_rules_react_rules_of_hooks",
+      "client_oxlintrc_schema"
+    ],
+    "10": [
+      "server_package_dependencies",
+      "server_package_dependencies_cors",
+      "server_package_dependencies_dotenv",
+      "server_package_dependencies_express",
+      "server_package_dependencies_shared",
+      "server_package_dependencies_zod"
+    ],
+    "11": [
+      "server_package_devdependencies",
+      "server_package_devdependencies_tsx",
+      "server_package_devdependencies_types_cors",
+      "server_package_devdependencies_types_express",
+      "server_package_devdependencies_types_node",
+      "server_package_devdependencies_typescript"
+    ],
+    "12": [
+      "client_package_scripts",
+      "client_package_scripts_build",
+      "client_package_scripts_dev",
+      "client_package_scripts_lint",
+      "client_package_scripts_preview"
+    ],
+    "13": [
+      "client_src_app",
+      "client_src_app_app",
+      "client_src_main",
+      "ref_react"
+    ],
+    "14": [
+      "client_tsconfig",
+      "client_tsconfig_files",
+      "client_tsconfig_references"
+    ]
+  },
+  "cohesion": {
+    "0": 0.1,
+    "1": 0.10526315789473684,
+    "2": 0.1111111111111111,
+    "3": 0.11764705882352941,
+    "4": 0.11764705882352941,
+    "5": 0.13333333333333333,
+    "6": 0.16666666666666666,
+    "7": 0.25,
+    "8": 0.3333333333333333,
+    "9": 0.3333333333333333,
+    "10": 0.3333333333333333,
+    "11": 0.3333333333333333,
+    "12": 0.4,
+    "13": 0.8333333333333334,
+    "14": 0.6666666666666666
+  },
+  "gods": [
+    {
+      "id": "client_tsconfig_app_compileroptions",
+      "label": "compilerOptions",
+      "degree": 18
+    },
+    {
+      "id": "server_tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "client_tsconfig_node_compileroptions",
+      "label": "compilerOptions",
+      "degree": 15
+    },
+    {
+      "id": "client_package_scripts",
+      "label": "scripts",
+      "degree": 5
+    },
+    {
+      "id": "server_package_scripts",
+      "label": "scripts",
+      "degree": 3
+    },
+    {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 3
+    },
+    {
+      "id": "client_package_json_ref_typescript",
+      "label": "typescript",
+      "degree": 3
+    },
+    {
+      "id": "client_oxlintrc_rules",
+      "label": "rules",
+      "degree": 3
+    },
+    {
+      "id": "client_src_app_app",
+      "label": "App()",
+      "degree": 2
+    },
+    {
+      "id": "shared_package_scripts",
+      "label": "scripts",
+      "degree": 2
+    }
+  ],
+  "surprises": [],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `typescript` connect `shared/package.json` to `server/package.json`, `client/package.json`?",
+      "why": "High betweenness centrality (0.137) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `@types/node` connect `client/package.json` to `server/package.json`?",
+      "why": "High betweenness centrality (0.046) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `devDependencies` connect `devDependencies` to `client/package.json`?",
+      "why": "High betweenness centrality (0.045) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `CreateUserInput`, `allowArbitraryExtensions`, `allowImportingTsExtensions` to the rest of the system?",
+      "why": "127 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `compilerOptions` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `server/package.json` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `shared/package.json` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

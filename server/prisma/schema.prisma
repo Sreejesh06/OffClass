@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User representation tied to Houses
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  name             String
+  house            House
+  points           Int      @default(0)
+  
+  bio              String?
+  githubHandle     String?
+  codeforcesHandle String?
+  htbHandle        String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+enum House {
+  RED
+  BLUE
+  GREEN
+  PURPLE
+}
