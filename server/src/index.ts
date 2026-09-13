@@ -1,5 +1,8 @@
 import express from "express";
+import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import pinoHttp from "pino-http";
 import authRoutes from "./routes/auth.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import integrationsRoutes from "./routes/integrations.js";
@@ -9,6 +12,17 @@ import "./workers/syncWorker.js"; // Boot the background worker
 
 const app = express();
 
+// Security Headers (explicitly deny framing)
+app.use(helmet({ frameguard: { action: "deny" } }));
+
+// Structured JSON Logging (threaded reqId)
+app.use((pinoHttp as any)({
+  transport: process.env.NODE_ENV !== "production" 
+    ? { target: "pino-pretty" } 
+    : undefined
+}));
+
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 

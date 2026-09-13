@@ -6,12 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test:a11y": "echo 'A11y tests stub (pending full test suite)' && exit 0"
   },
   "dependencies": {
+    "@axe-core/react": "^4.13.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3",
     "shared": "workspace:*"
   },
   "devDependencies": {

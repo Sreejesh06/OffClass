@@ -1,0 +1,26 @@
+{
+    email sreejesh.s2024csecs@sece.ac.in
+}
+
+cryptid.local, localhost {
+    # 1. Security Headers (Frontend)
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        # Strict CSP blocking inline scripts. Adjust img-src/connect-src based on MinIO domain if needed.
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*; connect-src 'self' https://*"
+    }
+
+    # 2. Proxy API routes to the Node Backend
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+
+    # 3. Serve Static Frontend (Vite SPA) directly from disk for ultimate performance
+    handle {
+        root * /var/www/html
+        try_files {path} /index.html
+        file_server
+    }
+}

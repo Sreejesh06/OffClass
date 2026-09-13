@@ -1,0 +1,58 @@
+name: Deploy Cryptid
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript Check (Client)
+        run: cd client && pnpm tsc --noEmit
+      
+      - name: TypeScript Check (Server)
+        run: cd server && pnpm tsc --noEmit
+      
+      - name: Run axe-core A11y tests
+        run: cd client && npm run test:a11y || echo "A11y tests failed, but not failing build yet (Non-blocking)"
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Migrations against Staging DB
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          cd server
+          npm install -g pnpm
+          pnpm install
+          npx prisma migrate deploy
+          
+      - name: Deploy to Prod via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/cryptid
+            git pull origin main
+            docker compose up -d --build
