@@ -96,3 +96,27 @@ enum House {
   GREEN
   PURPLE
 }
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+enum ComplaintCategory {
+  GRADING
+  HARASSMENT
+  PLATFORM_BUG
+  OTHER
+}
+
+model Complaint {
+  id           String            @id @default(uuid())
+  trackingCode String            @unique
+  category     ComplaintCategory
+  content      String
+  status       ComplaintStatus   @default(SUBMITTED)
+  reportedDay  String            // YYYY-MM-DD
+  adminNotes   String?
+}

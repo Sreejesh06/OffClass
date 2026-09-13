@@ -5,10 +5,6 @@ import { awardPoints } from "../lib/leaderboard.js";
 import type { SyncJobData } from "../lib/queue.js";
 import axios from "axios";
 
-// ---------------------------------------------------------
-// Open-source wrappers/fetchers for the various platforms
-// ---------------------------------------------------------
-// aislop-ignore: ai-slop/hardcoded-url
 const fetchCodeforces = async (handle: string) => {
   const res = await axios.get(`https://codeforces.com/api/user.info?handles=${handle}`);
   if (res.data.status !== "OK") throw new Error("CF API failed");
