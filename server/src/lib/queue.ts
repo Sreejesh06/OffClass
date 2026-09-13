@@ -27,13 +27,12 @@ const defaultJobOptions = {
   backoff: { type: "exponential" as const, delay: 2000 },
   removeOnComplete: true,
 };
-
 const queues = new Map<string, Queue<SyncJobData>>();
 
 for (const name of Object.keys(QUEUE_CONFIGS)) {
   queues.set(
     name,
-    new Queue<SyncJobData>(`sync:${name}`, { connection: redis, defaultJobOptions })
+    new Queue<SyncJobData>(name, { connection: redis, defaultJobOptions: { removeOnComplete: true, removeOnFail: 1000 }, prefix: 'sync' })
   );
 }
 

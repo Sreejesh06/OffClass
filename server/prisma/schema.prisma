@@ -24,6 +24,9 @@ model User {
   profileLinks         ProfileLink[]
   profileSyncs         ProfileSync[]
   certificates         Certificate[]
+  pointsTransactions   PointsTransaction[]
+  redemptions          Redemption[]
+  badges               UserBadge[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
@@ -147,4 +150,59 @@ model AuditLog {
   targetId   String
   metadata   Json?
   createdAt  DateTime @default(now())
+}
+
+model PointsTransaction {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta         Int
+  reason        String
+  referenceType String?  
+  referenceId   String?  
+  createdBy     String?  
+  createdAt     DateTime @default(now())
+}
+
+model PerkItem {
+  id                String       @id @default(uuid())
+  name              String
+  description       String?
+  cost              Int
+  quantityRemaining Int?         
+  redemptions       Redemption[]
+  isActive          Boolean      @default(true)
+}
+
+model Redemption {
+  id             String           @id @default(uuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  perkItemId     String
+  perkItem       PerkItem         @relation(fields: [perkItemId], references: [id])
+  idempotencyKey String
+  createdAt      DateTime         @default(now())
+
+  @@unique([userId, idempotencyKey])
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  imageUrl    String?
+  users       UserBadge[]
+  createdAt   DateTime    @default(now())
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  awardedBy String?  // ID of the admin who manually awarded it (if applicable)
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
 }

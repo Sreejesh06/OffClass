@@ -8,9 +8,12 @@ import leaderboardRoutes from "./routes/leaderboard.js";
 import integrationsRoutes from "./routes/integrations.js";
 import complaintsRoutes from "./routes/complaints.js";
 import adminRoutes from "./routes/admin.js";
+import perksRoutes from "./routes/perks.js";
+import badgesRoutes from "./routes/badges.js";
 import "./workers/syncWorker.js"; // Boot the background worker
 
 const app = express();
+export { app };
 
 // Security Headers (explicitly deny framing)
 app.use(helmet({ frameguard: { action: "deny" } }));
@@ -26,14 +29,23 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/integrations", integrationsRoutes);
 app.use("/api/complaints", complaintsRoutes);
+app.use("/api/perks", perksRoutes);
+app.use("/api/badges", badgesRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/integrations", integrationsRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(3000);
+const PORT = process.env.PORT || 3000;
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}

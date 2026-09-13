@@ -10,11 +10,31 @@ export const getHouseKey = (house: House): string => `leaderboard:house:${house}
  * Postgres is incremented securely as the absolute source of truth.
  * The resulting total is then synchronously pipeline-written to Redis.
  */
-export const awardPoints = async (userId: string, house: House, pointsToAdd: number): Promise<number> => {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { points: { increment: pointsToAdd } },
-  });
+export const awardPoints = async (
+  userId: string, 
+  house: House, 
+  pointsToAdd: number,
+  reason: string = "Manual adjustment",
+  referenceType?: string,
+  referenceId?: string,
+  createdBy?: string
+): Promise<number> => {
+  const [user] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { points: { increment: pointsToAdd } },
+    }),
+    prisma.pointsTransaction.create({
+      data: {
+        userId,
+        delta: pointsToAdd,
+        reason,
+        referenceType,
+        referenceId,
+        createdBy
+      }
+    })
+  ]);
 
   const newTotal = user.points;
 

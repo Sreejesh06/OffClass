@@ -114,12 +114,13 @@ const processSyncJob = async (job: Job<SyncJobData>) => {
 // Boot one Worker per platform queue
 for (const [name, config] of Object.entries(QUEUE_CONFIGS)) {
   new Worker<SyncJobData>(
-    `sync:${name}`,
+    name,
     processSyncJob,
     {
       connection: redis,
       concurrency: config.concurrency,
       limiter: { max: config.rateMax, duration: config.rateDuration },
+      prefix: 'sync'
     }
   );
 }
