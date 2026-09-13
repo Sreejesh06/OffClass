@@ -25,6 +25,8 @@ model User {
 
   refreshTokens        RefreshToken[]
   leaderboardSnapshots LeaderboardSnapshot[]
+  platformSyncStates   PlatformSyncState[]
+  certificates         Certificate[]
 
   createdAt            DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -51,6 +53,35 @@ model LeaderboardSnapshot {
   rankInHouse  Int
   rankOverall  Int
   snapshotDate DateTime @default(now())
+}
+
+model PlatformSyncState {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     Platform
+  snapshotData Json
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, platform])
+}
+
+model Certificate {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileKey   String   @unique
+  mimeType  String
+  status    String   @default("PENDING_VERIFICATION")
+  createdAt DateTime @default(now())
+}
+
+enum Platform {
+  GITHUB
+  CODEFORCES
+  LEETCODE
+  HTB
+  THM
 }
 
 enum Role {
