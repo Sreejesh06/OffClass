@@ -5,53 +5,66 @@ interface LeetCodeRaw {
   easySolved: number;
   mediumSolved: number;
   hardSolved: number;
-  streak: number;
+  streak?: number;
   submissionCalendar: Record<string, number>;
 }
 
-// aislop-ignore: ai-slop/hardcoded-url — stable unofficial GraphQL endpoint
 export const fetchLeetCode = async (handle: string): Promise<LeetCodeRaw> => {
-  const query = `
-    query userProfileCalendar($username: String!) {
-      matchedUser(username: $username) {
-        submitStats: submitStatsGlobal {
-          acSubmissionNum { difficulty count }
-        }
-        userCalendar { submissionCalendar streak }
-      }
+  const [solvedRes, calendarRes] = await Promise.all([
+    axios.get(`https://alfa-leetcode-api.onrender.com/${handle}/solved`, {
+      validateStatus: (s) => s < 500
+    }),
+    axios.get(`https://alfa-leetcode-api.onrender.com/${handle}/calendar`, {
+      validateStatus: (s) => s < 500
+    })
+  ]);
+
+  if (!solvedRes.data || solvedRes.data.errors || solvedRes.status === 404) {
+    throw new Error("LeetCode user not found");
+  }
+
+  const data = solvedRes.data;
+  
+  let calendarData: Record<string, number> = {};
+  if (calendarRes.data && calendarRes.data.submissionCalendar) {
+    try {
+      const parsedStr = typeof calendarRes.data.submissionCalendar === "string" 
+        ? JSON.parse(calendarRes.data.submissionCalendar)
+        : calendarRes.data.submissionCalendar;
+      calendarData = parsedStr;
+    } catch (e) {
+      // Ignore parse error
     }
-  `;
-
-  // aislop-ignore: ai-slop/hardcoded-url — stable unofficial GraphQL endpoint
-  const res = await axios.post("https://leetcode.com/graphql", {
-    query,
-    variables: { username: handle },
-  });
-
-  const user = res.data?.data?.matchedUser;
-  if (!user) throw new Error("LeetCode user not found");
-
-  const stats = user.submitStats.acSubmissionNum;
-  const calendarStr = user.userCalendar.submissionCalendar || "{}";
-  const calendar: Record<string, number> = JSON.parse(calendarStr);
-
-  const findCount = (difficulty: string) =>
-    stats.find((s: any) => s.difficulty === difficulty)?.count ?? 0;
+  }
 
   return {
-    totalSolved: findCount("All"),
-    easySolved: findCount("Easy"),
-    mediumSolved: findCount("Medium"),
-    hardSolved: findCount("Hard"),
-    streak: user.userCalendar.streak ?? 0,
-    submissionCalendar: calendar,
+    totalSolved: data.solvedProblem ?? 0,
+    easySolved: data.easySolved ?? 0,
+    mediumSolved: data.mediumSolved ?? 0,
+    hardSolved: data.hardSolved ?? 0,
+    streak: 0,
+    submissionCalendar: calendarData,
   };
 };
 
-export const parseLeetCode = (raw: LeetCodeRaw) => ({
-  totalSolved: raw.totalSolved,
-  easySolved: raw.easySolved,
-  mediumSolved: raw.mediumSolved,
-  hardSolved: raw.hardSolved,
-  streak: raw.streak,
-});
+export const parseLeetCode = (raw: LeetCodeRaw) => {
+  const calendar: Record<string, number> = {};
+  
+  for (const [timestampStr, count] of Object.entries(raw.submissionCalendar || {})) {
+    const ts = parseInt(timestampStr, 10);
+    if (!isNaN(ts)) {
+      const d = new Date(ts * 1000);
+      const dateStr = d.toISOString().split("T")[0]!;
+      calendar[dateStr] = (calendar[dateStr] || 0) + count;
+    }
+  }
+
+  return {
+    totalSolved: raw.totalSolved,
+    easySolved: raw.easySolved,
+    mediumSolved: raw.mediumSolved,
+    hardSolved: raw.hardSolved,
+    streak: raw.streak,
+    calendar,
+  };
+};

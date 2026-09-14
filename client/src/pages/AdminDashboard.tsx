@@ -11,9 +11,11 @@ interface ApprovalItem {
   id: string;
   studentName: string;
   studentHouse: string;
+  targetHouse?: string;
   type: string;
   description: string;
   date: string;
+  reason?: string;
 }
 
 interface ComplaintItem {
@@ -69,6 +71,21 @@ export function AdminDashboard() {
   const approveMutation = useMutation({
     mutationFn: async ({ action, items }: { action: 'approve' | 'reject', items: string[] }) => {
       await api.post('/admin/approve', { action, items });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'approvals'] });
+      setSelectedApprovals(new Set());
+    }
+  });
+
+  // Single Item Review Mutation
+  const reviewMutation = useMutation({
+    mutationFn: async ({ id, action, type }: { id: string; action: 'approve' | 'reject'; type: string }) => {
+      if (type === 'HOUSE_TRANSFER') {
+        await api.post(`/admin/house-transfers/${id}/review`, { action });
+      } else {
+        await api.post('/admin/approve', { action, items: [id] });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'approvals'] });
@@ -220,11 +237,12 @@ export function AdminDashboard() {
                     <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Type</th>
                     <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Details</th>
                     <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Submitted</th>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approvals.length === 0 ? (
-                    <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No pending approvals.</td></tr>
+                    <tr><td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No pending approvals.</td></tr>
                   ) : (
                     approvals.map(a => (
                       <tr key={a.id} style={{ borderBottom: '1px solid var(--border-subtle)', background: selectedApprovals.has(a.id) ? 'color-mix(in srgb, var(--accent-house) 5%, transparent)' : 'transparent' }}>
@@ -236,10 +254,77 @@ export function AdminDashboard() {
                             aria-label={`Select approval for ${a.studentName}`}
                           />
                         </td>
-                        <td style={{ padding: '1rem', fontWeight: 500 }}>{a.studentName} <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>({a.studentHouse})</span></td>
-                        <td style={{ padding: '1rem' }}><span style={{ padding: '0.25rem 0.5rem', background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem' }}>{a.type}</span></td>
-                        <td style={{ padding: '1rem' }}>{a.description}</td>
-                        <td className="mono" style={{ padding: '1rem', fontSize: '0.875rem' }}>{new Date(a.date).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: 600 }}>{a.studentName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>{a.studentHouse}</span>
+                            {a.targetHouse && (
+                              <>
+                                <span>➔</span>
+                                <span style={{ fontWeight: 700, color: 'var(--accent-house)' }}>{a.targetHouse}</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            background: a.type === 'HOUSE_TRANSFER' ? 'rgba(234, 179, 8, 0.12)' : 'var(--bg-surface)',
+                            border: a.type === 'HOUSE_TRANSFER' ? '1px solid #eab308' : '1px solid var(--border-strong)',
+                            color: a.type === 'HOUSE_TRANSFER' ? '#eab308' : 'inherit',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            letterSpacing: '0.04em'
+                          }}>
+                            {a.type === 'HOUSE_TRANSFER' ? 'HOUSE TRANSFER' : a.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', maxWidth: '300px', fontSize: '0.85rem' }}>{a.description}</td>
+                        <td className="mono" style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(a.date).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => reviewMutation.mutate({ id: a.id, action: 'reject', type: a.type })}
+                              disabled={reviewMutation.isPending}
+                              title="Reject"
+                              style={{
+                                padding: '5px 10px',
+                                background: 'transparent',
+                                border: '1px solid #e11d48',
+                                color: '#e11d48',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                            >
+                              <X size={13} /> Reject
+                            </button>
+                            <button
+                              onClick={() => reviewMutation.mutate({ id: a.id, action: 'approve', type: a.type })}
+                              disabled={reviewMutation.isPending}
+                              title="Approve"
+                              style={{
+                                padding: '5px 10px',
+                                background: '#10b981',
+                                border: 'none',
+                                color: '#fff',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                            >
+                              <Check size={13} weight="bold" /> Approve
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}

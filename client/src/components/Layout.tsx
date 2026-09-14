@@ -60,29 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="mono" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Theme Swap (Dev):
-          </span>
-          <select 
-            value={house} 
-            onChange={(e) => setHouse(e.target.value as House)}
-            style={{
-              background: 'var(--bg-surface)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-strong)',
-              padding: '0.25rem 0.5rem',
-              borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--font-mono)'
-            }}
-          >
-            <option value="none">None</option>
-            <option value="red">Red</option>
-            <option value="blue">Blue</option>
-            <option value="green">Green</option>
-            <option value="purple">Purple</option>
-          </select>
-        </div>
+
       </header>
       
       <main id="main-content" style={{ padding: '0', width: '100%', boxSizing: 'border-box' }}>

@@ -29,53 +29,29 @@ export function BadgeWallet() {
   const userBadges: UserBadge[] = badges || [];
 
   return (
-    <div className="dossier-card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div className="dossier-header" style={{ padding: '1.5rem 1.5rem 1rem', margin: 0, borderBottom: '1px solid var(--border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>SERVICE BADGES</h2>
-        <span className="mono" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          {isLoading ? '...' : userBadges.length} UNLOCKED
-        </span>
-      </div>
-
-      <div style={{ padding: '2rem', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+    <div className="w-full">
+      <div className="flex flex-wrap gap-8 justify-center lg:justify-start">
         {isLoading ? (
-          <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading badges...</div>
+          <div className="w-full text-center text-gray-400 py-8">Loading badges...</div>
         ) : userBadges.length === 0 ? (
-          <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-secondary)' }}>No badges earned yet.</div>
+          <div className="w-full text-center text-gray-400 py-8">No badges earned yet.</div>
         ) : (
           userBadges.map(({ id, badge, awardedAt }) => (
             <div 
               key={id}
-              style={{
-                width: '120px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.75rem',
-                textAlign: 'center'
-              }}
+              className="flex flex-col items-center gap-3 text-center w-28"
             >
               {/* Badge Icon / Visual */}
-              <div style={{ 
-                width: '80px', 
-                height: '80px', 
-                borderRadius: '50%', 
-                background: 'color-mix(in srgb, var(--accent-house) 10%, transparent)',
-                border: '2px solid var(--accent-house)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 15px color-mix(in srgb, var(--accent-house) 20%, transparent)'
-              }}>
-                <SealCheck size={40} weight="fill" color="var(--accent-house)" />
+              <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
+                <SealCheck size={40} weight="fill" className="text-amber-500" />
               </div>
               
               {/* Info */}
               <div>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.2 }}>{badge.name}</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div className="font-semibold text-sm leading-tight text-gray-800">{badge.name}</div>
+                <div className="text-[10px] text-gray-500 mt-1 flex flex-col gap-0.5">
                   <span>{badge.description}</span>
-                  <span className="mono" style={{ opacity: 0.7 }}>{new Date(awardedAt).toLocaleDateString()}</span>
+                  <span className="font-mono opacity-70">{new Date(awardedAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>

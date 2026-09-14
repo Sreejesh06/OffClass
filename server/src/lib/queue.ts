@@ -20,6 +20,7 @@ const QUEUE_CONFIGS: Record<string, QueueConfig> = {
   gfg:        { concurrency: 3, rateMax: 5,  rateDuration: 1000 },
   htb:        { concurrency: 2, rateMax: 3,  rateDuration: 1000 },
   thm:        { concurrency: 3, rateMax: 5,  rateDuration: 1000 },
+  github:     { concurrency: 5, rateMax: 10, rateDuration: 1000 },
 };
 
 const defaultJobOptions = {

@@ -4,14 +4,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   GithubLogo, Code, Trophy, Certificate, Sword, Shield as ShieldIcon,
   Star, CalendarBlank, PencilSimple, Check, X, Copy,
-  ArrowSquareOut, WarningCircle, Wrench, CaretDown, CaretUp as CaretUpIcon
+  ArrowSquareOut, WarningCircle, Wrench, CaretDown, CaretUp as CaretUpIcon,
+  ArrowsLeftRight, HourglassMedium, Trash,
+  Envelope, MapPin, Briefcase, Medal, User as UserIcon
 } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { AccountLinker } from '../components/AccountLinker';
-import { CertificateUpload } from '../components/CertificateUpload';
+import { IntegrationsModal } from '../components/IntegrationsModal';
 import { BadgeWallet } from '../components/BadgeWallet';
 import { TransactionHistory } from '../components/TransactionHistory';
+import { HouseTransferModal } from '../components/HouseTransferModal';
+import { AchievementModal } from '../components/AchievementModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +32,9 @@ interface ProfileData {
   certificates: { id: string; name: string; createdAt: string; mimeType: string }[];
   recentTransactions: { delta: number; reason: string; createdAt: string }[];
   badges: { id: string; name: string; description: string; imageUrl: string | null }[];
-  heatmap: { date: string; points: number }[];
+  achievements: { id: string; title: string; category: string; position: string; date: string; prize: string | null }[];
+  heatmap: { date: string; points: number; summary?: string; details?: Record<string, number> }[];
+  activePlatforms: string[];
 }
 
 // ─── House Config ─────────────────────────────────────────────────────────────
@@ -51,30 +56,55 @@ const PROVIDER_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PROVIDER_URLS: Record<string, (h: string) => string> = {
-  GITHUB:     h => `https://github.com/${h}`,
-  CODEFORCES: h => `https://codeforces.com/profile/${h}`,
-  LEETCODE:   h => `https://leetcode.com/${h}`,
-  GFG:        h => `https://auth.geeksforgeeks.org/user/${h}`,
-  HTB:        h => `https://app.hackthebox.com/users/${h}`,
-  THM:        h => `https://tryhackme.com/p/${h}`,
+  GITHUB:     (h: string) => `https://github.com/${h}`,
+  CODEFORCES: (h: string) => `https://codeforces.com/profile/${h}`,
+  LEETCODE:   (h: string) => `https://leetcode.com/${h}`,
+  GFG:        (h: string) => `https://auth.geeksforgeeks.org/user/${h}`,
+  HTB:        (h: string) => `https://app.hackthebox.com/users/${h}`,
+  THM:        (h: string) => `https://tryhackme.com/p/${h}`,
 };
 
 // ─── Activity Heatmap ─────────────────────────────────────────────────────────
 
-function ActivityHeatmap({ heatmap, houseColor }: { heatmap: { date: string; points: number }[], houseColor: string }) {
+function ActivityHeatmap({ heatmap = [], houseColor, activePlatforms = [] }: { heatmap?: { date: string; points: number; summary?: string; details?: Record<string, number> }[], houseColor: string, activePlatforms?: string[] }) {
+  const [filter, setFilter] = useState<string>('All');
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, content: string } | null>(null);
+
+  const availablePlatforms = useMemo(() => {
+    return ['All', ...[...(activePlatforms || [])].sort()];
+  }, [activePlatforms]);
+
   const cells = useMemo(() => {
-    const map: Record<string, number> = {};
-    heatmap.forEach(({ date, points }) => { map[date] = points; });
+    const map: Record<string, { points: number; summary?: string; details?: Record<string, number> }> = {};
+    if (heatmap && Array.isArray(heatmap)) {
+      heatmap.forEach(({ date, points, summary, details }) => { map[date] = { points, summary, details }; });
+    }
     const today = new Date();
-    const result: { date: Date; points: number; dateStr: string }[] = [];
+    const result: { date: Date | null; points: number; dateStr: string; summary?: string; details?: Record<string, number> }[] = [];
+    
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 364);
+    
+    for (let i = 0; i < startDate.getDay(); i++) {
+      result.push({ date: null, points: 0, dateStr: '' });
+    }
+
     for (let i = 364; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0]!;
-      result.push({ date: d, points: map[dateStr] ?? 0, dateStr });
+      const data = map[dateStr];
+      let points = data?.points ?? 0;
+      let summary = data?.summary;
+      
+      if (filter !== 'All' && data?.details) {
+        points = data.details[filter] ?? 0;
+      }
+      
+      result.push({ date: d, points, dateStr, summary, details: data?.details });
     }
     return result;
-  }, [heatmap]);
+  }, [heatmap, filter]);
 
   const maxPts = Math.max(...cells.map(c => c.points), 1);
   const weeks: typeof cells[] = [];
@@ -84,483 +114,457 @@ function ActivityHeatmap({ heatmap, houseColor }: { heatmap: { date: string; poi
   const monthLabels: { label: string; weekIndex: number }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wi) => {
-    const m = week[0]?.date.getMonth() ?? 0;
+    const validDay = week.find(d => d.date);
+    if (!validDay) return;
+    const m = validDay.date!.getMonth();
     if (m !== lastMonth) { monthLabels.push({ label: months[m]!, weekIndex: wi }); lastMonth = m; }
   });
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div style={{ display: 'flex', gap: 0, marginBottom: '4px', position: 'relative', height: '16px', minWidth: `${weeks.length * 14}px` }}>
-        {monthLabels.map(({ label, weekIndex }) => (
-          <div key={label} style={{ position: 'absolute', left: `${weekIndex * 14}px`, fontSize: '10px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            {label}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: '2px' }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {week.map((cell, di) => {
-              const intensity = cell.points === 0 ? 0.2 : Math.max(0.25, cell.points / maxPts);
-              return (
-                <div
-                  key={di}
-                  title={`${cell.dateStr}: ${cell.points} pts`}
-                  style={{
-                    width: '11px', height: '11px',
-                    borderRadius: '2px',
-                    backgroundColor: cell.points === 0 ? 'var(--border-subtle)' : houseColor,
-                    opacity: intensity,
-                    cursor: 'default',
-                    transition: 'opacity 0.1s',
-                  }}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Less</span>
-        {[0.25, 0.45, 0.65, 0.85, 1].map(op => (
-          <div key={op} style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: houseColor, opacity: op }} />
-        ))}
-        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>More</span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Section Label ────────────────────────────────────────────────────────────
-
-function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
-  return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center',
-      padding: '3px 10px',
-      background: color,
-      borderRadius: '4px',
-      fontFamily: 'var(--font-h2)',
-      fontSize: '0.65rem',
-      fontWeight: 800,
-      letterSpacing: '0.12em',
-      color: '#000',
-      textTransform: 'uppercase',
-      marginBottom: '12px',
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export function ProfilePortfolio() {
-  const { userId } = useParams<{ userId?: string }>();
-  const { user: authUser } = useAuth();
-  const queryClient = useQueryClient();
-
-  const targetId = userId || authUser?.id;
-  const isOwner = authUser?.id === targetId;
-
-  const [bioEditing, setBioEditing] = useState(false);
-  const [bioText, setBioText] = useState('');
-  const [copied, setCopied] = useState(false);
-  const bioRef = useRef<HTMLTextAreaElement>(null);
-
-  const { data: profile, isLoading, error } = useQuery<ProfileData>({
-    queryKey: ['profile', targetId],
-    queryFn: async () => {
-      const res = await api.get(`/users/${targetId}/profile`);
-      return res.data;
-    },
-    enabled: !!targetId,
-  });
-
-  useEffect(() => {
-    if (profile?.bio) setBioText(profile.bio);
-  }, [profile?.bio]);
-
-  useEffect(() => {
-    if (bioEditing) bioRef.current?.focus();
-  }, [bioEditing]);
-
-  const bioMutation = useMutation({
-    mutationFn: async (bio: string) => { await api.patch('/users/me/bio', { bio }); },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', targetId] });
-      setBioEditing(false);
-    },
-  });
-
-  const handleShare = () => {
-    const url = `${window.location.origin}/profile/${targetId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
-    });
-  };
-
-  if (!targetId) {
-    return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Please <a href="/login" style={{ color: 'var(--accent-house)' }}>log in</a> to view your profile.</div>;
-  }
-
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-        {[200, 80, 300, 200].map((h, i) => (
-          <div key={i} style={{ height: h, background: 'var(--bg-surface)', borderRadius: '6px', opacity: 0.5 }} />
-        ))}
-      </div>
-    );
-  }
-
-  if (error || !profile) {
-    return (
-      <div style={{ padding: '4rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)' }}>
-        <WarningCircle size={48} />
-        <p>Profile not found.</p>
-      </div>
-    );
-  }
-
-  const hConf = HOUSE_CONFIG[profile.house];
-  const hColor = hConf.color;
-
-  // Top activity categories from recent transactions
-  const activityFreq: Record<string, number> = {};
-  profile.recentTransactions.forEach(tx => { activityFreq[tx.reason] = (activityFreq[tx.reason] || 0) + 1; });
-  const topActivities = Object.entries(activityFreq).sort((a, b) => b[1] - a[1]).slice(0, 6);
-
-  const ghSync = profile.syncs.find(s => s.provider === 'GITHUB');
-  const cfSync = profile.syncs.find(s => s.provider === 'CODEFORCES');
-  const htbSync = profile.syncs.find(s => s.provider === 'HTB');
-  const hasPlatformStats = ghSync || cfSync || htbSync;
-
-  return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 1rem' }}>
-
-      {/* ────── TOP IDENTITY CARD ──────────────────────────────────────── */}
-      <div style={{
-        background: 'var(--bg-surface)',
-        border: `1px solid var(--border-subtle)`,
-        borderTop: `3px solid ${hColor}`,
-        borderRadius: '8px 8px 0 0',
-        padding: '1.5rem',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto',
-        gap: '1.5rem',
-        alignItems: 'start',
-      }}>
+    <div className="w-full bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
-            <h1 style={{ margin: 0, fontFamily: 'var(--font-h2)', fontSize: 'clamp(1.4rem, 4vw, 1.9rem)', fontWeight: 800, letterSpacing: '-0.02em' }}>
-              {profile.name}
-            </h1>
-            <span style={{ padding: '2px 10px', background: hConf.bg, border: `1px solid ${hColor}`, borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 700, color: hColor, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              {hConf.label}
-            </span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '14px', fontFamily: 'var(--font-mono)' }}>
-            {hConf.desc}
-          </div>
-          {/* Bio */}
-          {bioEditing ? (
-            <div>
-              <textarea
-                ref={bioRef}
-                value={bioText}
-                onChange={e => setBioText(e.target.value)}
-                maxLength={400}
-                rows={4}
-                style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg-base)', border: `1px solid ${hColor}`, borderRadius: '4px', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: '0.875rem', padding: '10px', resize: 'vertical', outline: 'none' }}
-              />
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{bioText.length}/400</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => { setBioEditing(false); setBioText(profile.bio || ''); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: 'none', border: '1px solid var(--border-strong)', borderRadius: '4px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem' }}>
-                    <X size={12} /> Cancel
-                  </button>
-                  <button onClick={() => bioMutation.mutate(bioText)} disabled={bioMutation.isPending} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: hColor, border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
-                    <Check size={12} /> {bioMutation.isPending ? 'Saving…' : 'Save'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-              <p style={{ margin: 0, color: profile.bio ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.875rem', lineHeight: 1.65, flex: 1, fontStyle: profile.bio ? 'normal' : 'italic' }}>
-                {profile.bio || (isOwner ? 'No bio yet. Add a summary to show on your public profile.' : 'No bio provided.')}
-              </p>
-              {isOwner && (
-                <button onClick={() => setBioEditing(true)} title="Edit bio" style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '4px', display: 'flex', flexShrink: 0, transition: 'color 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = hColor)}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                >
-                  <PencilSimple size={14} />
-                </button>
-              )}
-            </div>
-          )}
+          <h3 className="text-lg font-bold text-gray-900 font-display">Activity Matrix</h3>
+          <p className="text-sm text-gray-500 font-sans mt-1">Platform engagement over the last year</p>
         </div>
-
-        {/* Share + metadata */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-          <button
-            onClick={handleShare}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', background: copied ? hColor : 'var(--bg-base)', border: `1px solid ${copied ? hColor : 'var(--border-strong)'}`, borderRadius: '4px', color: copied ? '#fff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
-          >
-            {copied ? <Check size={13} /> : <Copy size={13} />}
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <CalendarBlank size={10} />
-            Since {new Date(profile.memberSince).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-          </div>
-        </div>
-      </div>
-
-      {/* ────── STATS STRIP ───────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', border: `1px solid var(--border-subtle)`, borderTop: 'none', background: 'var(--bg-base)' }}>
-        {[
-          { icon: <Trophy size={16} weight="fill" />, label: 'Points', value: profile.points.toLocaleString() },
-          { icon: <Star size={16} weight="fill" />, label: 'Overall Rank', value: `#${profile.rankOverall}` },
-          { icon: <ShieldIcon size={16} weight="fill" />, label: 'House Rank', value: profile.rankInHouse ? `#${profile.rankInHouse}` : '—' },
-          { icon: <Certificate size={16} weight="fill" />, label: 'Certs', value: profile.certificates.length },
-          { icon: <Star size={16} weight="fill" />, label: 'Badges', value: profile.badges.length },
-        ].map((s, i, arr) => (
-          <div key={i} style={{ padding: '12px 8px', borderRight: i < arr.length - 1 ? `1px solid var(--border-subtle)` : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-            <span style={{ color: hColor }}>{s.icon}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 700 }}>{s.value}</span>
-            <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-secondary)', textAlign: 'center' }}>{s.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ────── 2-COLUMN BODY ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: `1px solid var(--border-subtle)`, borderTop: 'none' }}>
-
-        {/* LEFT */}
-        <div style={{ borderRight: `1px solid var(--border-subtle)`, display: 'flex', flexDirection: 'column' }}>
-
-          {/* Linked Accounts */}
-          <section style={{ padding: '1.25rem', borderBottom: `1px solid var(--border-subtle)` }}>
-            <SectionLabel color={hColor}>Linked Accounts</SectionLabel>
-            {profile.profileLinks.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No accounts linked yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                {profile.profileLinks.map(link => (
-                  <a key={link.provider} href={PROVIDER_URLS[link.provider]?.(link.externalHandle) || '#'} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: '4px', textDecoration: 'none', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = hColor)}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '7px', color: hColor }}>
-                      {PROVIDER_ICONS[link.provider]}
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-primary)' }}>{link.provider}</span>
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      {link.externalHandle}
-                      <ArrowSquareOut size={11} />
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Activity Focus */}
-          <section style={{ padding: '1.25rem', borderBottom: hasPlatformStats ? `1px solid var(--border-subtle)` : 'none', flex: 1 }}>
-            <SectionLabel color={hColor}>Activity Focus</SectionLabel>
-            {topActivities.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No activity recorded yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {topActivities.map(([reason, count]) => (
-                  <div key={reason} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '6px', height: '6px', background: hColor, borderRadius: '50%', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reason}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-secondary)', padding: '1px 6px', background: 'var(--bg-base)', borderRadius: '99px', flexShrink: 0 }}>×{count}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Platform Stats */}
-          {hasPlatformStats && (
-            <section style={{ padding: '1.25rem' }}>
-              <SectionLabel color={hColor}>Platform Stats</SectionLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {ghSync && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}><GithubLogo size={13} /> GitHub Commits</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>{(ghSync.parsedStats as any).totalCommits ?? '—'}</span>
-                  </div>
-                )}
-                {cfSync && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: htbSync ? '1px solid var(--border-subtle)' : 'none', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}><Code size={13} /> CF Rating</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: hColor, fontWeight: 600 }}>{(cfSync.parsedStats as any).rating ?? '—'}</span>
-                  </div>
-                )}
-                {htbSync && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', fontSize: '0.78rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}><Sword size={13} /> HTB Rank</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: hColor, fontWeight: 600 }}>{(htbSync.parsedStats as any).rank ?? '—'}</span>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* RIGHT */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-
-          {/* Badges */}
-          <section style={{ padding: '1.25rem', borderBottom: `1px solid var(--border-subtle)` }}>
-            <SectionLabel color={hColor}>Achievements & Badges</SectionLabel>
-            {profile.badges.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No badges earned yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {profile.badges.map(badge => (
-                  <div key={badge.id} title={badge.description} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', background: 'var(--bg-base)', border: `1px solid ${hColor}`, borderRadius: '99px', fontSize: '0.72rem', fontWeight: 600, color: hColor, cursor: 'default', transition: 'background 0.15s' }}>
-                    <Star size={10} weight="fill" style={{ color: '#f59e0b' }} />
-                    {badge.name}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Certificates */}
-          <section style={{ padding: '1.25rem', borderBottom: `1px solid var(--border-subtle)` }}>
-            <SectionLabel color={hColor}>Verified Certificates</SectionLabel>
-            {profile.certificates.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No approved certificates yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                {profile.certificates.map(cert => (
-                  <div key={cert.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <Certificate size={13} weight="fill" style={{ color: hColor, flexShrink: 0 }} />
-                      <span style={{ fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>{cert.name}</span>
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-secondary)', flexShrink: 0 }}>
-                      {new Date(cert.createdAt).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Recent Points */}
-          <section style={{ padding: '1.25rem', flex: 1 }}>
-            <SectionLabel color={hColor}>Recent Points</SectionLabel>
-            {profile.recentTransactions.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No transactions yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                {profile.recentTransactions.slice(0, 6).map((tx, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', fontSize: '0.78rem' }}>
-                    <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{tx.reason}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, flexShrink: 0, color: tx.delta >= 0 ? '#10b981' : '#e11d48' }}>
-                      {tx.delta >= 0 ? '+' : ''}{tx.delta}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
-
-      {/* ────── ACTIVITY HEATMAP ──────────────────────────────────────── */}
-      <div style={{ border: `1px solid var(--border-subtle)`, borderTop: 'none', borderRadius: '0 0 8px 8px', background: 'var(--bg-surface)', padding: '1.25rem' }}>
-        <SectionLabel color={hColor}>Activity Heatmap — Last 365 Days</SectionLabel>
-        <ActivityHeatmap heatmap={profile.heatmap} houseColor={hColor} />
-      </div>
-
-      {/* ────── PORTFOLIO LINKS BAR ───────────────────────────────────── */}
-      {profile.profileLinks.length > 0 && (
-        <div style={{ marginTop: '8px', background: 'var(--bg-base)', border: `1px solid var(--border-subtle)`, borderLeft: `3px solid ${hColor}`, borderRadius: '6px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-h2)', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: hColor, flexShrink: 0 }}>Portfolio Links</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {profile.profileLinks.map(link => (
-              <a key={link.provider} href={PROVIDER_URLS[link.provider]?.(link.externalHandle) || '#'} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', background: 'var(--bg-surface)', border: `1px solid var(--border-strong)`, borderRadius: '4px', textDecoration: 'none', fontSize: '0.72rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.color = hColor; e.currentTarget.style.borderColor = hColor; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+        
+        {availablePlatforms.length > 1 && (
+          <div className="flex gap-2 text-xs font-mono">
+            {availablePlatforms.map(p => (
+              <button
+                key={p}
+                onClick={() => setFilter(p)}
+                style={{
+                  background: filter === p ? houseColor : 'white',
+                  color: filter === p ? 'white' : '#6b7280',
+                  borderColor: filter === p ? houseColor : '#e5e7eb'
+                }}
+                className="px-3 py-1 rounded-md border transition-colors"
               >
-                <span style={{ color: hColor }}>{PROVIDER_ICONS[link.provider]}</span>
-                {link.provider}
-              </a>
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="relative">
+        {tooltip && (
+          <div style={{ left: tooltip.x, top: tooltip.y - 8 }} className="fixed -translate-x-1/2 -translate-y-full bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-mono whitespace-pre-line pointer-events-none z-50 text-center shadow-lg">
+            {tooltip.content}
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+          </div>
+        )}
+
+        <div className="overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex gap-0 mb-1 relative h-4" style={{ minWidth: `${weeks.length * 15}px` }}>
+            {monthLabels.map(({ label, weekIndex }) => (
+              <div key={`${label}-${weekIndex}`} style={{ left: `${weekIndex * 15}px` }} className="absolute text-[10px] text-gray-400 font-mono">
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-1" style={{ minWidth: `${weeks.length * 15}px` }}>
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-1">
+                {week.map((cell, di) => {
+                  if (!cell.date) {
+                    return <div key={di} className="w-3 h-3 rounded-sm bg-transparent" />;
+                  }
+                  const intensity = cell.points === 0 ? 0 : Math.max(0.3, cell.points / maxPts);
+                  const dateFormatted = new Date(cell.dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  let tooltipContent = cell.points > 0 ? `${cell.points} contributions on ${dateFormatted}` : `No activity on ${dateFormatted}`;
+                  if (filter === 'All' && cell.details && Object.keys(cell.details).length > 0) {
+                    const detailsText = Object.entries(cell.details)
+                      .filter(([_, count]) => count > 0)
+                      .map(([provider, count]) => `${count} ${provider}`)
+                      .join(' • ');
+                    if (detailsText) {
+                      tooltipContent = `${tooltipContent}\n(${detailsText})`;
+                    }
+                  }
+                  return (
+                    <div key={di}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTooltip({ x: rect.left + rect.width / 2, y: rect.top, content: tooltipContent });
+                      }}
+                      onMouseLeave={() => setTooltip(null)}
+                      className={`w-3 h-3 rounded-sm transition-opacity hover:ring-2 ring-gray-300 ${cell.points === 0 ? 'bg-gray-100/50' : ''}`}
+                      style={cell.points > 0 ? { backgroundColor: houseColor, opacity: intensity } : {}}
+                    />
+                  );
+                })}
+              </div>
             ))}
           </div>
         </div>
-      )}
-
-      {/* ────── OWNER-ONLY TOOLS ──────────────────────────────────────── */}
-      {isOwner && <OwnerTools houseColor={hColor} />}
-
+      </div>
+      <div className="flex items-center gap-1 mt-2 justify-end text-[10px] text-gray-400 font-mono">
+        <span>Less</span>
+        {[0, 0.3, 0.55, 0.8, 1].map((op, i) => (
+          <div key={i} className={`w-3 h-3 rounded-sm ${op === 0 ? 'bg-gray-100/50' : ''}`} style={op > 0 ? { backgroundColor: houseColor, opacity: op } : {}} />
+        ))}
+        <span>More</span>
+      </div>
     </div>
   );
 }
 
-// ─── Owner Tools Panel ────────────────────────────────────────────────────────
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
-function OwnerTools({ houseColor }: { houseColor: string }) {
-  const [open, setOpen] = useState(false);
+export function ProfilePortfolio() {
+  const { userId } = useParams();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // States
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [activityTab, setActivityTab] = useState<'ACHIEVEMENTS' | 'ACTIVITY'>('ACHIEVEMENTS');
+  const [bioEditing, setBioEditing] = useState(false);
+  const [bioText, setBioText] = useState('');
+  const bioRef = useRef<HTMLTextAreaElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Queries
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['profile', userId || user?.id],
+    queryFn: async () => {
+      const targetId = userId || user?.id;
+      if (!targetId) throw new Error("No user ID");
+      const res = await api.get(`/users/${targetId}/profile`);
+      return res.data;
+    },
+    enabled: !!(userId || user?.id)
+  });
+
+  const { data: transferStatus } = useQuery({
+    queryKey: ['house-transfer', userId || 'me'],
+    queryFn: async () => {
+      const res = await api.get('/users/me/house-transfer');
+      return res.data;
+    },
+    enabled: (!userId || userId === user?.id) && !!user
+  });
+
+  // Mutations
+  const bioMutation = useMutation({
+    mutationFn: async (newBio: string) => {
+      await api.patch('/users/me/bio', { bio: newBio });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      setBioEditing(false);
+    }
+  });
+
+  const handleShare = () => {
+    if (!profile) return;
+    const url = `${window.location.origin}/profile/${profile.id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  useEffect(() => {
+    if (bioEditing && bioRef.current) {
+      bioRef.current.focus();
+      bioRef.current.setSelectionRange(bioRef.current.value.length, bioRef.current.value.length);
+    }
+  }, [bioEditing]);
+
+  if (isLoading) return <div className="p-8 text-center text-gray-500 font-mono">Loading dossier...</div>;
+  if (error || !data) return <div className="p-8 text-center text-rose-500 font-mono">Profile not found.</div>;
+
+  const profile: ProfileData = data;
+  const isOwner = !userId || userId === user?.id;
+  const hConf = HOUSE_CONFIG[profile.house] || HOUSE_CONFIG.RED;
+  const hColor = hConf.color;
+
   return (
-    <div style={{ marginTop: '16px' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 16px',
-          background: 'var(--bg-surface)',
-          border: `1px solid var(--border-subtle)`,
-          borderLeft: `3px solid ${houseColor}`,
-          borderRadius: open ? '6px 6px 0 0' : '6px',
-          color: 'var(--text-secondary)', cursor: 'pointer', transition: 'color 0.15s',
-          fontSize: '0.78rem', fontWeight: 600,
-        }}
-        onMouseEnter={e => (e.currentTarget.style.color = houseColor)}
-        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-        aria-expanded={open}
-        aria-controls="profile-tools-panel"
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Wrench size={14} />
-          Profile Management Tools
-        </span>
-        {open ? <CaretUpIcon size={14} /> : <CaretDown size={14} />}
-      </button>
+    <main className="w-full pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT COLUMN: Avatar & Contact (4 cols) */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Profile Avatar Card */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col items-center text-center relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-32 opacity-20" style={{ background: `linear-gradient(135deg, ${hColor} 0%, transparent 100%)` }}></div>
+              
+              <div className="absolute top-6 right-6">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-gray-200 text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  {copied ? 'Copied' : 'Share'}
+                </button>
+              </div>
 
-      {open && (
-        <div
-          id="profile-tools-panel"
-          style={{
-            background: 'var(--bg-surface)',
-            border: `1px solid var(--border-subtle)`,
-            borderTop: 'none',
-            borderRadius: '0 0 6px 6px',
-            padding: '1.5rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '2rem',
-          }}
-        >
-          <AccountLinker />
-          <CertificateUpload />
-          <BadgeWallet />
-          <TransactionHistory />
+              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-white shadow-sm bg-white overflow-hidden mb-5 mt-4 flex items-center justify-center">
+                <img 
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}&backgroundColor=e5e7eb&textColor=000000`} 
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <h1 className="text-3xl font-bold text-gray-900 font-display mb-1">{profile.name}</h1>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hConf.bg, color: hColor, border: `1px solid ${hColor}40` }}>
+                  {hConf.label}
+                </span>
+                {isOwner && (
+                  transferStatus?.hasPending ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 flex items-center gap-1">
+                      <HourglassMedium size={10} weight="bold" /> Pending
+                    </span>
+                  ) : (
+                    <button onClick={() => setShowTransferModal(true)} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 flex items-center gap-1 transition-colors">
+                      <ArrowsLeftRight size={10} /> Transfer
+                    </button>
+                  )
+                )}
+              </div>
+              
+              <div className="w-full grid grid-cols-2 gap-4 mt-2">
+                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Points</p>
+                  <p className="text-2xl font-black font-heading" style={{ color: hColor }}>{profile.points.toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Global Rank</p>
+                  <p className="text-2xl font-black text-gray-900 font-heading">#{profile.rankOverall}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact & Details */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Identity & Focus</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 text-gray-600">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                    <CalendarBlank size={18} />
+                  </div>
+                  <span className="font-medium text-sm">Joined {new Date(profile.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                </div>
+                <div className="flex items-center gap-4 text-gray-600">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: hConf.bg, color: hColor }}>
+                    <ShieldIcon size={18} />
+                  </div>
+                  <span className="font-medium text-sm">{hConf.desc}</span>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+          {/* RIGHT COLUMN: Bio, Experience, Stats (8 cols) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            
+            {/* Bio Card */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 relative group">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900 font-display">About Me</h3>
+                {isOwner && !bioEditing && (
+                  <button onClick={() => { setBioText(profile.bio || ''); setBioEditing(true); }} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                    <PencilSimple size={18} />
+                  </button>
+                )}
+              </div>
+              
+              {bioEditing ? (
+                <div className="flex flex-col gap-3">
+                  <textarea
+                    ref={bioRef}
+                    value={bioText}
+                    onChange={e => setBioText(e.target.value)}
+                    maxLength={400}
+                    rows={4}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-700 font-sans focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400 font-mono">{bioText.length}/400</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setBioEditing(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancel</button>
+                      <button onClick={() => bioMutation.mutate(bioText)} disabled={bioMutation.isPending} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-70" style={{ backgroundColor: hColor }}>
+                        {bioMutation.isPending ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className={`text-lg leading-relaxed ${profile.bio ? 'text-gray-600' : 'text-gray-400 italic'}`}>
+                  {profile.bio || (isOwner ? 'No bio yet. Click the pencil icon to add a summary for your public profile.' : 'No bio provided.')}
+                </p>
+              )}
+            </div>
+
+            {/* Experience / Activity Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Point History / Public Activity */}
+              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                      <Medal size={18} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 font-display">Activity & Achievements</h3>
+                  </div>
+                  {isOwner && activityTab === 'ACHIEVEMENTS' && (
+                    <button 
+                      onClick={() => setShowAchievementModal(true)}
+                      className="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-md transition-colors"
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex bg-gray-100/50 p-1 rounded-xl mb-4 flex-shrink-0">
+                  <button onClick={() => setActivityTab('ACHIEVEMENTS')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACHIEVEMENTS' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>Achievements</button>
+                  <button onClick={() => setActivityTab('ACTIVITY')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACTIVITY' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>Activity Log</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-3">
+                  {activityTab === 'ACHIEVEMENTS' ? (
+                    profile.achievements && profile.achievements.length > 0 ? (
+                      profile.achievements.map((ach) => (
+                        <div key={ach.id} className="flex flex-col p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-bold text-gray-900">{ach.title}</span>
+                            <span className="text-xs font-mono text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">{ach.category}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-600">
+                            <span className="font-medium text-orange-600">{ach.position} {ach.prize && `• ${ach.prize}`}</span>
+                            <span className="font-mono text-gray-500">{new Date(ach.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center text-gray-400 text-sm">No official achievements found.</div>
+                    )
+                  ) : (
+                    <TransactionHistory transactions={profile.recentTransactions} filterType="ACTIVITY" />
+                  )}
+                </div>
+              </div>
+
+              {/* Linked Accounts */}
+              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <Briefcase size={18} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 font-display">Integrations</h3>
+                  </div>
+                  {isOwner && (
+                    <button 
+                      onClick={() => setShowIntegrationsModal(true)}
+                      className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md transition-colors"
+                    >
+                      Manage
+                    </button>
+                  )}
+                </div>
+                <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-hide">
+                  <div className="flex flex-col gap-3">
+                    {profile.profileLinks.length === 0 ? (
+                      <div className="text-gray-400 text-sm text-center py-4">No public integrations.</div>
+                    ) : (
+                      profile.profileLinks.map(link => (
+                        <a key={link.provider} href={PROVIDER_URLS[link.provider]?.(link.externalHandle) || '#'} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="flex items-center gap-2 font-medium" style={{ color: hColor }}>
+                            {PROVIDER_ICONS[link.provider]}
+                            <span className="text-gray-900 text-sm">{link.provider}</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-500 font-mono">
+                            {link.externalHandle} <ArrowSquareOut size={12} />
+                          </span>
+                        </a>
+                      ))
+                    )}
+                  </div>
+
+                  {profile.certificates.length > 0 && (
+                    <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                      <h4 className="text-sm font-bold text-gray-900 font-display">Uploaded Certificates</h4>
+                      {profile.certificates.map(cert => (
+                        <div key={cert.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50">
+                          <span className="flex items-center gap-2 font-medium text-gray-700">
+                            <Certificate size={16} weight="fill" className="text-amber-500 flex-shrink-0" />
+                            <span className="text-sm truncate max-w-[200px]">{cert.name}</span>
+                          </span>
+                          <span className="text-xs text-gray-500 font-mono flex-shrink-0">
+                            {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+            </div>
+
+            {/* Badges Full Width */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+               <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Certifications & Badges</h3>
+               {isOwner ? (
+                 <BadgeWallet />
+               ) : (
+                 <div className="flex flex-wrap gap-6">
+                   {profile.badges.length === 0 ? (
+                     <div className="w-full text-center text-gray-400 py-4 text-sm">No badges earned yet.</div>
+                   ) : (
+                     profile.badges.map(b => (
+                       <div key={b.id} className="flex flex-col items-center gap-2 text-center w-24">
+                         <div className="w-16 h-16 rounded-full flex items-center justify-center bg-amber-50 border-2 border-amber-200">
+                           <Trophy size={28} weight="fill" className="text-amber-500" />
+                         </div>
+                         <div className="font-semibold text-[11px] leading-tight text-gray-800">{b.name}</div>
+                       </div>
+                     ))
+                   )}
+                 </div>
+               )}
+            </div>
+
+          </div>
+          
+          {/* BOTTOM ROW: Heatmap */}
+          <div className="lg:col-span-12">
+            <ActivityHeatmap heatmap={profile.heatmap} houseColor={hColor} activePlatforms={profile.activePlatforms} />
+          </div>
+
         </div>
+      </div>
+
+      {showTransferModal && (
+        <HouseTransferModal 
+          currentHouse={profile.house}
+          onClose={() => setShowTransferModal(false)} 
+          onSuccess={() => { setShowTransferModal(false); queryClient.invalidateQueries({ queryKey: ['house-transfer', 'me'] }); }} 
+        />
       )}
-    </div>
+
+      {showIntegrationsModal && (
+        <IntegrationsModal onClose={() => setShowIntegrationsModal(false)} />
+      )}
+
+      {showAchievementModal && (
+        <AchievementModal onClose={() => setShowAchievementModal(false)} onSuccess={() => { setShowAchievementModal(false); }} />
+      )}
+    </main>
   );
 }

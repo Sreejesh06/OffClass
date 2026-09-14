@@ -55,8 +55,8 @@ const fetchSyncStatus = async (): Promise<PlatformLink[]> => {
 };
 
 export function AccountLinker() {
-  const queryClient = useQueryClient();
   const [linkingPlatform, setLinkingPlatform] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: platforms, isLoading, refetch } = useQuery({
     queryKey: ['platform-links'],
@@ -67,7 +67,6 @@ export function AccountLinker() {
 
   const linkMutation = useMutation({
     mutationFn: async (platformId: string) => {
-      // In a real app we might prompt for handle. For now, prompt here.
       const handle = prompt(`Enter your ${platformId} handle:`);
       if (!handle) throw new Error('Handle is required');
 
@@ -76,6 +75,7 @@ export function AccountLinker() {
     },
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       setLinkingPlatform(null);
     },
     onError: () => {
@@ -84,38 +84,82 @@ export function AccountLinker() {
     }
   });
 
+  const syncMutation = useMutation({
+    mutationFn: async (platformId: string) => {
+      await api.post(`/integrations/sync/${platformId}`);
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: () => {
+      alert("Failed to sync account");
+    }
+  });
+
   const handleLink = (platformId: string) => {
     setLinkingPlatform(platformId);
     linkMutation.mutate(platformId);
+  };
+
+  const handleSync = (platformId: string) => {
+    syncMutation.mutate(platformId);
   };
 
   const renderStatus = (platform: PlatformLink) => {
     switch (platform.state) {
       case 'UP_TO_DATE':
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-            <CheckCircle size={16} color="var(--accent-house)" weight="fill" />
-            <span>Synced {platform.lastSync}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+              <CheckCircle size={16} className="text-emerald-500" weight="fill" />
+              <span>Synced {platform.lastSync}</span>
+            </div>
+            <button 
+              onClick={() => handleSync(platform.id)}
+              disabled={syncMutation.isPending}
+              className="text-xs px-3 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Sync
+            </button>
           </div>
         );
       case 'STALE':
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-            <Clock size={16} />
-            <span>Last updated {platform.lastSync}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+              <Clock size={16} />
+              <span>Last updated {platform.lastSync}</span>
+            </div>
+            <button 
+              onClick={() => handleSync(platform.id)}
+              disabled={syncMutation.isPending}
+              className="text-xs px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 transition-colors"
+            >
+              Sync Now
+            </button>
           </div>
         );
       case 'FAILED':
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e11d48', fontSize: '0.75rem' }}>
-            <Warning size={16} weight="fill" />
-            <span>{platform.errorDetail || 'Sync failed.'}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-rose-500 text-xs">
+              <Warning size={16} weight="fill" />
+              <span className="max-w-[120px] truncate" title={platform.errorDetail}>{platform.errorDetail || 'Sync failed.'}</span>
+            </div>
+            <button 
+              onClick={() => handleSync(platform.id)}
+              disabled={syncMutation.isPending}
+              className="text-xs px-3 py-1 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         );
       case 'SYNCING':
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-house)', fontSize: '0.75rem' }}>
-            <ArrowsClockwise size={16} className="spin-animation" />
+          <div className="flex items-center gap-1.5 text-blue-500 text-xs">
+            <ArrowsClockwise size={16} className="animate-spin" />
             <span>Syncing right now...</span>
           </div>
         );
@@ -125,18 +169,7 @@ export function AccountLinker() {
           <button 
             onClick={() => handleLink(platform.id)}
             disabled={linkingPlatform === platform.id}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border-strong)',
-              color: 'var(--text-primary)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.25rem 0.75rem',
-              fontSize: '0.75rem',
-              cursor: linkingPlatform === platform.id ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             <Link size={14} />
             {linkingPlatform === platform.id ? 'Linking...' : 'Link Account'}
@@ -146,40 +179,21 @@ export function AccountLinker() {
   };
 
   return (
-    <div className="dossier-card" style={{ display: 'flex', flexDirection: 'column' }}>
-      <style>{`
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .spin-animation { animation: spin 1s linear infinite; }
-      `}</style>
-      
-      <div className="dossier-header">
-        <h2 style={{ margin: 0 }}>LINKED ACCOUNTS</h2>
-      </div>
-
+    <div className="w-full">
       {isLoading ? (
-        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading sync status...</div>
+        <div className="py-8 text-center text-gray-400">Loading sync status...</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className="flex flex-col gap-3">
           {platforms?.map(platform => (
-            <div key={platform.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  padding: '0.75rem 1rem', 
-                  border: platform.state === 'FAILED' ? '1px solid color-mix(in srgb, #e11d48 50%, var(--border-subtle))' : '1px solid var(--border-subtle)', 
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--bg-base)'
-                }}
-              >
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{platform.name}</span>
+            <div key={platform.id} className="flex flex-col gap-2">
+              <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 rounded-xl border ${platform.state === 'FAILED' ? 'border-rose-200 bg-rose-50/30' : 'border-gray-100 bg-gray-50/50'}`}>
+                <span className="font-semibold text-gray-900">{platform.name}</span>
                 {renderStatus(platform)}
               </div>
               
               {/* Inline HTB Instruction */}
               {platform.id === 'HTB' && platform.state === 'NOT_LINKED' && linkingPlatform === 'HTB' && (
-                <div style={{ fontSize: '0.75rem', color: '#e11d48', padding: '0.5rem', backgroundColor: 'color-mix(in srgb, #e11d48 10%, transparent)', borderRadius: 'var(--radius-sm)' }}>
+                <div className="text-xs text-rose-600 p-3 bg-rose-50 rounded-xl border border-rose-100">
                   <strong>Important:</strong> Set your HTB profile to Public in Account Settings, or your stats won't sync.
                 </div>
               )}

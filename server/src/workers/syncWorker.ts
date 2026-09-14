@@ -10,6 +10,7 @@ import { fetchLeetCode, parseLeetCode } from "../lib/platforms/leetcode.js";
 import { fetchGfg, parseGfg } from "../lib/platforms/gfg.js";
 import { fetchThm, parseThm } from "../lib/platforms/thm.js";
 import { fetchHtb, parseHtb } from "../lib/platforms/htb.js";
+import { fetchGithub, parseGithub } from "../lib/platforms/github.js";
 
 type FetchFn = (handle: string) => Promise<any>;
 type ParseFn = (raw: any) => Record<string, number | string>;
@@ -20,6 +21,7 @@ const FETCHERS: Partial<Record<string, FetchFn>> = {
   gfg: fetchGfg,
   thm: fetchThm,
   htb: fetchHtb,
+  github: fetchGithub,
 };
 
 const PARSERS: Partial<Record<string, ParseFn>> = {
@@ -28,6 +30,7 @@ const PARSERS: Partial<Record<string, ParseFn>> = {
   gfg: parseGfg,
   thm: parseThm,
   htb: parseHtb,
+  github: parseGithub,
 };
 
 const SCORE_KEYS: Record<string, string> = {
@@ -36,6 +39,7 @@ const SCORE_KEYS: Record<string, string> = {
   gfg: "totalProblemsSolved",
   thm: "points",
   htb: "points",
+  github: "score",
 };
 
 const processSyncJob = async (job: Job<SyncJobData>) => {

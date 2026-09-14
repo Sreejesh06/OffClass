@@ -8,8 +8,8 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import './App.css'
 
+const Home = React.lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const Login = React.lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
-const Profile = React.lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const ProfilePortfolio = React.lazy(() => import('./pages/ProfilePortfolio').then(m => ({ default: m.ProfilePortfolio })));
 const HallOfFame = React.lazy(() => import('./pages/HallOfFame').then(m => ({ default: m.HallOfFame })));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
@@ -45,6 +45,7 @@ function App() {
             <RouteChangeFocus />
             <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>}>
               <Routes>
+                <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/hall-of-fame" element={<HallOfFame />} />
                 <Route path="/complaints" element={<Complaints />} />
@@ -52,8 +53,7 @@ function App() {
                 <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />
                 
                 <Route element={<ProtectedLayout />}>
-                  <Route path="/" element={<Navigate to="/profile" replace />} />
-                  {/* Own profile — redirect to portfolio view */}
+                  {/* Own profile — render the Bento layout */}
                   <Route path="/profile" element={<ProfilePortfolio />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/redeem" element={<Redeem />} />
@@ -69,4 +69,3 @@ function App() {
 }
 
 export default App
-

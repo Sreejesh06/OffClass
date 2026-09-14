@@ -63,7 +63,7 @@ router.delete("/link/:provider", requireAuth, async (req: Request, res: Response
   }
 });
 
-const SyncProviderSchema = z.enum(["CODEFORCES", "LEETCODE", "GFG", "HTB", "THM"]);
+const SyncProviderSchema = z.enum(["GITHUB", "CODEFORCES", "LEETCODE", "GFG", "HTB", "THM"]);
 
 router.post("/sync/:provider", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -170,12 +170,66 @@ router.post("/certs/verify", requireAuth, async (req: Request, res: Response): P
 
     await prisma.certificate.update({
       where: { fileKey },
-      data: { status: "UPLOADED", mimeType: typeInfo.mime },
+      data: { status: "APPROVED", mimeType: typeInfo.mime },
     });
 
     res.json({ message: "File verified", mimeType: typeInfo.mime });
   } catch {
     res.status(500).json({ error: "Failed to verify file" });
+  }
+});
+
+router.delete("/certs/:id", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const certId = req.params["id"] as string;
+    const cert = await prisma.certificate.findUnique({ where: { id: certId } });
+    if (!cert || cert.userId !== req.user!.userId) {
+      res.status(403).json({ error: "Forbidden or not found" });
+      return;
+    }
+
+    await deleteFile(cert.fileKey);
+    await prisma.certificate.delete({ where: { id: certId } });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to delete certificate" });
+  }
+});
+
+const ReorderSchema = z.object({
+  certIds: z.array(z.string()),
+});
+
+router.patch("/certs/reorder", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { certIds } = ReorderSchema.parse(req.body);
+    
+    // Check ownership of all certs
+    const certs = await prisma.certificate.findMany({
+      where: { id: { in: certIds } },
+    });
+    if (certs.some(c => c.userId !== req.user!.userId)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    // Update orders sequentially
+    await prisma.$transaction(
+      certIds.map((id, index) => 
+        prisma.certificate.update({
+          where: { id },
+          data: { order: index },
+        })
+      )
+    );
+
+    res.json({ success: true });
+  } catch (e: any) {
+    if (e.name === "ZodError") {
+      res.status(400).json({ error: e.errors[0]?.message });
+      return;
+    }
+    res.status(500).json({ error: "Failed to reorder certificates" });
   }
 });
 

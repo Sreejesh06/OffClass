@@ -27,6 +27,8 @@ model User {
   pointsTransactions   PointsTransaction[]
   redemptions          Redemption[]
   badges               UserBadge[]
+  houseTransferRequests HouseTransferRequest[]
+  achievements         Achievement[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
@@ -93,6 +95,7 @@ model Certificate {
   mimeType   String
   status     String   @default("PENDING_VERIFICATION")
   reviewedBy String?
+  order      Int      @default(0)
   createdAt  DateTime @default(now())
 }
 
@@ -116,6 +119,29 @@ enum House {
   BLUE
   GREEN
   PURPLE
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model HouseTransferRequest {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentHouse House
+  targetHouse  House
+  reason       String
+  status       TransferStatus @default(PENDING)
+  reviewedBy   String?
+  reviewNotes  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 enum ComplaintStatus {
@@ -205,4 +231,36 @@ model UserBadge {
   awardedAt DateTime @default(now())
 
   @@unique([userId, badgeId])
+}
+
+enum AchievementCategory {
+  HACKATHON
+  CTF
+  COMPETITION
+  PUBLICATION
+  OTHER
+}
+
+enum AchievementStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  REJECTED
+}
+
+model Achievement {
+  id            String              @id @default(uuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  category      AchievementCategory
+  position      String
+  date          DateTime
+  semester      String?
+  prize         String?
+  description   String?
+  status        AchievementStatus   @default(PENDING_VERIFICATION)
+  reviewedBy    String?
+  pointsAwarded Int?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 }

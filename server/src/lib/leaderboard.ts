@@ -54,22 +54,52 @@ export const awardPoints = async (
 export const getTopUsers = async (
   house?: House,
   limit: number = 50
-): Promise<Array<{ userId: string; points: number; rank: number }>> => {
+): Promise<Array<{ id: string; name: string; house: House; points: number; rank: number; previousRank: number }>> => {
   const key = house ? getHouseKey(house) : getOverallKey();
   
   // ZREVRANGE returns [userId1, score1, userId2, score2, ...]
   const results = await redis.zrevrange(key, 0, limit - 1, "WITHSCORES");
   
-  const formatted = [];
+  if (results.length === 0) return [];
+
+  const rawUsers = [];
+  const userIds = [];
   for (let i = 0; i < results.length; i += 2) {
-    formatted.push({
-      userId: results[i]!,
+    const userId = results[i]!;
+    userIds.push(userId);
+    rawUsers.push({
+      userId,
       points: parseInt(results[i + 1]!, 10),
       rank: Math.floor(i / 2) + 1, // Convert 0-indexed to 1-indexed human rank
     });
   }
+
+  // Fetch the user details from DB
+  const usersDb = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, house: true }
+  });
+
+  // Create a fast lookup map
+  const userMap = new Map(usersDb.map(u => [u.id, u]));
+
+  // Also fetch previous ranks from the snapshot logic (optional, stub to rank for now)
+  // To keep it fast, we can just stub previousRank to rank (meaning no change) if we don't have historic data loaded.
   
-  return formatted;
+  return rawUsers
+    .map(ru => {
+      const dbUser = userMap.get(ru.userId);
+      if (!dbUser) return null;
+      return {
+        id: dbUser.id,
+        name: dbUser.name,
+        house: dbUser.house,
+        points: ru.points,
+        rank: ru.rank,
+        previousRank: ru.rank // Stubbed for now, normally would query `LeaderboardSnapshot`
+      };
+    })
+    .filter((u): u is NonNullable<typeof u> => u !== null);
 };
 
 /**
@@ -82,3 +112,19 @@ export const getUserRank = async (userId: string, house?: House): Promise<number
   
   return rank !== null ? rank + 1 : null;
 };
+
+/**
+ * Atomically transfers a user's leaderboard score from one house to another.
+ */
+export const transferHouseLeaderboard = async (
+  userId: string,
+  oldHouse: House,
+  newHouse: House,
+  points: number
+): Promise<void> => {
+  const pipeline = redis.pipeline();
+  pipeline.zrem(getHouseKey(oldHouse), userId);
+  pipeline.zadd(getHouseKey(newHouse), points, userId);
+  await pipeline.exec();
+};
+

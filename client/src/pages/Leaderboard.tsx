@@ -1,7 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CaretLeft, CaretRight, CaretUp, CaretDown, Minus } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, CaretUp, CaretDown, Minus, Trophy, Star, Lightning, ArrowUpRight, TrendUp } from "@phosphor-icons/react";
 import { type House } from "../components/ThemeProvider";
 import { api } from "../lib/api";
 
@@ -13,6 +13,95 @@ interface LeaderboardEntry {
   house: House;
   points: number;
 }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const getAvatar = (seed: string) => `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8f9fa`;
+
+const houseGradients = {
+  RED: "from-red-50 to-red-100/50",
+  BLUE: "from-blue-50 to-blue-100/50",
+  GREEN: "from-green-50 to-green-100/50",
+  PURPLE: "from-purple-50 to-purple-100/50",
+};
+
+const houseColors = {
+  RED: "text-red-600 bg-red-100",
+  BLUE: "text-blue-600 bg-blue-100",
+  GREEN: "text-green-600 bg-green-100",
+  PURPLE: "text-purple-600 bg-purple-100",
+};
+
+// ─── Components ──────────────────────────────────────────────────────────────
+
+const PodiumCard = ({ entry, position }: { entry: LeaderboardEntry | null; position: 1 | 2 | 3 }) => {
+  if (!entry) return <div className="w-full max-w-[280px] h-[320px] rounded-3xl" />;
+
+  const isFirst = position === 1;
+  const gradient = houseGradients[entry.house];
+  const color = houseColors[entry.house];
+  const rankDiff = entry.previousRank - entry.rank;
+
+  return (
+    <div 
+      className={`relative w-full max-w-[280px] bg-gradient-to-b ${gradient} border border-white shadow-xl rounded-[2rem] p-6 flex flex-col items-center justify-between transition-transform hover:-translate-y-2
+        ${isFirst ? 'z-10 min-h-[380px] shadow-2xl' : 'z-0 min-h-[340px] opacity-95'}
+      `}
+    >
+      {/* Huge Background Number */}
+      <div className={`absolute top-4 right-4 text-8xl font-black opacity-5 font-display ${isFirst ? 'text-9xl right-2' : ''}`}>
+        {position}
+      </div>
+
+      <div className="relative w-24 h-24 mt-4 shrink-0">
+        <div className={`absolute inset-0 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white`}>
+          <img src={getAvatar(entry.id)} alt={entry.name} className="w-full h-full object-cover" />
+        </div>
+        <div className="absolute -bottom-2 -right-2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg border-2 border-white shadow-sm flex items-center gap-1">
+          <Star size={12} weight="fill" className="text-yellow-400" />
+          {entry.points}
+        </div>
+      </div>
+
+      <div className="text-center mt-6 z-10 w-full">
+        <h3 className="font-display font-bold text-gray-900 text-xl truncate px-2">{entry.name}</h3>
+        <span className={`inline-block mt-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${color}`}>
+          {entry.house}
+        </span>
+      </div>
+
+      <div className="flex justify-around w-full mt-6 border-t border-black/5 pt-4 z-10">
+        <div className="text-center">
+          <div className="text-xs text-gray-500 font-medium">Trend</div>
+          <div className="font-bold text-gray-900 flex items-center justify-center gap-1 mt-1">
+            {rankDiff > 0 ? (
+              <><CaretUp size={14} weight="bold" className="text-green-500" /> +{rankDiff}</>
+            ) : rankDiff < 0 ? (
+              <><CaretDown size={14} weight="bold" className="text-red-500" /> {Math.abs(rankDiff)}</>
+            ) : (
+              <><Minus size={14} weight="bold" className="text-gray-400" /> 0</>
+            )}
+          </div>
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-gray-500 font-medium">Avg Gain</div>
+          <div className="font-bold text-gray-900 mt-1">
+            {Math.round((entry.points / 5000) * 100)}%
+          </div>
+        </div>
+      </div>
+
+      <Link 
+        to={`/profile/${entry.id}`}
+        className="w-full mt-6 py-2.5 bg-white text-gray-900 text-sm font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all text-center z-10 relative overflow-hidden group"
+      >
+        <span className="relative z-10">View Profile</span>
+      </Link>
+    </div>
+  );
+};
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 export function Leaderboard() {
   const [activeTab, setActiveTab] = useState<House | 'overall'>('overall');
@@ -28,9 +117,17 @@ export function Leaderboard() {
     },
   });
 
-  // Calculate pagination locally for now, since API returns all top 100 for a house/overall
-  const paginatedData = data?.leaderboard ? data.leaderboard.slice((page - 1) * perPage, page * perPage) : [];
-  const totalPages = data?.leaderboard ? Math.ceil(data.leaderboard.length / perPage) : 1;
+  const allEntries: LeaderboardEntry[] = data?.leaderboard || [];
+  
+  // Podium logic: top 3
+  const top1 = allEntries[0] || null;
+  const top2 = allEntries[1] || null;
+  const top3 = allEntries[2] || null;
+
+  // List logic: 4 onwards
+  const remainingEntries = allEntries.slice(3);
+  const paginatedData = remainingEntries.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.max(1, Math.ceil(remainingEntries.length / perPage));
 
   const handleTabChange = (tab: House | 'overall') => {
     setActiveTab(tab);
@@ -38,145 +135,198 @@ export function Leaderboard() {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="min-h-screen bg-[#FDFDFD] pb-20 font-sans">
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ margin: 0 }}>Overall Leaderboard</h1>
-      </div>
-
-      {/* Term Reset Banner */}
-      <div style={{
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-strong)',
-        padding: '1rem',
-        borderRadius: 'var(--radius-md)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '0.5rem',
-        color: 'var(--text-secondary)'
-      }}>
-        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Season 2 starts Nov 1st</span>
-        — see past champions in the <a href="/hall-of-fame" style={{ color: 'var(--accent-house)' }}>Hall of Fame</a>.
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-        {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => handleTabChange(tab)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontWeight: activeTab === tab ? 700 : 500,
-              textTransform: 'uppercase',
-              fontSize: '0.875rem',
-              letterSpacing: '0.05em',
-              padding: '0.5rem',
-              cursor: 'pointer',
-              borderBottom: activeTab === tab ? '2px solid var(--text-primary)' : '2px solid transparent'
-            }}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="dossier-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {isLoading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading logs...</div>
-        ) : (
-          <>
-            <div className="responsive-table-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-strong)', background: 'var(--bg-base)' }}>
-                    <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500, width: '4rem' }}>Rank</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500, width: '3rem' }}>+/-</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Operative</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>House</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((entry: LeaderboardEntry) => {
-                    const rankDiff = entry.previousRank - entry.rank;
-                    return (
-                      <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-subtle)' }} className={`theme-${entry.house}`}>
-                        <td style={{ padding: '0.75rem 1rem' }} className="mono">{entry.rank}</td>
-                        <td style={{ padding: '0.75rem 1rem' }} className="mono">
-                          {rankDiff > 0 ? (
-                            <span style={{ color: 'var(--accent-house)', display: 'flex', alignItems: 'center', gap: '0.25rem' }} aria-label={`Moved up ${rankDiff} ranks`}>
-                              <CaretUp weight="bold" /> {rankDiff}
-                            </span>
-                          ) : rankDiff < 0 ? (
-                            <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }} aria-label={`Moved down ${Math.abs(rankDiff)} ranks`}>
-                              <CaretDown weight="bold" /> {Math.abs(rankDiff)}
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }} aria-label="Rank unchanged">
-                              <Minus weight="bold" />
-                            </span>
-                          )}
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                          <Link to={`/profile/${entry.id}`} style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.15s' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-house)')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'inherit')}
-                          >
-                            {entry.name}
-                          </Link>
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          <span style={{ color: 'var(--accent-house)', fontWeight: 600 }}>{entry.house}</span>
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-primary)' }} className="mono">
-                          {entry.points}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      {/* Header Area */}
+      <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 rounded-2xl flex items-center justify-center transform rotate-3 shadow-sm border border-orange-200/50">
+              <Trophy size={28} weight="fill" />
             </div>
-            
-            {/* Pagination Controls */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-base)', borderTop: '1px solid var(--border-subtle)' }}>
-              <button 
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  background: 'none', border: 'none', 
-                  color: page === 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
-                  cursor: page === 1 ? 'not-allowed' : 'pointer',
-                  opacity: page === 1 ? 0.5 : 1
-                }}
-              >
-                <CaretLeft /> Prev
-              </button>
-              
-              <span className="mono" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                Page {page} of {totalPages}
-              </span>
-
-              <button 
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  background: 'none', border: 'none', 
-                  color: page === totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
-                  cursor: page === totalPages ? 'not-allowed' : 'pointer',
-                  opacity: page === totalPages ? 0.5 : 1
-                }}
-              >
-                Next <CaretRight />
-              </button>
+            <div>
+              <h1 className="text-3xl font-black font-display text-gray-900 tracking-tight">Champions</h1>
+              <p className="text-gray-500 text-sm font-medium mt-1">Season 2 is underway. See past champions in the Hall of Fame.</p>
             </div>
-          </>
+          </div>
+          
+          <div className="flex bg-gray-50 p-1.5 rounded-2xl shadow-inner border border-gray-100">
+            {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+                  activeTab === tab 
+                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' 
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 mt-12 flex flex-col gap-12">
+        
+        {/* Podium */}
+        {!isLoading && allEntries.length > 0 && (
+          <div className="flex flex-col md:flex-row justify-center items-end gap-6 md:gap-8 pt-8">
+            <div className="order-2 md:order-1 w-full md:w-auto flex justify-center"><PodiumCard entry={top2} position={2} /></div>
+            <div className="order-1 md:order-2 w-full md:w-auto flex justify-center"><PodiumCard entry={top1} position={1} /></div>
+            <div className="order-3 md:order-3 w-full md:w-auto flex justify-center"><PodiumCard entry={top3} position={3} /></div>
+          </div>
         )}
+
+        {/* Highlights Strip */}
+        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 flex flex-wrap md:flex-nowrap items-center justify-between gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-100 mt-4">
+          <div className="flex-1 flex items-center gap-4 px-4 py-2 md:py-0">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+              <TrendUp size={24} weight="duotone" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Ranked</p>
+              <p className="text-2xl font-black text-gray-900 font-display">{allEntries.length}</p>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center gap-4 px-4 py-2 md:py-0">
+            <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100">
+              <Lightning size={24} weight="duotone" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Points</p>
+              <p className="text-2xl font-black text-gray-900 font-display">
+                {allEntries.reduce((sum, e) => sum + e.points, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center gap-4 px-4 py-2 md:py-0">
+            <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100">
+              <Star size={24} weight="duotone" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Top House</p>
+              <p className="text-2xl font-black text-gray-900 font-display">
+                {activeTab === 'overall' && allEntries.length > 0 ? allEntries[0].house : (activeTab !== 'overall' ? activeTab.toUpperCase() : 'N/A')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* List Section */}
+        {isLoading ? (
+          <div className="text-center py-20 text-gray-400 font-medium flex justify-center items-center gap-2">
+            <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            Loading champions...
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {/* Table Header Equivalent */}
+            <div className="flex px-6 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider hidden md:flex">
+              <div className="w-16 text-center">Rank</div>
+              <div className="flex-1">Operative</div>
+              <div className="w-24 text-center">Trend</div>
+              <div className="w-32 text-right pr-4">Points</div>
+              <div className="w-16"></div>
+            </div>
+
+            {paginatedData.map((entry) => {
+              const rankDiff = entry.previousRank - entry.rank;
+              const color = houseColors[entry.house];
+
+              return (
+                <div 
+                  key={entry.id} 
+                  className="group flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-100 rounded-2xl p-4 md:p-3 shadow-sm hover:shadow-md hover:border-gray-200 transition-all cursor-pointer relative overflow-hidden"
+                >
+                  <div className="w-full md:w-16 text-left md:text-center mb-3 md:mb-0">
+                    <span className="text-sm md:text-xl font-black text-gray-300 font-display group-hover:text-gray-900 transition-colors">
+                      {entry.rank}
+                    </span>
+                  </div>
+                  
+                  {/* Angled separator (desktop only) */}
+                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  
+                  <div className="flex-1 flex items-center gap-4 w-full">
+                    <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-white shadow-sm overflow-hidden shrink-0">
+                      <img src={getAvatar(entry.id)} alt={entry.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 flex-1">
+                      <Link to={`/profile/${entry.id}`} className="font-bold text-gray-900 hover:text-orange-600 transition-colors text-base">
+                        {entry.name}
+                      </Link>
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${color} w-fit`}>
+                        {entry.house}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+
+                  <div className="w-24 flex justify-center hidden md:flex">
+                    <div className="flex flex-col items-center">
+                      <div className="font-bold text-sm flex items-center gap-1 mt-0.5">
+                        {rankDiff > 0 ? (
+                          <><CaretUp size={14} weight="bold" className="text-green-500" /> {rankDiff}</>
+                        ) : rankDiff < 0 ? (
+                          <><CaretDown size={14} weight="bold" className="text-red-500" /> {Math.abs(rankDiff)}</>
+                        ) : (
+                          <><Minus size={14} weight="bold" className="text-gray-300" /></>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+
+                  <div className="w-32 flex justify-start md:justify-end items-center mt-3 md:mt-0 pr-4">
+                    <div className="flex items-center gap-1.5 bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-inner">
+                      <Star size={12} weight="fill" className="text-yellow-400" />
+                      <span className="font-bold font-mono text-sm">{entry.points}</span>
+                    </div>
+                  </div>
+
+                  <div className="w-16 flex justify-end absolute right-4 top-4 md:static">
+                    <Link 
+                      to={`/profile/${entry.id}`}
+                      className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-400 flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all"
+                    >
+                      <ArrowUpRight size={16} weight="bold" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex justify-between items-center bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <CaretLeft weight="bold" /> Prev
+            </button>
+            
+            <span className="font-mono text-gray-500 text-sm font-medium">
+              Page {page} of {totalPages}
+            </span>
+
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Next <CaretRight weight="bold" />
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

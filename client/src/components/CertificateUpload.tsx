@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { UploadSimple, CheckCircle, XCircle } from '@phosphor-icons/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
 type UploadStatus = 'idle' | 'presigning' | 'uploading' | 'verifying' | 'success' | 'error';
@@ -10,6 +11,7 @@ export function CertificateUpload() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,8 +70,9 @@ export function CertificateUpload() {
       await api.post('/integrations/certs/verify', { fileKey });
 
       setStatus('success');
-      setSuccessMsg(`Successfully uploaded ${file.name}. Pending review.`);
+      setSuccessMsg(`Successfully uploaded ${file.name}. It is now displayed on your profile.`);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       
     } catch (err: any) {
       setStatus('error');
@@ -78,29 +81,18 @@ export function CertificateUpload() {
   };
 
   return (
-    <div className="dossier-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="dossier-header" style={{ marginBottom: 0, paddingBottom: '0.5rem', border: 'none' }}>
-        <h2 style={{ margin: 0 }}>SUBMIT CERTIFICATE</h2>
-      </div>
+    <div className="w-full flex flex-col gap-4">
 
       <p style={{ margin: 0, fontSize: '0.875rem' }}>Upload certifications to earn points. Max 5MB, PDF/JPG/PNG only.</p>
 
       {/* Upload Zone */}
       <div 
         onClick={() => status !== 'uploading' && status !== 'presigning' && fileInputRef.current?.click()}
-        style={{
-          border: '2px dashed var(--border-strong)',
-          borderRadius: 'var(--radius-md)',
-          padding: '2rem',
-          textAlign: 'center',
-          cursor: status === 'uploading' || status === 'presigning' ? 'wait' : 'pointer',
-          backgroundColor: 'color-mix(in srgb, var(--bg-surface) 50%, transparent)',
-          transition: 'background-color 0.2s',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem'
-        }}
+        className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center gap-4 transition-colors ${
+          status === 'uploading' || status === 'presigning' 
+            ? 'cursor-wait bg-gray-50 border-gray-200' 
+            : 'cursor-pointer border-gray-300 hover:bg-gray-50 bg-white'
+        }`}
       >
         <input 
           type="file" 
@@ -112,19 +104,22 @@ export function CertificateUpload() {
         
         {status === 'idle' || status === 'error' || status === 'success' ? (
           <>
-            <UploadSimple size={32} color="var(--text-secondary)" />
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Click to select file</span>
+            <UploadSimple size={32} className="text-gray-400" />
+            <span className="font-semibold text-gray-700">Click to select file</span>
           </>
         ) : (
-          <div style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
-              <span style={{ color: 'var(--text-primary)' }}>
+          <div className="w-full max-w-xs flex flex-col gap-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-700">
                 {status === 'presigning' ? 'Preparing upload...' : status === 'verifying' ? 'Verifying with server...' : 'Uploading...'}
               </span>
-              <span className="mono" style={{ color: 'var(--accent-house)' }}>{progress}%</span>
+              <span className="font-mono text-blue-600 font-medium">{progress}%</span>
             </div>
-            <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--border-subtle)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress}%`, backgroundColor: 'var(--accent-house)', transition: 'width 0.2s ease-out' }} />
+            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-200 ease-out" 
+                style={{ width: `${progress}%` }} 
+              />
             </div>
           </div>
         )}
@@ -132,14 +127,14 @@ export function CertificateUpload() {
 
       {/* Status Messages */}
       {errorMsg && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e11d48', fontSize: '0.875rem', padding: '0.75rem', backgroundColor: 'color-mix(in srgb, #e11d48 10%, transparent)', borderRadius: 'var(--radius-sm)', border: '1px solid #e11d48' }}>
+        <div className="flex items-center gap-2 text-sm text-rose-600 p-3 bg-rose-50 rounded-lg border border-rose-100">
           <XCircle size={20} weight="fill" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-house)', fontSize: '0.875rem', padding: '0.75rem', backgroundColor: 'color-mix(in srgb, var(--accent-house) 10%, transparent)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--accent-house)' }}>
+        <div className="flex items-center gap-2 text-sm text-emerald-600 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
           <CheckCircle size={20} weight="fill" />
           <span>{successMsg}</span>
         </div>

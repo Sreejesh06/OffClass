@@ -29,9 +29,22 @@ export const fetchGfg = async (handle: string): Promise<GfgRaw> => {
   };
 };
 
-export const parseGfg = (raw: GfgRaw) => ({
-  totalProblemsSolved: raw.totalProblemsSolved,
-  currentStreak: raw.currentStreak,
-  maxStreak: raw.maxStreak,
-  codingScore: raw.codingScore,
-});
+export const parseGfg = (raw: GfgRaw) => {
+  const calendar: Record<string, number> = {};
+  
+  if (Array.isArray(raw.heatmap)) {
+    for (const item of raw.heatmap) {
+      if (item.date && item.count) {
+        calendar[item.date] = item.count;
+      }
+    }
+  }
+
+  return {
+    totalProblemsSolved: raw.totalProblemsSolved,
+    currentStreak: raw.currentStreak,
+    maxStreak: raw.maxStreak,
+    codingScore: raw.codingScore,
+    calendar,
+  };
+};

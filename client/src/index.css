@@ -1,91 +1,28 @@
-@font-face {
-  font-family: 'Bespoke Stencil';
-  src: url('/fonts/Fonts/WEB/fonts/BespokeStencil-Regular.woff2') format('woff2'),
-       url('/fonts/Fonts/WEB/fonts/BespokeStencil-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Nunito:wght@600;700&family=Outfit:wght@700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-crypto-bg: #fbf8f1;
+  --color-crypto-purple: #a855f7;
+  --color-crypto-pink: #ec4899;
+  --color-crypto-yellow: #eab308;
+  --color-crypto-cyan: #06b6d4;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Nunito', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
-
-:root {
-  /* Base Neutral Palette (Ink-Slate) */
-  --bg-base: #0b0e14;
-  --bg-surface: #151a22;
-  --border-subtle: #2a3241;
-  --border-strong: #4b5563;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-
-  /* Dynamic House Accent (Default to neutral/red if no house) */
-  --accent-house: #4b5563;
-
-  /* Font Families */
-  --font-h1: 'Bespoke Stencil', serif;
-  --font-h2: 'Montserrat', sans-serif;
-  --font-body: 'Lora', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-
-  /* Base Spacing & Layout */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --shadow-floating: 0 4px 20px rgba(0, 0, 0, 0.4);
-
-  color-scheme: dark;
-  font: 16px/1.5 var(--font-body);
-  color: var(--text-primary);
-  background: var(--bg-base);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* House Accent Overrides - Toggled via class on body or wrapper */
-.theme-red { --accent-house: #e11d48; }
-.theme-blue { --accent-house: #2563eb; }
-.theme-green { --accent-house: #10b981; }
-.theme-purple { --accent-house: #8b5cf6; }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--bg-base);
-  color: var(--text-primary);
+  background-color: var(--color-crypto-bg);
+  color: #111827; /* Gray 900 */
 }
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0 0 1rem 0;
-  color: var(--text-primary);
-}
-
-h1 { 
-  font-family: var(--font-h1);
-  font-size: 2.5rem; 
-  letter-spacing: -0.02em; 
-  font-weight: 400;
-}
-
-h2 { 
-  font-family: var(--font-h2);
-  font-size: 1.25rem; 
-  letter-spacing: 0.1em; 
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-h3 { 
-  font-family: var(--font-h2);
-  font-size: 1.125rem; 
-  font-weight: 500;
-}
-
-p {
-  margin: 0 0 1rem 0;
-  color: var(--text-secondary);
-}
-
-code, .mono {
-  font-family: var(--font-mono);
 }
 
 /* Base primitives for dossier style */

@@ -9,64 +9,36 @@ interface Transaction {
   reason: string;
 }
 
-export function TransactionHistory() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['ledger'],
-    queryFn: async () => {
-      const res = await api.get('/ledger/me');
-      return res.data;
-    }
+interface TransactionHistoryProps {
+  transactions: Transaction[];
+  filterType?: 'ACHIEVEMENTS' | 'ACTIVITY' | 'ALL';
+}
+
+export function TransactionHistory({ transactions, filterType = 'ALL' }: TransactionHistoryProps) {
+  const isAchievement = (reason: string) => {
+    const r = reason.toLowerCase();
+    return !r.includes('manual adjustment') && !r.includes('sync') && !r.includes('certificate approved') && !r.includes('purchased');
+  };
+
+  const filtered = transactions.filter(tx => {
+    if (filterType === 'ACHIEVEMENTS') return isAchievement(tx.reason);
+    if (filterType === 'ACTIVITY') return !isAchievement(tx.reason);
+    return true;
   });
 
-  const transactions: Transaction[] = data?.transactions || [];
-
   return (
-    <div className="dossier-card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div className="dossier-header" style={{ padding: '1.5rem 1.5rem 1rem', margin: 0, borderBottom: '1px solid var(--border-strong)' }}>
-        <h2 style={{ margin: 0 }}>POINTS LEDGER</h2>
-      </div>
-      
-      <div className="responsive-table-wrapper">
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-strong)', background: 'var(--bg-base)' }}>
-              <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.875rem' }}>Timestamp</th>
-              <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.875rem' }}>Reason</th>
-              <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.875rem', textAlign: 'right' }}>Amount</th>
-            </tr>
-          </thead>
-          <tbody className="mono">
-            {isLoading ? (
-              <tr>
-                <td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading ledger...</td>
-              </tr>
-            ) : transactions.length === 0 ? (
-              <tr>
-                <td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No transactions found.</td>
-              </tr>
-            ) : transactions.map(tx => (
-              <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <td style={{ padding: '0.75rem 1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                  {new Date(tx.createdAt).toLocaleString()}
-                </td>
-                <td style={{ padding: '0.75rem 1.5rem', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
-                  {tx.reason}
-                </td>
-                <td style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontWeight: 600 }}>
-                  {tx.delta > 0 ? (
-                    <span style={{ color: 'var(--accent-house)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                      <ArrowUpRight weight="bold" /> +{tx.delta}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#e11d48', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                      <ArrowDownRight weight="bold" /> {tx.delta}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="w-full">
+      <div className="w-full flex flex-col gap-3">
+        {filtered.length === 0 ? (
+          <div className="py-6 text-center text-gray-400 text-sm">No recent {filterType === 'ACHIEVEMENTS' ? 'achievements' : 'activity'} found.</div>
+        ) : filtered.map(tx => (
+          <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+            <span className="text-sm font-medium text-gray-800">{tx.reason}</span>
+            <span className="text-xs font-mono text-gray-500">
+              {new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

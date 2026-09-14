@@ -25,8 +25,8 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
         },
         certificates: {
           where: { status: "APPROVED" },
-          select: { id: true, name: true, createdAt: true, mimeType: true },
-          orderBy: { createdAt: "desc" },
+          select: { id: true, name: true, createdAt: true, mimeType: true, fileKey: true, order: true },
+          orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         },
         pointsTransactions: {
           select: { delta: true, reason: true, createdAt: true },
@@ -46,6 +46,10 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
           take: 1,
           select: { rankOverall: true, rankInHouse: true, termName: true },
         },
+        achievements: {
+          where: { status: "APPROVED" },
+          orderBy: { date: "desc" },
+        },
       },
     });
 
@@ -54,31 +58,43 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Build activity heatmap: group transactions by day for last 365 days
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-    const allTransactions = await prisma.pointsTransaction.findMany({
-      where: {
-        userId: id,
-        createdAt: { gte: oneYearAgo },
-        delta: { gt: 0 },
-      },
-      select: { createdAt: true, delta: true },
+    // Build activity heatmap by combining calendars from all synced platforms
+    const profileSyncs = await prisma.profileSync.findMany({
+      where: { userId: id, status: "SYNCED" }
     });
 
-    const heatmapMap: Record<string, number> = {};
-    for (const tx of allTransactions) {
-      const day = tx.createdAt.toISOString().split("T")[0]!;
-      heatmapMap[day] = (heatmapMap[day] || 0) + tx.delta;
+    const heatmapMap: Record<string, { points: number; texts: string[]; details: Record<string, number> }> = {};
+    for (const sync of profileSyncs) {
+      const stats = sync.parsedStats as any;
+      if (stats?.calendar && typeof stats.calendar === 'object') {
+        const providerName = sync.provider === 'GITHUB' ? 'GitHub Commits' 
+                           : sync.provider === 'LEETCODE' ? 'LeetCode Submissions' 
+                           : sync.provider === 'CODEFORCES' ? 'Codeforces Submissions' 
+                           : sync.provider === 'GFG' ? 'GFG Problems' 
+                           : 'Activities';
+
+        for (const [dateStr, count] of Object.entries(stats.calendar)) {
+          if (!heatmapMap[dateStr]) heatmapMap[dateStr] = { points: 0, texts: [], details: {} };
+          heatmapMap[dateStr].points += Number(count);
+          heatmapMap[dateStr].texts.push(`${count} ${providerName}`);
+          heatmapMap[dateStr].details[sync.provider] = Number(count);
+        }
+      }
     }
-    const heatmap = Object.entries(heatmapMap).map(([date, points]) => ({ date, points }));
+    const heatmap = Object.entries(heatmapMap).map(([date, data]) => ({ 
+      date, 
+      points: data.points,
+      summary: data.texts.join(' | '),
+      details: data.details
+    }));
 
     const rank = await prisma.user.count({
       where: { points: { gt: user.points }, role: "STUDENT" },
     });
 
     const latestSnapshot = user.leaderboardSnapshots[0];
+
+    const activePlatforms = profileSyncs.map(s => s.provider);
 
     res.json({
       id: user.id,
@@ -95,7 +111,9 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
       certificates: user.certificates,
       recentTransactions: user.pointsTransactions,
       badges: user.badges.map((ub) => ub.badge),
+      achievements: user.achievements,
       heatmap,
+      activePlatforms,
     });
   } catch (e) {
     console.error(e);
@@ -127,6 +145,142 @@ router.patch("/me/bio", requireAuth, async (req: Request, res: Response): Promis
       return;
     }
     res.status(500).json({ error: "Failed to update bio" });
+  }
+});
+
+/**
+ * GET /api/users/me/house-transfer
+ * Authenticated — check current user's latest house transfer request status.
+ */
+router.get("/me/house-transfer", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, house: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const latestRequest = await prisma.houseTransferRequest.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({
+      currentHouse: user.house,
+      request: latestRequest,
+      hasPending: latestRequest?.status === "PENDING",
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch house transfer status" });
+  }
+});
+
+/**
+ * POST /api/users/me/house-transfer
+ * Authenticated — submit a ticket requesting teacher approval to transfer house.
+ */
+const HouseTransferSchema = z.object({
+  targetHouse: z.enum(["RED", "BLUE", "GREEN", "PURPLE"]),
+  reason: z
+    .string()
+    .min(10, "Please provide a reason of at least 10 characters")
+    .max(500, "Reason must be 500 characters or fewer"),
+});
+
+router.post("/me/house-transfer", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { targetHouse, reason } = HouseTransferSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, house: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (user.house === targetHouse) {
+      res.status(400).json({ error: "You are already a member of this house" });
+      return;
+    }
+
+    const existingPending = await prisma.houseTransferRequest.findFirst({
+      where: { userId, status: "PENDING" },
+    });
+
+    if (existingPending) {
+      res.status(400).json({
+        error: "You already have a pending house transfer request awaiting teacher review",
+      });
+      return;
+    }
+
+    const request = await prisma.houseTransferRequest.create({
+      data: {
+        userId,
+        currentHouse: user.house,
+        targetHouse,
+        reason,
+      },
+    });
+
+    res.status(201).json({
+      message: "House transfer request submitted for teacher approval",
+      request,
+    });
+  } catch (e: any) {
+    if (e.name === "ZodError") {
+      res.status(400).json({ error: e.errors[0]?.message || "Invalid input" });
+      return;
+    }
+    console.error(e);
+    res.status(500).json({ error: "Failed to submit house transfer request" });
+  }
+});
+
+/**
+ * POST /api/users/me/achievements
+ * Submit a new achievement request for admin approval
+ */
+router.post("/me/achievements", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { title, category, position, date, semester, prize, description } = req.body;
+
+    if (!title || !category || !position || !date) {
+      res.status(400).json({ error: "Title, category, position, and date are required" });
+      return;
+    }
+
+    const achievement = await prisma.achievement.create({
+      data: {
+        userId,
+        title,
+        category,
+        position,
+        date: new Date(date),
+        semester: semester || null,
+        prize: prize || null,
+        description: description || null,
+      },
+    });
+
+    res.status(201).json({
+      message: "Achievement submitted for review",
+      achievement,
+    });
+  } catch (error) {
+    console.error("Failed to submit achievement:", error);
+    res.status(500).json({ error: "Failed to submit achievement" });
   }
 });
 

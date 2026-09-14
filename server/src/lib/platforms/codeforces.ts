@@ -5,7 +5,7 @@ interface CodeforcesRaw {
   maxRating: number;
   rank: string;
   handle: string;
-  submissions: Array<{ problem: { contestId: number; index: string; name: string }; verdict: string }>;
+  submissions: Array<{ problem: { contestId: number; index: string; name: string }; verdict: string; creationTimeSeconds?: number }>;
 }
 
 // aislop-ignore: ai-slop/hardcoded-url — stable public API
@@ -27,21 +27,32 @@ export const fetchCodeforces = async (handle: string): Promise<CodeforcesRaw> =>
     submissions: statusRes.data.result.map((s: any) => ({
       problem: { contestId: s.problem.contestId, index: s.problem.index, name: s.problem.name },
       verdict: s.verdict,
+      creationTimeSeconds: s.creationTimeSeconds,
     })),
   };
 };
 
 export const parseCodeforces = (raw: CodeforcesRaw) => {
   const solved = new Set<string>();
+  const calendar: Record<string, number> = {};
+
   for (const s of raw.submissions) {
+    if (s.creationTimeSeconds) {
+      const d = new Date(s.creationTimeSeconds * 1000);
+      const dateStr = d.toISOString().split("T")[0]!;
+      calendar[dateStr] = (calendar[dateStr] || 0) + 1;
+    }
+    
     if (s.verdict === "OK") {
       solved.add(`${s.problem.contestId}-${s.problem.index}`);
     }
   }
+
   return {
     rating: raw.rating,
     maxRating: raw.maxRating,
     rank: raw.rank,
     solvedCount: solved.size,
+    calendar,
   };
 };
