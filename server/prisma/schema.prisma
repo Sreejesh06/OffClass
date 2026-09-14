@@ -18,6 +18,9 @@ model User {
   points           Int            @default(0)
 
   bio              String?
+  avatar           String?
+  workDomain       String?
+  skills           String[]
 
   refreshTokens        RefreshToken[]
   leaderboardSnapshots LeaderboardSnapshot[]
@@ -29,6 +32,9 @@ model User {
   badges               UserBadge[]
   houseTransferRequests HouseTransferRequest[]
   achievements         Achievement[]
+  workExperiences      WorkExperience[]
+  postedOpportunities  Opportunity[]         @relation("PostedOpportunities")
+  opportunityBookmarks OpportunityBookmark[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
@@ -119,6 +125,16 @@ enum House {
   BLUE
   GREEN
   PURPLE
+}
+
+enum OpportunityType {
+  BUG_BOUNTY
+  HACKATHON
+  CTF
+  INTERNSHIP
+  WORKSHOP
+  CERT_DISCOUNT
+  OTHER
 }
 
 enum TransferStatus {
@@ -261,6 +277,51 @@ model Achievement {
   status        AchievementStatus   @default(PENDING_VERIFICATION)
   reviewedBy    String?
   pointsAwarded Int?
+  opportunityId String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
+}
+
+model WorkExperience {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     String
+  role        String
+  duration    String
+  description String?
+  isCurrent   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Opportunity {
+  id           String               @id @default(uuid())
+  title        String
+  description  String
+  externalUrl  String
+  type         OpportunityType
+  targetHouses House[]
+  deadline     DateTime?
+  isActive     Boolean              @default(true)
+  postedById   String
+  postedBy     User                 @relation("PostedOpportunities", fields: [postedById], references: [id])
+  bookmarks    OpportunityBookmark[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([isActive])
+}
+
+model OpportunityBookmark {
+  id                 String      @id @default(uuid())
+  userId             String
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunityId      String
+  opportunity        Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  lookingForTeammate Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+
+  @@unique([userId, opportunityId])
+  @@index([opportunityId])
 }

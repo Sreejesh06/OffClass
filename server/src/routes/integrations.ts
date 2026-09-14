@@ -1,6 +1,6 @@
 import { Router, type Router as IRouter, type Request, type Response } from "express";
 import { requireAuth } from "../middlewares/requireAuth.js";
-import { generatePresignedPut, deleteFile, fetchFileHeaderBytes } from "../lib/minio.js";
+import { generatePresignedPut, generatePresignedGet, deleteFile, fetchFileHeaderBytes } from "../lib/minio.js";
 import { getQueue } from "../lib/queue.js";
 import { prisma } from "../lib/db.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -176,6 +176,22 @@ router.post("/certs/verify", requireAuth, async (req: Request, res: Response): P
     res.json({ message: "File verified", mimeType: typeInfo.mime });
   } catch {
     res.status(500).json({ error: "Failed to verify file" });
+  }
+});
+
+router.get("/certs/:id/view", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const certId = req.params["id"] as string;
+    const cert = await prisma.certificate.findUnique({ where: { id: certId } });
+    if (!cert) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const url = await generatePresignedGet(cert.fileKey);
+    res.json({ url });
+  } catch {
+    res.status(500).json({ error: "Failed to generate view URL" });
   }
 });
 

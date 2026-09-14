@@ -5,16 +5,19 @@ import {
   GithubLogo, Code, Trophy, Certificate, Sword, Shield as ShieldIcon,
   Star, CalendarBlank, PencilSimple, Check, X, Copy,
   ArrowSquareOut, WarningCircle, Wrench, CaretDown, CaretUp as CaretUpIcon,
-  ArrowsLeftRight, HourglassMedium, Trash,
+  ArrowsLeftRight, HourglassMedium, Trash, Plus, SealCheck,
   Envelope, MapPin, Briefcase, Medal, User as UserIcon
 } from '@phosphor-icons/react';
+import { SiGithub, SiCodeforces, SiHackthebox, SiTryhackme, SiLeetcode, SiGeeksforgeeks } from 'react-icons/si';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { IntegrationsModal } from '../components/IntegrationsModal';
-import { BadgeWallet } from '../components/BadgeWallet';
 import { TransactionHistory } from '../components/TransactionHistory';
 import { HouseTransferModal } from '../components/HouseTransferModal';
 import { AchievementModal } from '../components/AchievementModal';
+import { AvatarModal } from '../components/AvatarModal';
+import { ProfileEditorModal } from '../components/ProfileEditorModal';
+import { CertificateUploadModal } from '../components/CertificateUploadModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,7 +26,18 @@ interface ProfileData {
   name: string;
   house: 'RED' | 'BLUE' | 'GREEN' | 'PURPLE';
   points: number;
+  avatar: string | null;
   bio: string | null;
+  workDomain: string | null;
+  skills: string[];
+  workExperiences: {
+    id: string;
+    company: string;
+    role: string;
+    duration: string;
+    description: string;
+    isCurrent: boolean;
+  }[];
   memberSince: string;
   rankOverall: number;
   rankInHouse: number | null;
@@ -47,12 +61,12 @@ const HOUSE_CONFIG = {
 };
 
 const PROVIDER_ICONS: Record<string, React.ReactNode> = {
-  GITHUB:     <GithubLogo size={16} weight="fill" />,
-  CODEFORCES: <Code size={16} weight="fill" />,
-  LEETCODE:   <Code size={16} weight="fill" />,
-  GFG:        <Code size={16} weight="fill" />,
-  HTB:        <Sword size={16} weight="fill" />,
-  THM:        <ShieldIcon size={16} weight="fill" />,
+  GITHUB:     <SiGithub size={16} />,
+  CODEFORCES: <SiCodeforces size={16} />,
+  LEETCODE:   <SiLeetcode size={16} />,
+  GFG:        <SiGeeksforgeeks size={16} />,
+  HTB:        <SiHackthebox size={16} />,
+  THM:        <SiTryhackme size={16} />,
 };
 
 const PROVIDER_URLS: Record<string, (h: string) => string> = {
@@ -222,10 +236,11 @@ export function ProfilePortfolio() {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showIntegrationsModal, setShowIntegrationsModal] = useState(false);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState(false);
   const [activityTab, setActivityTab] = useState<'ACHIEVEMENTS' | 'ACTIVITY'>('ACHIEVEMENTS');
-  const [bioEditing, setBioEditing] = useState(false);
-  const [bioText, setBioText] = useState('');
-  const bioRef = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState(false);
 
   // Queries
@@ -249,17 +264,6 @@ export function ProfilePortfolio() {
     enabled: (!userId || userId === user?.id) && !!user
   });
 
-  // Mutations
-  const bioMutation = useMutation({
-    mutationFn: async (newBio: string) => {
-      await api.patch('/users/me/bio', { bio: newBio });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      setBioEditing(false);
-    }
-  });
-
   const handleShare = () => {
     if (!profile) return;
     const url = `${window.location.origin}/profile/${profile.id}`;
@@ -268,12 +272,25 @@ export function ProfilePortfolio() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  useEffect(() => {
-    if (bioEditing && bioRef.current) {
-      bioRef.current.focus();
-      bioRef.current.setSelectionRange(bioRef.current.value.length, bioRef.current.value.length);
+  const deleteCertMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/integrations/certs/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     }
-  }, [bioEditing]);
+  });
+
+  const handleViewCertificate = async (id: string) => {
+    try {
+      const res = await api.get(`/integrations/certs/${id}/view`);
+      if (res.data.url) {
+        window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('Failed to load certificate preview');
+    }
+  };
 
   if (isLoading) return <div className="p-8 text-center text-gray-500 font-mono">Loading dossier...</div>;
   if (error || !data) return <div className="p-8 text-center text-rose-500 font-mono">Profile not found.</div>;
@@ -306,12 +323,20 @@ export function ProfilePortfolio() {
                 </button>
               </div>
 
-              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-white shadow-sm bg-white overflow-hidden mb-5 mt-4 flex items-center justify-center">
+              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-white shadow-md bg-white overflow-hidden mb-5 mt-4 flex items-center justify-center group-hover:shadow-lg transition-shadow">
                 <img 
-                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}&backgroundColor=e5e7eb&textColor=000000`} 
+                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(profile.avatar || profile.name)}&backgroundColor=e5e7eb`} 
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
+                {isOwner && (
+                  <button 
+                    onClick={() => setShowAvatarModal(true)}
+                    className="absolute inset-0 bg-gray-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <PencilSimple size={24} weight="bold" className="text-white" />
+                  </button>
+                )}
               </div>
               
               <h1 className="text-3xl font-bold text-gray-900 font-display mb-1">{profile.name}</h1>
@@ -332,21 +357,24 @@ export function ProfilePortfolio() {
                 )}
               </div>
               
-              <div className="w-full grid grid-cols-2 gap-4 mt-2">
-                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center">
+              <div className="w-full flex mt-2">
+                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center w-full">
                   <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Points</p>
-                  <p className="text-2xl font-black font-heading" style={{ color: hColor }}>{profile.points.toLocaleString()}</p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Global Rank</p>
-                  <p className="text-2xl font-black text-gray-900 font-heading">#{profile.rankOverall}</p>
+                  <p className="text-3xl font-black font-heading" style={{ color: hColor }}>{profile.points.toLocaleString()}</p>
                 </div>
               </div>
             </div>
 
             {/* Contact & Details */}
             <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Identity & Focus</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-gray-900 font-display">Identity & Focus</h3>
+                {isOwner && (
+                  <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                    <PencilSimple size={18} />
+                  </button>
+                )}
+              </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-gray-600">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
@@ -354,57 +382,91 @@ export function ProfilePortfolio() {
                   </div>
                   <span className="font-medium text-sm">Joined {new Date(profile.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                 </div>
-                <div className="flex items-center gap-4 text-gray-600">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: hConf.bg, color: hColor }}>
-                    <ShieldIcon size={18} />
-                  </div>
-                  <span className="font-medium text-sm">{hConf.desc}</span>
-                </div>
-              </div>
-            </div>
-            
-          </div>
 
-          {/* RIGHT COLUMN: Bio, Experience, Stats (8 cols) */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            
-            {/* Bio Card */}
-            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 relative group">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-gray-900 font-display">About Me</h3>
-                {isOwner && !bioEditing && (
-                  <button onClick={() => { setBioText(profile.bio || ''); setBioEditing(true); }} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
-                    <PencilSimple size={18} />
-                  </button>
+                {profile.workDomain && (
+                  <div className="flex items-center gap-4 text-gray-600">
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                      <Briefcase size={18} />
+                    </div>
+                    <span className="font-medium text-sm">{profile.workDomain}</span>
+                  </div>
                 )}
               </div>
               
-              {bioEditing ? (
-                <div className="flex flex-col gap-3">
-                  <textarea
-                    ref={bioRef}
-                    value={bioText}
-                    onChange={e => setBioText(e.target.value)}
-                    maxLength={400}
-                    rows={4}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-700 font-sans focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-                  />
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400 font-mono">{bioText.length}/400</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setBioEditing(false)} className="px-4 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancel</button>
-                      <button onClick={() => bioMutation.mutate(bioText)} disabled={bioMutation.isPending} className="px-4 py-1.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-70" style={{ backgroundColor: hColor }}>
-                        {bioMutation.isPending ? 'Saving...' : 'Save'}
-                      </button>
-                    </div>
-                  </div>
+              {/* Bio directly in Identity block to save space */}
+              {(profile.bio || isOwner) && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <p className={`text-sm leading-relaxed ${profile.bio ? 'text-gray-600' : 'text-gray-400 italic'}`}>
+                    {profile.bio || (isOwner ? 'No bio yet. Click the pencil icon above to add a summary for your public profile.' : 'No bio provided.')}
+                  </p>
                 </div>
-              ) : (
-                <p className={`text-lg leading-relaxed ${profile.bio ? 'text-gray-600' : 'text-gray-400 italic'}`}>
-                  {profile.bio || (isOwner ? 'No bio yet. Click the pencil icon to add a summary for your public profile.' : 'No bio provided.')}
-                </p>
               )}
             </div>
+
+            {/* Skills Card (Dynamic) */}
+            {(profile.skills.length > 0 || isOwner) && (
+              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 font-display">Technical Skills</h3>
+                  {isOwner && (
+                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                      <PencilSimple size={18} />
+                    </button>
+                  )}
+                </div>
+                {profile.skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.skills.map((skill, index) => (
+                      <span key={index} className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No skills added yet.</p>
+                )}
+              </div>
+            )}
+            
+          </div>
+
+          {/* RIGHT COLUMN: Experience, Stats, etc (8 cols) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            
+            {/* Work Experience (Dynamic) */}
+            {(profile.workExperiences.length > 0 || isOwner) && (
+              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 font-display">Work Experience</h3>
+                  {isOwner && (
+                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                      <PencilSimple size={18} />
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-6">
+                  {profile.workExperiences.length > 0 ? (
+                    profile.workExperiences.map((exp) => (
+                      <div key={exp.id} className="relative pl-6 before:absolute before:left-0 before:top-2 before:bottom-[-24px] last:before:hidden before:w-px before:bg-gray-200">
+                        <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-gray-300 ring-4 ring-white" style={{ backgroundColor: hColor }}></div>
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="text-base font-bold text-gray-900">{exp.role}</h4>
+                          <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 shrink-0 ml-2">
+                            {exp.duration}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-gray-600 mb-2">{exp.company}</p>
+                        {exp.description && (
+                          <p className="text-sm text-gray-500 leading-relaxed">{exp.description}</p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No work experience added yet.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Experience / Activity Split */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -498,47 +560,80 @@ export function ProfilePortfolio() {
 
                   {profile.certificates.length > 0 && (
                     <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-                      <h4 className="text-sm font-bold text-gray-900 font-display">Uploaded Certificates</h4>
-                      {profile.certificates.map(cert => (
-                        <div key={cert.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50">
-                          <span className="flex items-center gap-2 font-medium text-gray-700">
-                            <Certificate size={16} weight="fill" className="text-amber-500 flex-shrink-0" />
-                            <span className="text-sm truncate max-w-[200px]">{cert.name}</span>
-                          </span>
-                          <span className="text-xs text-gray-500 font-mono flex-shrink-0">
-                            {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
               </div>
-              
             </div>
 
             {/* Badges Full Width */}
             <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
-               <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Certifications & Badges</h3>
-               {isOwner ? (
-                 <BadgeWallet />
-               ) : (
-                 <div className="flex flex-wrap gap-6">
-                   {profile.badges.length === 0 ? (
-                     <div className="w-full text-center text-gray-400 py-4 text-sm">No badges earned yet.</div>
-                   ) : (
-                     profile.badges.map(b => (
-                       <div key={b.id} className="flex flex-col items-center gap-2 text-center w-24">
-                         <div className="w-16 h-16 rounded-full flex items-center justify-center bg-amber-50 border-2 border-amber-200">
-                           <Trophy size={28} weight="fill" className="text-amber-500" />
-                         </div>
-                         <div className="font-semibold text-[11px] leading-tight text-gray-800">{b.name}</div>
+               <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Badges</h3>
+               <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
+                 {profile.badges.length === 0 ? (
+                   <div className="w-full text-center text-gray-400 py-4 text-sm italic">No badges earned yet.</div>
+                 ) : (
+                   profile.badges.map(b => (
+                     <div key={b.id} className="flex flex-col items-center gap-2 text-center w-28">
+                       <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
+                         <SealCheck size={40} weight="fill" className="text-amber-500" />
                        </div>
-                     ))
-                   )}
-                 </div>
-               )}
+                       <div className="font-semibold text-[11px] leading-tight text-gray-800 mt-1">{b.name}</div>
+                     </div>
+                   ))
+                 )}
+               </div>
             </div>
+
+            {/* Certifications (Dynamic) */}
+            {(profile.certificates.length > 0 || isOwner) && (
+              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 font-display">Certifications</h3>
+                  {isOwner && (
+                    <button 
+                      onClick={() => setShowCertificateModal(true)} 
+                      className="flex items-center gap-1 text-xs font-bold bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus size={14} weight="bold" /> Add
+                    </button>
+                  )}
+                </div>
+                
+                {profile.certificates.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {profile.certificates.map(cert => (
+                      <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <Certificate size={24} weight="fill" className="text-amber-500 flex-shrink-0" />
+                          <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-bold text-gray-800 truncate">{cert.name}</span>
+                            <span className="text-xs text-gray-500 font-mono">
+                              {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                        </div>
+                        {isOwner && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // prevent viewing preview when deleting
+                              deleteCertMutation.mutate(cert.id);
+                            }} 
+                            disabled={deleteCertMutation.isPending}
+                            className="p-2 text-gray-400 hover:text-rose-500 bg-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-gray-200 shadow-sm disabled:opacity-50"
+                            title="Delete Certificate"
+                          >
+                            <Trash size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No certifications uploaded yet.</p>
+                )}
+              </div>
+            )}
 
           </div>
           
@@ -564,6 +659,34 @@ export function ProfilePortfolio() {
 
       {showAchievementModal && (
         <AchievementModal onClose={() => setShowAchievementModal(false)} onSuccess={() => { setShowAchievementModal(false); }} />
+      )}
+
+      {showAvatarModal && (
+        <AvatarModal 
+          currentAvatar={profile.avatar}
+          onClose={() => setShowAvatarModal(false)}
+        />
+      )}
+
+      {/* Show Onboarding/Edit Modal */}
+      {(showProfileEditor || (isOwner && !profile.workDomain && profile.workExperiences.length === 0 && !hasDismissedOnboarding)) && (
+        <ProfileEditorModal 
+          initialData={{
+            bio: profile.bio,
+            workDomain: profile.workDomain,
+            skills: profile.skills || [],
+            workExperiences: profile.workExperiences || [],
+          }}
+          onClose={() => {
+            setShowProfileEditor(false);
+            setHasDismissedOnboarding(true);
+          }}
+          isOnboarding={!showProfileEditor} // If it's open but showProfileEditor is false, it means it's the auto-onboarding
+        />
+      )}
+      {/* Show Certificate Upload Modal */}
+      {showCertificateModal && (
+        <CertificateUploadModal onClose={() => setShowCertificateModal(false)} />
       )}
     </main>
   );

@@ -24,6 +24,16 @@ export const generatePresignedPut = async (fileKey: string, mimeType: string): P
   return getSignedUrl(s3Client, command, { expiresIn: 900 });
 };
 
+export const generatePresignedGet = async (fileKey: string): Promise<string> => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: fileKey,
+  });
+  
+  // URL expires in 1 hour
+  return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+};
+
 export const deleteFile = async (fileKey: string): Promise<void> => {
   if (process.env.MOCK_MINIO === 'true') return;
   const command = new DeleteObjectCommand({

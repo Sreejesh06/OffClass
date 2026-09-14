@@ -12,11 +12,15 @@ interface LeaderboardEntry {
   name: string;
   house: House;
   points: number;
+  avatar: string | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const getAvatar = (seed: string) => `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8f9fa`;
+const getAvatar = (fallbackSeed: string, avatarSeed?: string | null) => {
+  const seed = avatarSeed || fallbackSeed;
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8f9fa`;
+};
 
 const houseGradients = {
   RED: "from-red-50 to-red-100/50",
@@ -34,7 +38,7 @@ const houseColors = {
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-const PodiumCard = ({ entry, position }: { entry: LeaderboardEntry | null; position: 1 | 2 | 3 }) => {
+const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | null; position: 1 | 2 | 3, maxPoints: number }) => {
   if (!entry) return <div className="w-full max-w-[280px] h-[320px] rounded-3xl" />;
 
   const isFirst = position === 1;
@@ -55,7 +59,7 @@ const PodiumCard = ({ entry, position }: { entry: LeaderboardEntry | null; posit
 
       <div className="relative w-24 h-24 mt-4 shrink-0">
         <div className={`absolute inset-0 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white`}>
-          <img src={getAvatar(entry.id)} alt={entry.name} className="w-full h-full object-cover" />
+          <img src={getAvatar(entry.id, entry.avatar)} alt={entry.name} className="w-full h-full object-cover" />
         </div>
         <div className="absolute -bottom-2 -right-2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg border-2 border-white shadow-sm flex items-center gap-1">
           <Star size={12} weight="fill" className="text-yellow-400" />
@@ -84,9 +88,9 @@ const PodiumCard = ({ entry, position }: { entry: LeaderboardEntry | null; posit
           </div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-gray-500 font-medium">Avg Gain</div>
+          <div className="text-xs text-gray-500 font-medium">Rel. to Top</div>
           <div className="font-bold text-gray-900 mt-1">
-            {Math.round((entry.points / 5000) * 100)}%
+            {Math.round((entry.points / Math.max(maxPoints, 1)) * 100)}%
           </div>
         </div>
       </div>
@@ -123,6 +127,8 @@ export function Leaderboard() {
   const top1 = allEntries[0] || null;
   const top2 = allEntries[1] || null;
   const top3 = allEntries[2] || null;
+  
+  const maxPoints = top1?.points || 1;
 
   // List logic: 4 onwards
   const remainingEntries = allEntries.slice(3);
@@ -135,47 +141,57 @@ export function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-20 font-sans">
+    <div className="min-h-screen bg-transparent pb-20 font-sans">
       
-      {/* Header Area */}
-      <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 rounded-2xl flex items-center justify-center transform rotate-3 shadow-sm border border-orange-200/50">
-              <Trophy size={28} weight="fill" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black font-display text-gray-900 tracking-tight">Champions</h1>
-              <p className="text-gray-500 text-sm font-medium mt-1">Season 2 is underway. See past champions in the Hall of Fame.</p>
-            </div>
-          </div>
-          
-          <div className="flex bg-gray-50 p-1.5 rounded-2xl shadow-inner border border-gray-100">
-            {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => (
+      {/* Hero Header Area */}
+      <div className="max-w-4xl mx-auto px-4 pt-16 pb-8 flex flex-col items-center text-center gap-6">
+        <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-[2rem] flex items-center justify-center transform -rotate-3 shadow-lg shadow-orange-500/30 border border-orange-400/50 mb-2">
+          <Trophy size={40} weight="fill" />
+        </div>
+        <div>
+          <h1 className="text-5xl md:text-6xl font-black font-display text-gray-900 tracking-tight mb-4">
+            Leaderboard
+          </h1>
+          <p className="text-gray-500 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed">
+            Season 2 is underway. Compete for your house, earn points, and climb the ranks.
+          </p>
+        </div>
+        
+        {/* House Tabs */}
+        <div className="mt-4 flex flex-wrap justify-center bg-white/80 backdrop-blur-xl p-2 rounded-2xl shadow-sm border border-gray-200/60 w-fit max-w-full overflow-x-auto gap-1">
+          {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => {
+            const isSelected = activeTab === tab;
+            let tabColorClass = 'text-gray-500 hover:text-gray-700 hover:bg-gray-100';
+            
+            if (isSelected) {
+              if (tab === 'red') tabColorClass = 'bg-red-500 text-white shadow-md border-red-600/20';
+              else if (tab === 'blue') tabColorClass = 'bg-blue-500 text-white shadow-md border-blue-600/20';
+              else if (tab === 'green') tabColorClass = 'bg-green-500 text-white shadow-md border-green-600/20';
+              else if (tab === 'purple') tabColorClass = 'bg-purple-500 text-white shadow-md border-purple-600/20';
+              else tabColorClass = 'bg-gray-900 text-white shadow-md border-gray-800/20';
+            }
+
+            return (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-                  activeTab === tab 
-                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all duration-300 border border-transparent ${tabColorClass}`}
               >
                 {tab}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 mt-12 flex flex-col gap-12">
+      <div className="max-w-6xl mx-auto px-4 mt-6 flex flex-col gap-12">
         
         {/* Podium */}
         {!isLoading && allEntries.length > 0 && (
           <div className="flex flex-col md:flex-row justify-center items-end gap-6 md:gap-8 pt-8">
-            <div className="order-2 md:order-1 w-full md:w-auto flex justify-center"><PodiumCard entry={top2} position={2} /></div>
-            <div className="order-1 md:order-2 w-full md:w-auto flex justify-center"><PodiumCard entry={top1} position={1} /></div>
-            <div className="order-3 md:order-3 w-full md:w-auto flex justify-center"><PodiumCard entry={top3} position={3} /></div>
+            <div className="order-2 md:order-1 w-full md:w-auto flex justify-center"><PodiumCard entry={top2} position={2} maxPoints={maxPoints} /></div>
+            <div className="order-1 md:order-2 w-full md:w-auto flex justify-center"><PodiumCard entry={top1} position={1} maxPoints={maxPoints} /></div>
+            <div className="order-3 md:order-3 w-full md:w-auto flex justify-center"><PodiumCard entry={top3} position={3} maxPoints={maxPoints} /></div>
           </div>
         )}
 
@@ -251,7 +267,7 @@ export function Leaderboard() {
                   
                   <div className="flex-1 flex items-center gap-4 w-full">
                     <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-white shadow-sm overflow-hidden shrink-0">
-                      <img src={getAvatar(entry.id)} alt={entry.name} className="w-full h-full object-cover" />
+                      <img src={getAvatar(entry.id, entry.avatar)} alt={entry.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 flex-1">
                       <Link to={`/profile/${entry.id}`} className="font-bold text-gray-900 hover:text-orange-600 transition-colors text-base">

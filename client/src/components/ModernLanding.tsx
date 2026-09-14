@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navbar } from './ui/navbar';
+import { NotchNavbar } from './ui/notch-navbar';
 import { motion } from 'motion/react';
 import { ArrowRight, MessagesSquare, BarChart, Terminal, Activity, User, Settings, Shield, Award, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -20,50 +20,28 @@ const platformLogos: LogoItem[] = [
 
 export const ModernLanding: React.FC = () => {
   return (
-    <div className="min-h-screen bg-crypto-bg font-sans text-gray-900 overflow-x-hidden">
-      <Navbar />
+    <div className="h-screen flex flex-col overflow-hidden bg-crypto-bg font-sans text-gray-900">
+      <NotchNavbar />
+      
+      <main className="flex-1 mt-16 overflow-y-auto w-full relative">
 
       {/* Hero Section */}
-      <section className="pt-40 pb-20 px-6 max-w-7xl mx-auto relative flex flex-col items-center text-center">
+      <section className="pt-32 pb-24 px-6 max-w-7xl mx-auto relative flex flex-col items-center text-center">
         
-        {/* Floating Shapes / Avatars (Abstracted for Cyber theme) */}
-        <motion.div 
-          animate={{ y: [0, -10, 0] }} 
-          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          className="hidden md:block absolute top-20 left-20 w-16 h-16 bg-crypto-pink rounded-full border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-        ></motion.div>
-        
-        <motion.div 
-          animate={{ y: [0, 15, 0] }} 
-          transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-          className="hidden md:block absolute top-32 right-32 w-20 h-20 bg-crypto-cyan transform rotate-12 border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-          style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}
-        ></motion.div>
+        {/* Eyebrow */}
+        <span className="inline-block mb-6 px-6 py-2 bg-crypto-yellow text-gray-900 font-mono text-xl md:text-2xl font-bold rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transform -rotate-2 z-10">
+          #Cybersecurity
+        </span>
 
-        <motion.div 
-          animate={{ y: [0, -8, 0] }} 
-          transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-          className="hidden md:block absolute bottom-40 left-32 w-14 h-14 bg-crypto-yellow border-2 border-black transform -rotate-12 shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-          style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-        ></motion.div>
-
-        <motion.div 
-          animate={{ y: [0, 10, 0] }} 
-          transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}
-          className="hidden md:block absolute bottom-20 right-20 w-24 h-12 bg-crypto-purple rounded-t-full border-2 border-black border-b-0 shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-        ></motion.div>
-
-        <h1 className="text-5xl md:text-7xl font-heading font-extrabold text-gray-900 tracking-tight max-w-4xl leading-[1.1] z-10 relative flex flex-col items-center">
+        {/* Unified Headline */}
+        <h1 className="text-5xl md:text-7xl font-heading font-extrabold text-gray-900 tracking-tight max-w-5xl leading-[1.1] z-10 relative flex flex-col items-center gap-2">
           <FoldText 
-            text="Empower Your Journey" 
+            text="Empower Your Journey in" 
             splitBy="word"
             fontSize="clamp(3rem, 6vw, 5rem)"
             fontWeight={800}
             color="#111827"
           />
-          <span className="inline-block mt-4 mb-2 px-6 py-2 bg-crypto-yellow text-gray-900 font-mono text-4xl rounded-full border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transform -rotate-2">
-            #Cybersecurity
-          </span>
           <FoldText 
             text="Training & Management" 
             splitBy="word"
@@ -73,78 +51,116 @@ export const ModernLanding: React.FC = () => {
           />
         </h1>
         
-        <p className="mt-8 text-lg font-sans text-gray-700 font-medium max-w-2xl mx-auto z-10">
-          Manage your CTF progress, certifications, and house points all from one place like a pro! Offclass covers all your academic and cybersecurity needs.
+        {/* Sub-headline */}
+        <p className="mt-8 text-xl font-sans text-gray-600 font-medium max-w-3xl mx-auto z-10 leading-relaxed">
+          Manage your CTF progress, certifications, and house points all from one place like a pro. Offclass covers all your academic and cybersecurity needs.
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 z-10">
-          <Link to="/login" className="px-8 py-4 bg-black text-white rounded-full font-bold hover:bg-gray-800 transition-colors shadow-lg">
+        {/* CTAs */}
+        <div className="mt-12 flex flex-col sm:flex-row gap-6 z-10">
+          <Link to="/login" className="px-10 py-5 bg-black text-white rounded-full text-lg font-bold hover:bg-gray-800 transition-colors shadow-lg">
             Join a House
           </Link>
-          <Link to="/leaderboard" className="px-8 py-4 bg-white text-gray-900 border-2 border-gray-200 rounded-full font-bold hover:border-black transition-colors shadow-sm">
+          <Link to="/leaderboard" className="px-10 py-5 bg-white text-gray-900 border-2 border-gray-200 rounded-full text-lg font-bold hover:border-black transition-colors shadow-sm">
             View Leaderboard
           </Link>
         </div>
 
-        {/* Dashboard Mockup Image */}
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="mt-20 w-full max-w-5xl rounded-2xl border-2 border-gray-200 bg-white p-2 shadow-2xl z-10"
-        >
-          <div className="rounded-xl border border-gray-100 bg-gray-50 h-[400px] md:h-[600px] overflow-hidden flex flex-col">
-            {/* Fake Browser Header */}
-            <div className="h-12 border-b border-gray-200 bg-white flex items-center px-4 gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-400"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-              <div className="w-3 h-3 rounded-full bg-green-400"></div>
-              <div className="ml-4 flex-1 h-6 bg-gray-100 rounded-md"></div>
-            </div>
-            {/* Fake Dashboard Body */}
-            <div className="flex flex-1 p-4 gap-4">
-              {/* Sidebar */}
-              <div className="w-48 hidden md:flex flex-col gap-2">
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-200 text-gray-700 font-medium">
-                  <Activity className="w-4 h-4" /> Overview
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
-                  <User className="w-4 h-4" /> Profile
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
-                  <Shield className="w-4 h-4" /> House
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
-                  <Settings className="w-4 h-4" /> Settings
-                </div>
+        {/* Dashboard Mockup Image with Framed Animations */}
+        <div className="relative mt-24 w-full max-w-5xl z-10">
+          
+          {/* Floating Shapes / Avatars anchored to the Dashboard Mockup */}
+          <motion.div 
+            animate={{ y: [0, -15, 0], x: [0, 10, 0], rotate: [-2, 4, -2] }} 
+            transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+            className="hidden lg:block absolute -top-16 -left-20 z-20"
+          >
+            <img src="/assets/animation_1.png" alt="Decoration 1" className="w-40 h-40 object-contain drop-shadow-2xl" />
+          </motion.div>
+          
+          <motion.div 
+            animate={{ y: [0, 20, 0], x: [0, -10, 0], rotate: [5, 0, 5] }} 
+            transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
+            className="hidden lg:block absolute -top-12 -right-16 z-20"
+          >
+            <img src="/assets/animation_2.png" alt="Decoration 2" className="w-44 h-44 object-contain drop-shadow-2xl" />
+          </motion.div>
+
+          <motion.div 
+            animate={{ y: [0, -10, 0], x: [0, -15, 0], rotate: [-8, -2, -8] }} 
+            transition={{ repeat: Infinity, duration: 9, ease: "easeInOut" }}
+            className="hidden lg:block absolute -bottom-16 -left-12 z-20"
+          >
+            <img src="/assets/animation_3.png" alt="Decoration 3" className="w-36 h-36 object-contain drop-shadow-2xl" />
+          </motion.div>
+
+          <motion.div 
+            animate={{ y: [0, 15, 0], x: [0, 15, 0], rotate: [0, 5, 0] }} 
+            transition={{ repeat: Infinity, duration: 11, ease: "easeInOut" }}
+            className="hidden lg:block absolute -bottom-20 -right-24 z-20"
+          >
+            <img src="/assets/animation_0.png" alt="Decoration 4" className="w-56 h-56 object-contain drop-shadow-2xl" />
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="w-full rounded-2xl border-2 border-gray-200 bg-white p-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative z-10"
+          >
+            <div className="rounded-xl border border-gray-100 bg-gray-50 h-[400px] md:h-[600px] overflow-hidden flex flex-col">
+              {/* Fake Browser Header */}
+              <div className="h-12 border-b border-gray-200 bg-white flex items-center px-4 gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <div className="ml-4 flex-1 h-6 bg-gray-100 rounded-md"></div>
               </div>
-              {/* Main Content Area */}
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="h-32 bg-crypto-bg border border-gray-200 rounded-xl p-6 flex flex-col justify-center">
-                  <h3 className="font-heading text-2xl font-bold text-gray-900">Welcome back, Alex!</h3>
-                  <p className="text-gray-600">You are currently ranked #4 in the Red House.</p>
+              {/* Fake Dashboard Body */}
+              <div className="flex flex-1 p-4 gap-4">
+                {/* Sidebar */}
+                <div className="w-48 hidden md:flex flex-col gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-200 text-gray-700 font-medium">
+                    <Activity className="w-4 h-4" /> Overview
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
+                    <User className="w-4 h-4" /> Profile
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
+                    <Shield className="w-4 h-4" /> House
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 font-medium transition-colors">
+                    <Settings className="w-4 h-4" /> Settings
+                  </div>
                 </div>
-                <div className="flex-1 flex gap-4">
-                  <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col">
-                    <div className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-crypto-yellow" /> Recent Activity</div>
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-green-500 rounded-full"></div> <span>Solved 'Format String' CTF challenge</span> <span className="ml-auto text-gray-400 text-xs">2h ago</span></div>
-                       <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> <span>Linked HackTheBox profile</span> <span className="ml-auto text-gray-400 text-xs">1d ago</span></div>
-                       <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-crypto-purple rounded-full"></div> <span>Earned 50 pts for AWS Certification</span> <span className="ml-auto text-gray-400 text-xs">3d ago</span></div>
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="h-32 bg-crypto-bg border border-gray-200 rounded-xl p-6 flex flex-col justify-center">
+                    <h3 className="font-heading text-2xl font-bold text-gray-900">Welcome back, Alex!</h3>
+                    <p className="text-gray-600">You are currently ranked #4 in the Red House.</p>
+                  </div>
+                  <div className="flex-1 flex gap-4">
+                    <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col">
+                      <div className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-crypto-yellow" /> Recent Activity</div>
+                      <div className="space-y-4">
+                         <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-green-500 rounded-full"></div> <span>Solved 'Format String' CTF challenge</span> <span className="ml-auto text-gray-400 text-xs">2h ago</span></div>
+                         <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> <span>Linked HackTheBox profile</span> <span className="ml-auto text-gray-400 text-xs">1d ago</span></div>
+                         <div className="flex items-center gap-3 text-sm"><div className="w-2 h-2 bg-crypto-purple rounded-full"></div> <span>Earned 50 pts for AWS Certification</span> <span className="ml-auto text-gray-400 text-xs">3d ago</span></div>
+                      </div>
+                    </div>
+                    <div className="w-1/3 bg-white border border-gray-200 rounded-xl shadow-sm hidden lg:flex flex-col p-4">
+                      <div className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-crypto-cyan" /> Upcoming</div>
+                      <div className="flex flex-col gap-3">
+                         <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm"><div className="font-bold">Weekend CTF</div><div className="text-gray-500 text-xs mt-1">Starts in 2 days</div></div>
+                         <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm"><div className="font-bold">Guest Lecture</div><div className="text-gray-500 text-xs mt-1">Security Audits</div></div>
+                      </div>
                     </div>
                   </div>
-                  <div className="w-1/3 bg-white border border-gray-200 rounded-xl shadow-sm hidden lg:flex flex-col p-4">
-                    <div className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-crypto-cyan" /> Upcoming</div>
-                    <div className="flex flex-col gap-3">
-                       <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm"><div className="font-bold">Weekend CTF</div><div className="text-gray-500 text-xs mt-1">Starts in 2 days</div></div>
-                       <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm"><div className="font-bold">Guest Lecture</div><div className="text-gray-500 text-xs mt-1">Security Audits</div></div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
       {/* Feature Section (Split) */}
@@ -238,6 +254,7 @@ export const ModernLanding: React.FC = () => {
           </Link>
         </div>
       </footer>
+      </main>
     </div>
   );
 };
