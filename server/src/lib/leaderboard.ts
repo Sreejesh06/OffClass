@@ -53,12 +53,12 @@ export const awardPoints = async (
  */
 export const getTopUsers = async (
   house?: House,
-  limit: number = 50
-): Promise<Array<{ id: string; name: string; house: House; points: number; rank: number; previousRank: number }>> => {
+  limit: number = 1000
+): Promise<Array<{ id: string; name: string; house: House; avatar: string | null; points: number; rank: number; previousRank: number }>> => {
   const key = house ? getHouseKey(house) : getOverallKey();
   
-  // ZREVRANGE returns [userId1, score1, userId2, score2, ...]
-  const results = await redis.zrevrange(key, 0, limit - 1, "WITHSCORES");
+  const end = limit === -1 ? -1 : limit - 1;
+  const results = await redis.zrevrange(key, 0, end, "WITHSCORES");
   
   if (results.length === 0) return [];
 
@@ -77,26 +77,42 @@ export const getTopUsers = async (
   // Fetch the user details from DB
   const usersDb = await prisma.user.findMany({
     where: { id: { in: userIds } },
-    select: { id: true, name: true, house: true }
+    select: { id: true, name: true, house: true, avatar: true }
   });
 
   // Create a fast lookup map
   const userMap = new Map(usersDb.map(u => [u.id, u]));
 
-  // Also fetch previous ranks from the snapshot logic (optional, stub to rank for now)
-  // To keep it fast, we can just stub previousRank to rank (meaning no change) if we don't have historic data loaded.
+  // Fetch previous ranks from the most recent snapshot for these users
+  const snapshots = await prisma.leaderboardSnapshot.findMany({
+    where: { userId: { in: userIds } },
+    orderBy: { snapshotDate: "desc" },
+    distinct: ["userId"], // Get only the most recent snapshot per user
+    select: { userId: true, rankOverall: true, rankInHouse: true }
+  });
+  
+  const snapshotMap = new Map(snapshots.map(s => [s.userId, s]));
   
   return rawUsers
     .map(ru => {
       const dbUser = userMap.get(ru.userId);
       if (!dbUser) return null;
+      
+      const prevSnapshot = snapshotMap.get(ru.userId);
+      // If there is a snapshot, use house rank if in house tab, else overall rank.
+      // If no snapshot exists (new user), stub previous rank to current rank (trend = 0).
+      const prevRank = prevSnapshot 
+        ? (house ? prevSnapshot.rankInHouse : prevSnapshot.rankOverall) 
+        : ru.rank;
+
       return {
         id: dbUser.id,
         name: dbUser.name,
         house: dbUser.house,
+        avatar: dbUser.avatar,
         points: ru.points,
         rank: ru.rank,
-        previousRank: ru.rank // Stubbed for now, normally would query `LeaderboardSnapshot`
+        previousRank: prevRank
       };
     })
     .filter((u): u is NonNullable<typeof u> => u !== null);

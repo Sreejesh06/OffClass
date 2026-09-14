@@ -12,6 +12,7 @@ import perksRoutes from "./routes/perks.js";
 import badgesRoutes from "./routes/badges.js";
 import ledgerRoutes from "./routes/ledger.js";
 import usersRoutes from "./routes/users.js";
+import opportunitiesRoutes from "./routes/opportunities.js";
 import "./workers/syncWorker.js"; // Boot the background worker
 
 const app = express();
@@ -41,6 +42,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/integrations", integrationsRoutes);
 app.use("/api/ledger", ledgerRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/opportunities", opportunitiesRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

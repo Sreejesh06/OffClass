@@ -6,14 +6,16 @@ import { useQueryClient } from '@tanstack/react-query';
 interface AchievementModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  initialTitle?: string;
+  opportunityId?: string;
 }
 
 type AchievementCategory = 'HACKATHON' | 'CTF' | 'COMPETITION' | 'PUBLICATION' | 'OTHER';
 
-export function AchievementModal({ onClose, onSuccess }: AchievementModalProps) {
+export function AchievementModal({ onClose, onSuccess, initialTitle, opportunityId }: AchievementModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
-    title: '',
+    title: initialTitle || '',
     category: 'HACKATHON' as AchievementCategory,
     position: '',
     date: '',
@@ -30,7 +32,7 @@ export function AchievementModal({ onClose, onSuccess }: AchievementModalProps) 
     setError(null);
 
     try {
-      await api.post('/users/me/achievements', formData);
+      await api.post('/users/me/achievements', { ...formData, opportunityId });
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       onSuccess();
     } catch (err: any) {
@@ -61,6 +63,16 @@ export function AchievementModal({ onClose, onSuccess }: AchievementModalProps) 
             <X size={20} />
           </button>
         </div>
+
+        {/* Board Tie-in Note */}
+        {opportunityId && (
+          <div className="px-6 pt-4">
+            <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-sm flex items-center gap-2 border border-blue-100">
+              <Trophy size={16} />
+              <span>Linking this achievement to the Opportunity Board post.</span>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex flex-col gap-5">

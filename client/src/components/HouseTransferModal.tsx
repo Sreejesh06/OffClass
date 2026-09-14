@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ArrowRight, ShieldCheck, WarningCircle, CheckCircle } from '@phosphor-icons/react';
+import { X, ArrowRight, ShieldCheck, WarningCircle, CheckCircle, Info } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 
 export type HouseType = 'RED' | 'BLUE' | 'GREEN' | 'PURPLE';
@@ -10,30 +10,34 @@ interface HouseTransferModalProps {
   onSuccess: () => void;
 }
 
-const HOUSE_DETAILS: Record<HouseType, { label: string; color: string; bg: string; desc: string }> = {
+const HOUSE_DETAILS: Record<HouseType, { label: string; color: string; bg: string; border: string; desc: string }> = {
   RED: {
     label: 'Red House',
-    color: '#e11d48',
-    bg: 'rgba(225, 29, 72, 0.12)',
-    desc: 'Penetration Testing & Offensive Security',
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+    border: 'border-rose-200 hover:border-rose-300',
+    desc: 'Offensive Security',
   },
   BLUE: {
     label: 'Blue House',
-    color: '#2563eb',
-    bg: 'rgba(37, 99, 235, 0.12)',
-    desc: 'Defensive Security & Incident Response',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200 hover:border-blue-300',
+    desc: 'Defensive Security',
   },
   GREEN: {
     label: 'Green House',
-    color: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.12)',
-    desc: 'Secure Development & DevSecOps',
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200 hover:border-emerald-300',
+    desc: 'Secure Development',
   },
   PURPLE: {
     label: 'Purple House',
-    color: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.12)',
-    desc: 'Cryptography & Protocol Research',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    border: 'border-purple-200 hover:border-purple-300',
+    desc: 'Cryptography Research',
   },
 };
 
@@ -75,221 +79,133 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="dossier-card"
-        style={{
-          width: '100%',
-          maxWidth: '560px',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-          position: 'relative',
-        }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 relative">
+        
         {/* Close Button */}
-        <button
+        <button 
           onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '1.25rem',
-            right: '1.25rem',
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-          aria-label="Close dialog"
+          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors z-20"
         >
-          <X size={20} />
+          <X size={18} weight="bold" />
         </button>
 
         {submitted ? (
-          <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-            <CheckCircle size={56} weight="fill" color="var(--accent-house)" style={{ marginBottom: '1rem' }} />
-            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.4rem' }}>Ticket Submitted</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '380px', margin: '0 auto' }}>
+          <div className="flex flex-col items-center justify-center text-center p-12">
+            <CheckCircle size={56} weight="fill" className="text-emerald-500 mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 font-display mb-2">Ticket Submitted</h2>
+            <p className="text-sm text-gray-500">
               Your house transfer ticket has been routed to department teachers for verification.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <ShieldCheck size={22} color="var(--accent-house)" />
-                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>Request House Transfer</h2>
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center gap-3 bg-white/90 backdrop-blur-md sticky top-0 z-10">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <ShieldCheck size={20} weight="fill" />
               </div>
-              <p style={{ margin: 0, fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-                House allotment is locked. To change houses, raise a ticket for teacher review.
-              </p>
-            </div>
-
-            {/* Department Notice Banner */}
-            <div
-              style={{
-                padding: '0.875rem 1rem',
-                borderRadius: '6px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid var(--border-subtle)',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.4,
-              }}
-            >
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Policy Reminder:</span> Students are
-              allotted a house upon joining. House changes require departmental faculty approval and will transfer your
-              accumulated points to the new house leaderboard upon acceptance.
-            </div>
-
-            {/* Current vs Target House selection */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.5rem' }}>
-                Select Target House
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
-                {availableHouses.map((houseKey) => {
-                  const info = HOUSE_DETAILS[houseKey];
-                  const isSelected = targetHouse === houseKey;
-                  return (
-                    <button
-                      key={houseKey}
-                      type="button"
-                      onClick={() => setTargetHouse(houseKey)}
-                      style={{
-                        padding: '0.875rem',
-                        textAlign: 'left',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        background: isSelected ? info.bg : 'var(--bg-base)',
-                        border: isSelected ? `2px solid ${info.color}` : '1px solid var(--border-subtle)',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: info.color }}>
-                          {info.label}
-                        </span>
-                        {isSelected && <span style={{ fontSize: '0.65rem', padding: '1px 6px', background: info.color, color: '#fff', borderRadius: '3px', fontWeight: 700 }}>SELECTED</span>}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                        {info.desc}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 font-display">House Transfer</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Submit a ticket for faculty review.</p>
               </div>
             </div>
 
-            {/* Reason Textarea */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                  Reason for Transfer Request
+            {/* Content */}
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex flex-col gap-6">
+              
+              {/* Policy Banner */}
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-200/60 text-xs text-gray-600 leading-relaxed">
+                <Info size={16} className="text-gray-400 shrink-0 mt-0.5" weight="fill" />
+                <p>
+                  <strong className="text-gray-900">Policy:</strong> Transfers require faculty approval. Your accumulated points will move to the new leaderboard upon acceptance.
+                </p>
+              </div>
+
+              {/* Target House */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Target House
                 </label>
-                <span style={{ fontSize: '0.7rem', color: reason.length < 10 ? '#e11d48' : 'var(--text-secondary)' }}>
-                  {reason.length}/500 (min 10)
-                </span>
+                <div className="flex flex-col gap-2">
+                  {availableHouses.map((houseKey) => {
+                    const info = HOUSE_DETAILS[houseKey];
+                    const isSelected = targetHouse === houseKey;
+                    
+                    return (
+                      <button
+                        key={houseKey}
+                        type="button"
+                        onClick={() => setTargetHouse(houseKey)}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                          isSelected 
+                            ? `${info.bg} ${info.border.split(' ')[0]} ring-1 ring-${info.color.split('-')[1]}-500/50` 
+                            : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div>
+                          <div className={`font-bold text-sm ${isSelected ? info.color : 'text-gray-700'}`}>
+                            {info.label}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">{info.desc}</div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? `border-${info.color.split('-')[1]}-500 bg-${info.color.split('-')[1]}-500 text-white` : 'border-gray-300'}`}>
+                          {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                maxLength={500}
-                rows={4}
-                placeholder="Explain why you are requesting to transfer (e.g., project alignment, focus on offensive red-teaming, faculty recommendation)..."
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  padding: '0.75rem',
-                  borderRadius: '6px',
-                  background: 'var(--bg-base)',
-                  border: '1px solid var(--border-strong)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.85rem',
-                  fontFamily: 'inherit',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
 
-            {error && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '0.75rem',
-                  borderRadius: '6px',
-                  background: 'rgba(225, 29, 72, 0.1)',
-                  border: '1px solid #e11d48',
-                  color: '#e11d48',
-                  fontSize: '0.8rem',
-                }}
-              >
-                <WarningCircle size={16} />
-                <span>{error}</span>
+              {/* Reason */}
+              <div>
+                <div className="flex justify-between items-end mb-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                    Reason
+                  </label>
+                  <span className={`text-[10px] font-bold font-mono ${reason.length < 10 ? 'text-rose-500' : 'text-gray-400'}`}>
+                    {reason.length}/500
+                  </span>
+                </div>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="e.g. Project alignment, focus on red-teaming..."
+                  className="w-full p-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-sm"
+                />
               </div>
-            )}
 
-            {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  background: 'transparent',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-secondary)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 500,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading || reason.trim().length < 10}
-                style={{
-                  padding: '0.65rem 1.4rem',
-                  background: 'var(--text-primary)',
-                  border: 'none',
-                  color: 'var(--bg-base)',
-                  borderRadius: '6px',
-                  cursor: loading || reason.trim().length < 10 ? 'not-allowed' : 'pointer',
-                  opacity: loading || reason.trim().length < 10 ? 0.5 : 1,
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                {loading ? 'Submitting Ticket...' : 'Submit Ticket'}
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </form>
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-600 font-medium">
+                  <WarningCircle size={16} weight="fill" className="shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || reason.trim().length < 10}
+                  className="px-5 py-2 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm shadow-gray-900/20"
+                >
+                  {loading ? 'Submitting...' : 'Submit Ticket'}
+                  <ArrowRight size={14} weight="bold" />
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
     </div>

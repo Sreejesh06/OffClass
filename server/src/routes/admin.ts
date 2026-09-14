@@ -42,13 +42,17 @@ router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), a
 
 router.get("/approvals", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
   try {
-    const [certs, houseTransfers] = await Promise.all([
+    const [certs, houseTransfers, achievements] = await Promise.all([
       prisma.certificate.findMany({
         where: { status: "UPLOADED" },
         include: { user: { select: { name: true, house: true } } },
       }),
       prisma.houseTransferRequest.findMany({
         where: { status: "PENDING" },
+        include: { user: { select: { name: true, house: true } } },
+      }),
+      prisma.achievement.findMany({
+        where: { status: "PENDING_VERIFICATION" },
         include: { user: { select: { name: true, house: true } } },
       }),
     ]);
@@ -73,6 +77,14 @@ router.get("/approvals", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (
         description: `Transfer Request to ${ht.targetHouse} House: "${ht.reason}"`,
         date: ht.createdAt.toISOString(),
         reason: ht.reason,
+      })),
+      ...achievements.map((a) => ({
+        id: a.id,
+        type: "ACHIEVEMENT",
+        studentName: a.user.name,
+        studentHouse: a.user.house,
+        description: `Achievement: ${a.title} (${a.category}) ${a.opportunityId ? '[From Board]' : ''}`,
+        date: a.createdAt.toISOString(),
       })),
     ];
 
@@ -161,7 +173,45 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
       }
     }
 
-    res.json({ message: "Approvals processed successfully" });
+    // 3. Process any Achievement items
+    const achievements = await prisma.achievement.findMany({
+      where: { id: { in: items }, status: "PENDING_VERIFICATION" },
+    });
+
+    for (const a of achievements) {
+      if (action === 'approve') {
+        const pointsToAward = a.pointsAwarded || 50; // Default points for batch approve if not specified
+        await prisma.$transaction([
+          prisma.achievement.update({
+            where: { id: a.id },
+            data: { status: "APPROVED", reviewedBy: reviewerId, pointsAwarded: pointsToAward },
+          }),
+          prisma.user.update({
+            where: { id: a.userId },
+            data: { points: { increment: pointsToAward } },
+          }),
+          prisma.pointsTransaction.create({
+            data: {
+              userId: a.userId,
+              delta: pointsToAward,
+              reason: `Achievement Approved: ${a.title}`,
+              createdBy: reviewerId,
+              referenceType: "ACHIEVEMENT",
+              referenceId: a.id,
+            },
+          }),
+        ]);
+        await logAction(reviewerId, "ACHIEVEMENT_APPROVED", "ACHIEVEMENT", a.id, { points: pointsToAward });
+      } else {
+        await prisma.achievement.update({
+          where: { id: a.id },
+          data: { status: "REJECTED", reviewedBy: reviewerId },
+        });
+        await logAction(reviewerId, "ACHIEVEMENT_REJECTED", "ACHIEVEMENT", a.id);
+      }
+    }
+
+    res.json({ message: "Processed approvals successfully" });
   } catch (e) {
     res.status(500).json({ error: "Failed to process approvals" });
   }

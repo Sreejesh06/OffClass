@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, CheckCircle, Warning, Clock, ArrowsClockwise } from '@phosphor-icons/react';
+import { SiGithub, SiCodeforces, SiHackthebox, SiTryhackme, SiLeetcode, SiGeeksforgeeks } from 'react-icons/si';
 import { api } from '../lib/api';
+
+const getPlatformIcon = (id: string) => {
+  switch(id) {
+    case 'GITHUB': return <div className="w-8 h-8 rounded-lg bg-[#181717]/10 text-[#181717] flex items-center justify-center"><SiGithub size={18} /></div>;
+    case 'CODEFORCES': return <div className="w-8 h-8 rounded-lg bg-[#1F8ACB]/10 text-[#1F8ACB] flex items-center justify-center"><SiCodeforces size={18} /></div>;
+    case 'HTB': return <div className="w-8 h-8 rounded-lg bg-[#9FEF00]/20 text-[#9FEF00] flex items-center justify-center"><SiHackthebox size={18} /></div>;
+    case 'THM': return <div className="w-8 h-8 rounded-lg bg-[#212C42]/10 text-[#212C42] flex items-center justify-center"><SiTryhackme size={18} /></div>;
+    case 'LEETCODE': return <div className="w-8 h-8 rounded-lg bg-[#FFA116]/10 text-[#FFA116] flex items-center justify-center"><SiLeetcode size={18} /></div>;
+    case 'GFG': return <div className="w-8 h-8 rounded-lg bg-[#2F8D46]/10 text-[#2F8D46] flex items-center justify-center"><SiGeeksforgeeks size={18} /></div>;
+    default: return <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center"><Link size={18} weight="bold" /></div>;
+  }
+};
 
 type SyncState = 'NOT_LINKED' | 'SYNCING' | 'STALE' | 'FAILED' | 'UP_TO_DATE';
 
@@ -169,10 +182,10 @@ export function AccountLinker() {
           <button 
             onClick={() => handleLink(platform.id)}
             disabled={linkingPlatform === platform.id}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-all shadow-sm"
           >
-            <Link size={14} />
-            {linkingPlatform === platform.id ? 'Linking...' : 'Link Account'}
+            <Link size={14} weight="bold" />
+            {linkingPlatform === platform.id ? 'Linking...' : 'Link'}
           </button>
         );
     }
@@ -186,9 +199,14 @@ export function AccountLinker() {
         <div className="flex flex-col gap-3">
           {platforms?.map(platform => (
             <div key={platform.id} className="flex flex-col gap-2">
-              <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 rounded-xl border ${platform.state === 'FAILED' ? 'border-rose-200 bg-rose-50/30' : 'border-gray-100 bg-gray-50/50'}`}>
-                <span className="font-semibold text-gray-900">{platform.name}</span>
-                {renderStatus(platform)}
+              <div className={`flex items-center justify-between gap-3 p-3 rounded-2xl border ${platform.state === 'FAILED' ? 'border-rose-200 bg-rose-50/50' : 'border-gray-100 bg-gray-50/50'} shadow-sm`}>
+                <div className="flex items-center gap-3">
+                  {getPlatformIcon(platform.id)}
+                  <span className="font-bold text-gray-900 text-sm">{platform.name}</span>
+                </div>
+                <div>
+                  {renderStatus(platform)}
+                </div>
               </div>
               
               {/* Inline HTB Instruction */}

@@ -16,6 +16,7 @@ const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ 
 const Redeem = React.lazy(() => import('./pages/Redeem').then(m => ({ default: m.Redeem })));
 const Complaints = React.lazy(() => import('./pages/Complaints').then(m => ({ default: m.Complaints })));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const OpportunityBoard = React.lazy(() => import('./pages/OpportunityBoard').then(m => ({ default: m.OpportunityBoard })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,16 +49,16 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/hall-of-fame" element={<HallOfFame />} />
-                <Route path="/complaints" element={<Complaints />} />
-                {/* Public shareable profile — no login needed */}
+                <Route path="/complaints" element={<Layout><Complaints /></Layout>} />
+                {/* Public routes — no login needed */}
                 <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />
+                <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
                 
                 <Route element={<ProtectedLayout />}>
-                  {/* Own profile — render the Bento layout */}
                   <Route path="/profile" element={<ProfilePortfolio />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/redeem" element={<Redeem />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/opportunities" element={<OpportunityBoard />} />
                 </Route>
               </Routes>
             </Suspense>

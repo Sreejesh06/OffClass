@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { Gift, CheckCircle, XCircle } from "@phosphor-icons/react";
+import { Gift, CheckCircle, XCircle, Store, Coins, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
+import { cn } from "../lib/utils";
+import type { House } from "../../../shared/src/schemas/user";
+
+// Shadcn UI Components
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
 
 interface Perk {
   id: string;
@@ -12,6 +20,20 @@ interface Perk {
   quantityRemaining: number | null;
   isActive: boolean;
 }
+
+const HOUSE_GRADIENTS: Record<House, string> = {
+  RED: "from-red-900 to-red-950 text-red-50",
+  BLUE: "from-blue-900 to-blue-950 text-blue-50",
+  GREEN: "from-emerald-900 to-emerald-950 text-emerald-50",
+  PURPLE: "from-purple-900 to-purple-950 text-purple-50",
+};
+
+const HOUSE_ACCENTS: Record<House, string> = {
+  RED: "text-red-500",
+  BLUE: "text-blue-500",
+  GREEN: "text-emerald-500",
+  PURPLE: "text-purple-500",
+};
 
 export function Redeem() {
   const { user } = useAuth();
@@ -30,6 +52,7 @@ export function Redeem() {
 
   const CATALOGUE: Perk[] = catalogueData?.items || [];
   const userPoints = user?.points || 0;
+  const userHouse = user?.house as House;
 
   const redeemMutation = useMutation({
     mutationFn: async ({ id, idempotencyKey }: { id: string, idempotencyKey: string }) => {
@@ -65,143 +88,173 @@ export function Redeem() {
     setSelectedPerk(null);
   };
 
+  const isOpen = status !== 'idle';
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1>Redemption Catalogue</h1>
-          <p>Exchange your hard-earned points for real-world perks.</p>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col gap-8">
+      
+      {/* Hero Banner */}
+      <div className={cn(
+        "w-full rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col lg:flex-row lg:items-end justify-between gap-6 min-h-[200px]",
+        "bg-gradient-to-br",
+        userHouse ? HOUSE_GRADIENTS[userHouse] : "from-gray-800 to-gray-900 text-white"
+      )}>
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 opacity-10">
+          <Store size={300} />
         </div>
-        <div className="dossier-card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Available Balance</span>
-          <span className="mono" style={{ fontSize: '2rem', color: 'var(--accent-house)', fontWeight: 700 }}>{userPoints}</span>
+        <div className="relative z-10 flex flex-col gap-2">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight">Redemption Store</h1>
+          <p className="text-white/80 text-lg md:text-xl font-medium max-w-xl">
+            Exchange your hard-earned points for exclusive perks, priority placements, and digital badges.
+          </p>
+        </div>
+        
+        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 flex flex-col items-end min-w-[200px]">
+          <span className="text-white/80 text-sm uppercase tracking-wider font-bold mb-1">Available Balance</span>
+          <div className="flex items-center gap-2">
+            <Coins size={32} className="text-yellow-400" />
+            <span className="font-mono text-4xl font-black">{userPoints}</span>
+          </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>Loading catalogue...</div>
+        <div className="flex justify-center py-20 text-muted-foreground">
+          <div className="flex items-center gap-2 animate-pulse">
+            <Store size={24} />
+            <span className="font-semibold text-lg">Loading catalogue...</span>
+          </div>
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {CATALOGUE.map(perk => {
             const isAvailable = perk.quantityRemaining === null || perk.quantityRemaining > 0;
             const canAfford = userPoints >= perk.cost;
             const disabled = !isAvailable || !canAfford;
 
             return (
-              <div 
-                key={perk.id}
-                className="dossier-card"
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '1rem',
-                  opacity: disabled ? 0.6 : 1,
-                  border: selectedPerk?.id === perk.id ? '2px solid var(--accent-house)' : '1px solid var(--border-subtle)',
-                  position: 'relative'
-                }}
+              <Card 
+                key={perk.id} 
+                className={cn(
+                  "flex flex-col relative transition-all duration-300",
+                  !disabled && "hover:-translate-y-1 hover:shadow-lg hover:border-primary/50",
+                  disabled && "opacity-75 grayscale-[0.2]"
+                )}
               >
                 {!isAvailable && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--border-strong)', borderRadius: 'var(--radius-sm)' }}>
+                  <Badge variant="destructive" className="absolute top-4 right-4 z-10">
                     Out of Stock
-                  </div>
+                  </Badge>
                 )}
-                <div>
-                  <h3 style={{ margin: 0, paddingRight: '4rem' }}>{perk.name}</h3>
-                  <span className="mono" style={{ color: canAfford ? 'var(--accent-house)' : '#e11d48', fontWeight: 600 }}>{perk.cost} pts</span>
-                </div>
-                <p style={{ fontSize: '0.875rem', flex: 1, margin: 0 }}>{perk.description}</p>
-                
-                <button 
-                  disabled={disabled}
-                  onClick={() => handleSelect(perk)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem',
-                    background: canAfford && isAvailable ? 'var(--text-primary)' : 'var(--border-subtle)',
-                    color: canAfford && isAvailable ? 'var(--bg-base)' : 'var(--text-secondary)',
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
-                    fontWeight: 600,
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    marginTop: 'auto'
-                  }}
-                >
-                  <Gift size={20} weight={canAfford && isAvailable ? "fill" : "regular"} />
-                  Redeem
-                </button>
-              </div>
+                <CardHeader>
+                  <CardTitle className="text-xl leading-tight pr-12">{perk.name}</CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-2">
+                    <span className={cn(
+                      "font-mono font-bold text-lg",
+                      canAfford ? (userHouse ? HOUSE_ACCENTS[userHouse] : "text-primary") : "text-destructive"
+                    )}>
+                      {perk.cost} pts
+                    </span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-muted-foreground text-sm leading-relaxed">{perk.description}</p>
+                </CardContent>
+                <CardFooter className="flex flex-col items-stretch gap-3">
+                  {perk.quantityRemaining !== null && isAvailable && (
+                    <div className="text-xs font-medium text-muted-foreground self-start">
+                      {perk.quantityRemaining} remaining
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => handleSelect(perk)}
+                    disabled={disabled}
+                    className="w-full font-bold"
+                    variant={canAfford && isAvailable ? "default" : "secondary"}
+                    size="lg"
+                  >
+                    <Gift className="w-5 h-5 mr-2" />
+                    {isAvailable ? (canAfford ? "Redeem Perk" : "Insufficient Points") : "Sold Out"}
+                  </Button>
+                </CardFooter>
+              </Card>
             );
           })}
         </div>
       )}
 
-      {/* Overlay Modal for Confirmation / Status */}
-      {status !== 'idle' && selectedPerk && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '1rem'
-        }}>
-          <div className="dossier-card" style={{ maxWidth: '400px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '1px solid var(--accent-house)' }}>
-            
-            {status === 'confirm' && (
-              <>
-                <div>
-                  <h3 style={{ margin: 0 }}>Confirm Transaction</h3>
-                  <p style={{ margin: 0, marginTop: '0.5rem' }}>You are about to spend <strong className="mono" style={{ color: '#e11d48' }}>{selectedPerk.cost}</strong> points on <strong>{selectedPerk.name}</strong>.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button onClick={handleReset} style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleConfirm} style={{ flex: 1, padding: '0.75rem', background: 'var(--accent-house)', border: 'none', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
-                </div>
-              </>
-            )}
+      {/* Redemption Dialog */}
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleReset()}>
+        <DialogContent className="sm:max-w-md">
+          {status === 'confirm' && selectedPerk && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black">Confirm Redemption</DialogTitle>
+                <DialogDescription className="text-base pt-2">
+                  You are about to spend <strong className="font-mono text-destructive">{selectedPerk.cost}</strong> points on <strong className="text-foreground">{selectedPerk.name}</strong>.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-3 mt-6">
+                <Button variant="outline" onClick={handleReset} className="flex-1 font-bold">
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirm} className="flex-1 font-bold">
+                  Confirm
+                </Button>
+              </DialogFooter>
+            </>
+          )}
 
-            {status === 'processing' && (
-              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Processing transaction...</div>
-                <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--border-strong)' }}>ID: {idempotencyKey}</div>
+          {status === 'processing' && (
+            <div className="flex flex-col items-center justify-center py-12 gap-6 text-center">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <div className="flex flex-col gap-2">
+                <DialogTitle className="text-xl">Processing transaction...</DialogTitle>
+                <div className="font-mono text-xs text-muted-foreground">ID: {idempotencyKey}</div>
               </div>
-            )}
+            </div>
+          )}
 
-            {status === 'success' && (
-              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                <CheckCircle size={48} weight="fill" color="var(--accent-house)" />
-                <div>
-                  <h3 style={{ margin: 0 }}>Redemption Successful</h3>
-                  <p style={{ margin: 0, marginTop: '0.5rem' }}>Your request for <strong>{selectedPerk.name}</strong> has been logged in the ledger and sent for fulfillment.</p>
-                </div>
-                <button onClick={handleReset} style={{ width: '100%', padding: '0.75rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}>Close</button>
+          {status === 'success' && selectedPerk && (
+            <div className="flex flex-col items-center text-center py-6 gap-6">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-12 w-12 text-green-500" />
               </div>
-            )}
-
-            {status === 'error' && (
-              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                <XCircle size={48} weight="fill" color="#e11d48" />
-                <div>
-                  <h3 style={{ margin: 0 }}>Transaction Failed</h3>
-                  <p style={{ margin: 0, marginTop: '0.5rem' }}>There was an issue processing your request. Your points have not been deducted.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-                  <button onClick={handleReset} style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleConfirm} style={{ flex: 1, padding: '0.75rem', background: '#e11d48', border: 'none', color: 'white', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}>Retry</button>
-                </div>
+              <div className="flex flex-col gap-2">
+                <DialogTitle className="text-2xl font-black">Redemption Successful</DialogTitle>
+                <DialogDescription className="text-base pt-2">
+                  Your request for <strong className="text-foreground">{selectedPerk.name}</strong> has been logged in the ledger and sent for fulfillment.
+                </DialogDescription>
               </div>
-            )}
+              <Button onClick={handleReset} className="w-full font-bold mt-4" size="lg">
+                Close
+              </Button>
+            </div>
+          )}
 
-          </div>
-        </div>
-      )}
-
+          {status === 'error' && (
+            <div className="flex flex-col items-center text-center py-6 gap-6">
+              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+                <XCircle className="h-12 w-12 text-red-500" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <DialogTitle className="text-2xl font-black">Transaction Failed</DialogTitle>
+                <DialogDescription className="text-base pt-2">
+                  There was an issue processing your request. Your points have not been deducted.
+                </DialogDescription>
+              </div>
+              <div className="flex gap-3 w-full mt-4">
+                <Button variant="outline" onClick={handleReset} className="flex-1 font-bold">
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleConfirm} className="flex-1 font-bold">
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
