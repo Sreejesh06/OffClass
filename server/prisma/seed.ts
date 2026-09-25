@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { rubricData } from './rubricData';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,8 @@ async function main() {
   await prisma.complaint.deleteMany();
   await prisma.redemption.deleteMany();
   await prisma.perkItem.deleteMany();
+  await prisma.achievement.deleteMany();  // Must come before rubric due to FK
+  await prisma.pointsRubric.deleteMany(); // Clear the rubric too
   await prisma.user.deleteMany();
 
   // 2. Create Users
@@ -71,6 +74,12 @@ async function main() {
       { name: "Off-Duty Pass", description: "Get a half-day OD for CTF preparation.", cost: 1500, quantityRemaining: 10 },
       { name: "Exclusive Hoodie", description: "Official OffClass Hacker Hoodie.", cost: 5000, quantityRemaining: 5 },
     ]
+  });
+
+  // 4. Seed Rubric
+  console.log("Seeding Points Rubric...");
+  await prisma.pointsRubric.createMany({
+    data: rubricData
   });
 
   console.log("Database seeded successfully!");

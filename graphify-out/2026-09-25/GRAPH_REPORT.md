@@ -1,7 +1,7 @@
 # Graph Report - Cryptid  (2026-09-25)
 
 ## Corpus Check
-- 140 files · ~416,500 words
+- 140 files · ~416,245 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 75 file(s) not represented in the graph (top: .ttf 14, .eot 12, .woff 12)
 

@@ -10,6 +10,10 @@ import './App.css'
 
 const Home = React.lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const Login = React.lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Signup = React.lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })));
+const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const ProfilePortfolio = React.lazy(() => import('./pages/ProfilePortfolio').then(m => ({ default: m.ProfilePortfolio })));
 const HallOfFame = React.lazy(() => import('./pages/HallOfFame').then(m => ({ default: m.HallOfFame })));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
@@ -48,6 +52,10 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/hall-of-fame" element={<HallOfFame />} />
                 <Route path="/complaints" element={<Layout><Complaints /></Layout>} />
                 {/* Public routes — no login needed */}

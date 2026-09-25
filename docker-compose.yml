@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/cryptid
-      POOL_MODE: transaction
+      POOL_MODE: session
       MAX_CLIENT_CONN: 1000
       DEFAULT_POOL_SIZE: 20
     depends_on:
@@ -28,7 +28,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-redispassword}
     volumes:
       - redis_data:/data
     networks:
@@ -42,9 +42,6 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_API_CORS_ALLOW_ORIGIN: "*"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     volumes:
       - minio_data:/data
     networks:
@@ -60,22 +57,21 @@ services:
       sleep 5;
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
       /usr/bin/mc mb myminio/cryptid-certs || true;
-      /usr/bin/mc anonymous set public myminio/cryptid-certs || true;
       "
     networks:
       - internal
 
   api:
     build: 
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://cryptid_app:${APP_DB_PASSWORD:-app_password}@pgbouncer:6432/cryptid?pgbouncer=true
       - DIRECT_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/cryptid
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET:-super_secret_fallback_key}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
+      - JWT_SECRET=${JWT_SECRET}
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
@@ -84,20 +80,26 @@ services:
       - pgbouncer
       - redis
       - minio
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - internal
       - proxy
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./client/dist:/var/www/html
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

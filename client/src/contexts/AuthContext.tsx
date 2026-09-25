@@ -15,8 +15,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<{ requireTotp?: boolean; tempToken?: string }>;
+  verifyTotp: (tempToken: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -27,28 +29,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { setHouse } = useTheme();
 
+  const fetchMe = async () => {
+    try {
+      const { data } = await api.get('/auth/me');
+      setUser(data);
+      setHouse(data.house);
+    } catch (err) {
+      setUser(null);
+      setHouse('none');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Check session on mount
-    const fetchMe = async () => {
-      try {
-        const { data } = await api.get('/auth/me');
-        setUser(data);
-        setHouse(data.house);
-      } catch (err) {
-        setUser(null);
-        setHouse('none');
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchMe();
   }, [setHouse]);
 
-  const login = async (email: string, password?: string) => {
+  const refreshUser = async () => {
+    await fetchMe();
+  };
+
+  const login = async (email: string, password?: string): Promise<{ requireTotp?: boolean; tempToken?: string }> => {
     setIsLoading(true);
     try {
-      await api.post('/auth/login', { email, password });
+      const { data: loginData } = await api.post('/auth/login', { email, password });
+      
+      if (loginData.requireTotp) {
+        return { requireTotp: true, tempToken: loginData.tempToken };
+      }
+      
       // Fetch user profile after successful login
+      const { data } = await api.get('/auth/me');
+      setUser(data);
+      setHouse(data.house);
+      return {};
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyTotp = async (tempToken: string, code: string): Promise<void> => {
+    setIsLoading(true);
+    try {
+      await api.post('/auth/login/totp', { tempToken, code });
       const { data } = await api.get('/auth/me');
       setUser(data);
       setHouse(data.house);
@@ -69,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, verifyTotp, logout, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

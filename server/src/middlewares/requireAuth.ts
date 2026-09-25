@@ -29,7 +29,7 @@ export const requireAuth = (
   try {
     const payload = jwt.verify(
       token,
-      process.env.JWT_SECRET || "super_secret_fallback_key"
+      process.env.JWT_SECRET!
     ) as { userId: string; role: Role };
 
     req.user = payload;
@@ -37,6 +37,26 @@ export const requireAuth = (
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
   }
+};
+
+export const optionalAuth = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const token = req.cookies.access_token;
+  if (!token) {
+    next();
+    return;
+  }
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { userId: string; role: Role };
+    req.user = payload;
+  } catch {}
+  next();
 };
 
 export const requireRole = (allowedRoles: Role[]) => {

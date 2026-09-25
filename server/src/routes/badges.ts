@@ -40,7 +40,7 @@ const CreateBadgeSchema = z.object({
 router.post("/", requireAuth, requireRole(["ADMIN"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const data = CreateBadgeSchema.parse(req.body);
-    const badge = await prisma.badge.create({ data });
+    const badge = await prisma.badge.create({ data: { ...data, imageUrl: data.imageUrl ?? null } });
     res.json({ success: true, badge });
   } catch (error) {
     res.status(400).json({ error: "Invalid data or badge already exists" });

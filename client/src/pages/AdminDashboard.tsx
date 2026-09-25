@@ -5,7 +5,10 @@ import { Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
-type Tab = 'approvals' | 'moderation' | 'risk' | 'export';
+import { AdminRubricTab } from '../components/AdminRubricTab';
+import { AdminDisciplineTab } from '../components/AdminDisciplineTab';
+
+type Tab = 'approvals' | 'moderation' | 'risk' | 'export' | 'rubric' | 'discipline';
 
 interface ApprovalItem {
   id: string;
@@ -40,10 +43,6 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
-    return <Navigate to="/profile" replace />;
-  }
-
   const [activeTab, setActiveTab] = useState<Tab>('approvals');
   const [selectedApprovals, setSelectedApprovals] = useState<Set<string>>(new Set());
 
@@ -93,13 +92,34 @@ export function AdminDashboard() {
     }
   });
 
-  const [complaints, setComplaints] = useState<ComplaintItem[]>([
-    { id: 'c1', trackingCode: 'X9F2A1P0', category: 'GRADING', date: '2026-09-10', status: 'SUBMITTED', content: 'I was given a 0 for my networking assignment but I submitted it on time on the portal.', notes: '' },
-    { id: 'c2', trackingCode: 'M4B8V9Q2', category: 'HARASSMENT', date: '2026-09-12', status: 'UNDER_REVIEW', content: 'Someone from Red House keeps spamming my student email.', notes: 'Looking into mail server logs.' },
-  ]);
+  // Fetch Complaints
+  const { data: complaintsData, isLoading: isLoadingComplaints } = useQuery({
+    queryKey: ['admin', 'complaints'],
+    queryFn: async () => {
+      const res = await api.get('/complaints/admin');
+      return res.data;
+    },
+    enabled: user?.role === 'ADMIN' || user?.role === 'TEACHER'
+  });
+  const complaints: ComplaintItem[] = complaintsData?.complaints || [];
+
+  // Update Complaint Mutation
+  const updateComplaintMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: string; status: string; adminNotes?: string }) => {
+      await api.patch(`/complaints/admin/${id}`, { status, adminNotes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'complaints'] });
+    }
+  });
 
   const [expandedComplaint, setExpandedComplaint] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({});
+
+  // Role check AFTER all hooks
+  if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
+    return <Navigate to="/profile" replace />;
+  }
 
   // Bulk Actions
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,9 +144,11 @@ export function AdminDashboard() {
 
   // Complaint Actions
   const handleSaveNotes = (id: string, newStatus: string) => {
-    setComplaints(complaints.map(c => 
-      c.id === id ? { ...c, notes: editingNotes[id] || c.notes, status: newStatus } : c
-    ));
+    updateComplaintMutation.mutate({ 
+      id, 
+      status: newStatus, 
+      adminNotes: editingNotes[id] !== undefined ? editingNotes[id] : complaints.find(c => c.id === id)?.notes 
+    });
     setExpandedComplaint(null);
   };
 
@@ -170,8 +192,8 @@ export function AdminDashboard() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', gap: '2rem' }}>
-        {(['approvals', 'moderation', 'risk', 'export'] as Tab[]).map((tab) => (
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', gap: '2rem', overflowX: 'auto', paddingBottom: '2px' }}>
+        {(['approvals', 'moderation', 'rubric', 'discipline', 'risk', 'export'] as Tab[]).map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -183,11 +205,14 @@ export function AdminDashboard() {
               color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
               fontWeight: activeTab === tab ? 600 : 400,
               cursor: 'pointer',
-              textTransform: 'capitalize'
+              textTransform: 'capitalize',
+              whiteSpace: 'nowrap'
             }}
           >
             {tab === 'approvals' ? `Approvals (${approvals.length})` : 
              tab === 'moderation' ? `Moderation (${complaints.filter(c => c.status !== 'RESOLVED').length})` :
+             tab === 'rubric' ? 'Rubric Config' : 
+             tab === 'discipline' ? 'Discipline Log' : 
              tab === 'risk' ? 'At-Risk Students' : 'Export & Reports'}
           </button>
         ))}
@@ -280,7 +305,15 @@ export function AdminDashboard() {
                             {a.type === 'HOUSE_TRANSFER' ? 'HOUSE TRANSFER' : a.type}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', maxWidth: '300px', fontSize: '0.85rem' }}>{a.description}</td>
+                        <td style={{ padding: '1rem', maxWidth: '300px', fontSize: '0.85rem' }}>
+                          <div>{a.description}</div>
+                          {a.type === 'CERTIFICATE' && (
+                            <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#eab308', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(234, 179, 8, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '4px', width: 'fit-content' }}>
+                              <Warning size={12} weight="bold" />
+                              Defaults to 10pts. Override manually if higher tier.
+                            </div>
+                          )}
+                        </td>
                         <td className="mono" style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(a.date).toLocaleDateString()}</td>
                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
@@ -346,7 +379,7 @@ export function AdminDashboard() {
                   <div 
                     onClick={() => {
                       setExpandedComplaint(expandedComplaint === c.id ? null : c.id);
-                      if (expandedComplaint !== c.id) setEditingNotes({ ...editingNotes, [c.id]: c.notes });
+                      if (expandedComplaint !== c.id) setEditingNotes({ ...editingNotes, [c.id]: c.notes || '' });
                     }}
                     style={{ padding: '1rem', display: 'flex', gap: '2rem', cursor: 'pointer', background: expandedComplaint === c.id ? 'var(--bg-surface)' : 'transparent', alignItems: 'center' }}
                   >
@@ -354,7 +387,7 @@ export function AdminDashboard() {
                     <div style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.5rem', background: 'var(--border-strong)', borderRadius: 'var(--radius-sm)' }}>
                       {c.category}
                     </div>
-                    <div className="mono" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{c.date}</div>
+                    <div className="mono" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{new Date(c.date || c.reportedDay).toLocaleDateString()}</div>
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.75rem', color: c.status === 'SUBMITTED' ? '#e11d48' : 'var(--text-secondary)', fontWeight: 600 }}>
                         {c.status.replace('_', ' ')}
@@ -387,13 +420,15 @@ export function AdminDashboard() {
                       <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                         <button 
                           onClick={() => handleSaveNotes(c.id, 'RESOLVED')}
-                          style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                          disabled={updateComplaintMutation.isPending}
+                          style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: updateComplaintMutation.isPending ? 'not-allowed' : 'pointer', opacity: updateComplaintMutation.isPending ? 0.5 : 1 }}
                         >
                           Mark Resolved
                         </button>
                         <button 
                           onClick={() => handleSaveNotes(c.id, 'UNDER_REVIEW')}
-                          style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
+                          disabled={updateComplaintMutation.isPending}
+                          style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', cursor: updateComplaintMutation.isPending ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: updateComplaintMutation.isPending ? 0.5 : 1 }}
                         >
                           Save Notes & Mark In Progress
                         </button>
@@ -427,7 +462,7 @@ export function AdminDashboard() {
                     <td className="mono" style={{ padding: '1rem', color: '#e11d48' }}>{s.points}</td>
                     <td className="mono" style={{ padding: '1rem' }}>{s.lastActive}</td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <button style={{ padding: '0.25rem 0.75rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <button disabled title="Not Implemented Yet" style={{ padding: '0.25rem 0.75rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', cursor: 'not-allowed', opacity: 0.5, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                         <Warning weight="fill" /> Flag for Check-in
                       </button>
                     </td>
@@ -455,6 +490,12 @@ export function AdminDashboard() {
             </button>
           </div>
         )}
+
+        {/* RUBRIC */}
+        {activeTab === 'rubric' && <AdminRubricTab />}
+
+        {/* DISCIPLINE */}
+        {activeTab === 'discipline' && <AdminDisciplineTab />}
       </div>
 
     </div>

@@ -1,45 +1,17 @@
 import { Router, type Router as IRouter, type Request, type Response } from "express";
 import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { prisma } from "../lib/db.js";
+import type { PrismaPromise } from "@prisma/client";
 import { logAction } from "../lib/audit.js";
 import { transferHouseLeaderboard } from "../lib/leaderboard.js";
+import { recalculateHouseScores } from "../lib/scoring.js";
+import { z } from "zod";
+
+import rateLimit from "express-rate-limit";
 
 const router: IRouter = Router();
 
-// Scoped export endpoint for students
-router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const actorId = req.user!.userId;
-    const actorRole = req.user!.role;
-
-    // Fetch all students. 
-    // This is strictly scoped so Teachers/Admins cannot accidentally export the internal PII (like 2FA secrets) of OTHER admins.
-    const students = await prisma.user.findMany({
-      where: { role: "STUDENT" },
-      select: {
-        id: true,
-        email: true,
-        house: true,
-        points: true,
-        profileLinks: { select: { provider: true, externalHandle: true, verified: true } },
-      },
-    });
-
-    // Immutable forensic trail
-    await logAction(
-      actorId,
-      "EXPORT_USERS",
-      "SYSTEM",
-      "ALL_STUDENTS",
-      { resultCount: students.length, role: actorRole }
-    );
-
-    res.json({ students });
-  } catch {
-    res.status(500).json({ error: "Failed to export students" });
-  }
-});
-
+// First duplicate route removed.
 router.get("/approvals", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
   try {
     const [certs, houseTransfers, achievements] = await Promise.all([
@@ -106,29 +78,34 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
     const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
 
     // 1. Process any Certificate items
-    const certs = await prisma.certificate.findMany({ where: { id: { in: items } } });
+    const certs = await prisma.certificate.findMany({ where: { id: { in: items }, status: "UPLOADED" } });
     if (certs.length > 0) {
-      await prisma.certificate.updateMany({
+      const txOperations: PrismaPromise<any>[] = [];
+      
+      txOperations.push(prisma.certificate.updateMany({
         where: { id: { in: certs.map((c) => c.id) } },
         data: { status: newStatus, reviewedBy: reviewerId },
-      });
+      }));
 
       if (action === 'approve') {
         for (const cert of certs) {
-          await prisma.user.update({
+          const points = 10; // Defaulting to 10 for now as per audit
+          txOperations.push(prisma.user.update({
             where: { id: cert.userId },
-            data: { points: { increment: 100 } },
-          });
-          await prisma.pointsTransaction.create({
+            data: { points: { increment: points } },
+          }));
+          txOperations.push(prisma.pointsTransaction.create({
             data: {
               userId: cert.userId,
-              delta: 100,
+              delta: points,
               reason: `Certificate Approved: ${cert.name}`,
               createdBy: reviewerId,
             },
-          });
+          }));
         }
       }
+      
+      await prisma.$transaction(txOperations);
     }
 
     // 2. Process any HouseTransferRequest items
@@ -176,11 +153,14 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
     // 3. Process any Achievement items
     const achievements = await prisma.achievement.findMany({
       where: { id: { in: items }, status: "PENDING_VERIFICATION" },
+      include: { rubric: true }
     });
 
     for (const a of achievements) {
       if (action === 'approve') {
-        const pointsToAward = a.pointsAwarded || 50; // Default points for batch approve if not specified
+        // Use rubric points if explicitly linked, otherwise fallback to existing pointsAwarded or legacy default
+        const pointsToAward = a.rubric?.points ?? (a.pointsAwarded || 50); 
+        
         await prisma.$transaction([
           prisma.achievement.update({
             where: { id: a.id },
@@ -194,14 +174,14 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
             data: {
               userId: a.userId,
               delta: pointsToAward,
-              reason: `Achievement Approved: ${a.title}`,
+              reason: a.rubric ? `Approved: ${a.rubric.description}` : `Achievement Approved: ${a.title}`,
               createdBy: reviewerId,
               referenceType: "ACHIEVEMENT",
               referenceId: a.id,
             },
           }),
         ]);
-        await logAction(reviewerId, "ACHIEVEMENT_APPROVED", "ACHIEVEMENT", a.id, { points: pointsToAward });
+        await logAction(reviewerId, "ACHIEVEMENT_APPROVED", "ACHIEVEMENT", a.id, { points: pointsToAward, rubricId: a.rubricId });
       } else {
         await prisma.achievement.update({
           where: { id: a.id },
@@ -210,6 +190,10 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
         await logAction(reviewerId, "ACHIEVEMENT_REJECTED", "ACHIEVEMENT", a.id);
       }
     }
+
+
+    // Trigger async recalculation of the master house score model
+    recalculateHouseScores().catch(err => console.error("Async house score recalculation failed:", err));
 
     res.json({ message: "Processed approvals successfully" });
   } catch (e) {
@@ -274,11 +258,13 @@ router.post("/house-transfers/:id/review", requireAuth, requireRole(["ADMIN", "T
         console.error("Leaderboard redis update failed on house transfer:", redisErr);
       }
 
-      await logAction(reviewerId, "HOUSE_TRANSFER_APPROVED", "USER", transferReq.userId, {
-        from: transferReq.currentHouse,
-        to: transferReq.targetHouse,
-        notes,
-      });
+      try {
+        await logAction(reviewerId, "HOUSE_TRANSFER_APPROVED", "USER", transferReq.userId, {
+          from: transferReq.currentHouse,
+          to: transferReq.targetHouse,
+          notes,
+        });
+      } catch (e) { console.error("Audit log failed:", e); }
     } else {
       await prisma.houseTransferRequest.update({
         where: { id },
@@ -289,11 +275,13 @@ router.post("/house-transfers/:id/review", requireAuth, requireRole(["ADMIN", "T
         },
       });
 
-      await logAction(reviewerId, "HOUSE_TRANSFER_REJECTED", "USER", transferReq.userId, {
-        from: transferReq.currentHouse,
-        to: transferReq.targetHouse,
-        notes,
-      });
+      try {
+        await logAction(reviewerId, "HOUSE_TRANSFER_REJECTED", "USER", transferReq.userId, {
+          from: transferReq.currentHouse,
+          to: transferReq.targetHouse,
+          notes,
+        });
+      } catch (e) { console.error("Audit log failed:", e); }
     }
 
     res.json({ message: `House transfer request ${action}d successfully` });
@@ -305,15 +293,23 @@ router.post("/house-transfers/:id/review", requireAuth, requireRole(["ADMIN", "T
 
 router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
   try {
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const students = await prisma.user.findMany({
-      where: { role: "STUDENT" },
-      orderBy: { points: 'asc' },
+      where: { 
+        role: "STUDENT",
+        OR: [
+          { lastLoginAt: null },
+          { lastLoginAt: { lt: twoWeeksAgo } }
+        ]
+      },
+      orderBy: { lastLoginAt: 'asc' },
       take: 10,
       select: {
         id: true,
         name: true,
         house: true,
-        points: true
+        points: true,
+        lastLoginAt: true
       }
     });
 
@@ -322,8 +318,8 @@ router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), 
       name: s.name,
       house: s.house,
       points: s.points,
-      reason: "Low points accumulation",
-      lastActive: "Unknown" // We don't track login dates yet
+      reason: "Inactive for > 14 days",
+      lastActive: s.lastLoginAt ? s.lastLoginAt.toISOString().split('T')[0] : "Never"
     }));
 
     res.json({ students: formatted });
@@ -334,6 +330,9 @@ router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), 
 // Scoped export endpoint for students
 router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
+    const actorId = req.user!.userId;
+    const actorRole = req.user!.role;
+
     const students = await prisma.user.findMany({
       where: { role: "STUDENT" },
       select: {
@@ -342,25 +341,46 @@ router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), a
         name: true,
         house: true,
         points: true,
-        githubUsername: true,
-        htbUsername: true,
+        profileLinks: {
+          select: {
+            provider: true,
+            externalHandle: true
+          }
+        }
       },
       orderBy: { points: 'desc' }
     });
+
+    try {
+      await logAction(
+        actorId,
+        "EXPORT_USERS",
+        "SYSTEM",
+        "ALL_STUDENTS",
+        { resultCount: students.length, role: actorRole }
+      );
+    } catch (e) {
+      console.error("Audit log failed:", e);
+    }
 
     const format = req.query.format === 'csv' ? 'csv' : 'json';
 
     if (format === 'csv') {
       const headers = ['id', 'name', 'email', 'house', 'points', 'github', 'htb'];
-      const rows = students.map(s => [
-        s.id,
-        s.name,
-        s.email,
-        s.house,
-        s.points.toString(),
-        s.githubUsername || '',
-        s.htbUsername || ''
-      ].map(v => `"${v}"`).join(','));
+      const rows = students.map(s => {
+        const github = s.profileLinks.find(l => l.provider === "GITHUB")?.externalHandle || '';
+        const htb = s.profileLinks.find(l => l.provider === "HTB")?.externalHandle || '';
+        
+        return [
+          s.id,
+          s.name,
+          s.email,
+          s.house,
+          s.points.toString(),
+          github,
+          htb
+        ].map(v => `"${v}"`).join(',');
+      });
       
       const csv = [headers.join(','), ...rows].join('\n');
       
@@ -389,7 +409,10 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
       return;
     }
 
-    const achievement = await prisma.achievement.findUnique({ where: { id } });
+    const achievement = await prisma.achievement.findUnique({ 
+      where: { id },
+      include: { rubric: true }
+    });
     if (!achievement) {
       res.status(404).json({ error: "Achievement not found" });
       return;
@@ -401,40 +424,236 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
     }
 
     const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-    const points = action === 'approve' ? (Number(pointsAwarded) || 0) : null;
+    
+    // Strict enforcement: if rubric is attached, it overrides any manual points requested.
+    let points = action === 'approve' ? (Number(pointsAwarded) || 0) : null;
+    if (action === 'approve' && achievement.rubric) {
+      points = achievement.rubric.points;
+    }
 
-    await prisma.achievement.update({
-      where: { id },
-      data: {
-        status: newStatus,
-        reviewedBy: reviewerId,
-        pointsAwarded: points,
-      },
-    });
-
-    if (action === 'approve' && points && points > 0) {
-      await prisma.user.update({
-        where: { id: achievement.userId },
-        data: { points: { increment: points } },
-      });
-      await prisma.pointsTransaction.create({
+    if (action === 'approve' && points !== null) {
+      await prisma.$transaction([
+        prisma.achievement.update({
+          where: { id },
+          data: {
+            status: newStatus,
+            reviewedBy: reviewerId,
+            pointsAwarded: points,
+          },
+        }),
+        prisma.user.update({
+          where: { id: achievement.userId },
+          data: { points: { increment: points } },
+        }),
+        prisma.pointsTransaction.create({
+          data: {
+            userId: achievement.userId,
+            delta: points,
+            reason: achievement.rubric ? `Approved: ${achievement.rubric.description}` : `Achievement: ${achievement.title}`,
+            createdBy: reviewerId,
+            referenceType: "ACHIEVEMENT",
+            referenceId: achievement.id,
+          },
+        })
+      ]);
+    } else {
+      await prisma.achievement.update({
+        where: { id },
         data: {
-          userId: achievement.userId,
-          delta: points,
-          reason: `Achievement: ${achievement.title}`,
-          createdBy: reviewerId,
-          referenceType: "ACHIEVEMENT",
-          referenceId: achievement.id,
+          status: newStatus,
+          reviewedBy: reviewerId,
+          pointsAwarded: points,
         },
       });
     }
 
-    await logAction(reviewerId, `REVIEW_ACHIEVEMENT_${newStatus}`, "ACHIEVEMENT", id, { points });
+    try {
+      await logAction(reviewerId, `REVIEW_ACHIEVEMENT_${newStatus}`, "ACHIEVEMENT", id, { points, rubricId: achievement.rubricId });
+    } catch (e) { console.error("Audit log failed:", e); }
+
+    if (newStatus === 'APPROVED') {
+      recalculateHouseScores().catch(err => console.error("Async house score recalculation failed:", err));
+    }
 
     res.json({ message: `Achievement ${newStatus.toLowerCase()}` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to review achievement" });
+  }
+});
+
+/**
+ * GET /api/admin/discipline
+ * Fetch all discipline records
+ */
+router.get("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const records = await prisma.disciplineRecord.findMany({
+      include: {
+        user: { select: { name: true, house: true } },
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ records });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch discipline records" });
+  }
+});
+
+/**
+ * POST /api/admin/discipline
+ * Record a new disciplinary violation against a student
+ */
+router.post("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const DisciplineSchema = z.object({
+      userId: z.string().uuid(),
+      violation: z.string().min(5).max(500).trim(),
+      pointsDeducted: z.number().int().min(1).max(100),
+      evidence: z.string().url().optional().nullable().or(z.literal("")),
+      termName: z.string().max(50).optional().nullable(),
+    });
+
+    const parsed = DisciplineSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid discipline payload" });
+      return;
+    }
+
+    const { userId, violation, pointsDeducted, evidence, termName } = parsed.data;
+    const reviewerId = req.user!.userId;
+
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!targetUser || targetUser.role !== "STUDENT") {
+      res.status(404).json({ error: "Target student not found" });
+      return;
+    }
+
+    const record = await prisma.disciplineRecord.create({
+      data: {
+        userId,
+        violation,
+        pointsDeducted,
+        evidence: evidence || null,
+        termName: termName || null,
+        reportedBy: reviewerId,
+      }
+    });
+
+    // NOTE: Framework dictates discipline reduces the HOUSE score, NOT the individual student's points.
+    // The HousePoints engine will calculate this. We don't deduct from user.points directly.
+
+    await logAction(reviewerId, "DISCIPLINE_RECORDED", "USER", userId, { violation, pointsDeducted });
+
+    recalculateHouseScores(termName || "Current").catch(err => console.error("Async house score recalculation failed:", err));
+
+    res.status(201).json({ message: "Discipline record created", record });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to record discipline" });
+  }
+});
+
+/**
+ * GET /api/admin/rubric
+ * Fetch the entire points rubric, including inactive items
+ */
+router.get("/rubric", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const rubric = await prisma.pointsRubric.findMany({
+      orderBy: [
+        { category: 'asc' },
+        { points: 'desc' }
+      ]
+    });
+    res.json({ rubric });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch rubric" });
+  }
+});
+
+/**
+ * PATCH /api/admin/rubric/:id
+ * Update point values, limits, or toggle active status for a scoring rule
+ */
+router.patch("/rubric/:id", requireAuth, requireRole(["ADMIN"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const RubricPatchSchema = z.object({
+      points: z.number().int().min(0).max(100).optional(),
+      capPerTerm: z.number().int().min(1).max(1000).nullable().optional(),
+      isActive: z.boolean().optional(),
+    });
+
+    const parsed = RubricPatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid rubric update payload" });
+      return;
+    }
+
+    const { points, capPerTerm, isActive } = parsed.data;
+    const reviewerId = req.user!.userId;
+
+    const dataToUpdate: any = {};
+    if (points !== undefined) dataToUpdate.points = points;
+    if (capPerTerm !== undefined) dataToUpdate.capPerTerm = capPerTerm;
+    if (isActive !== undefined) dataToUpdate.isActive = isActive;
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      res.status(400).json({ error: "No valid fields provided for update" });
+      return;
+    }
+
+    const updated = await prisma.pointsRubric.update({
+      where: { id },
+      data: dataToUpdate
+    });
+
+    await logAction(reviewerId, "UPDATED_RUBRIC", "SYSTEM", id, dataToUpdate);
+
+    // If point values changed, we technically should NOT backpropagate them to old achievements. 
+    // Old achievements keep the points they were awarded at the time.
+
+    res.json({ message: "Rubric updated", rubric: updated });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update rubric" });
+  }
+});
+
+
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // limit each IP to 30 requests per windowMs
+  message: { error: "Too many search requests, please try again later." }
+});
+
+/**
+ * GET /api/admin/users/search
+ * Fast search for students by name or email, useful for discipline logging
+ */
+router.get("/users/search", requireAuth, requireRole(["ADMIN", "TEACHER"]), searchLimiter, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const q = req.query.q as string;
+    if (!q || q.length < 2) {
+      res.json({ users: [] });
+      return;
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } }
+        ]
+      },
+      select: { id: true, name: true, house: true, email: true },
+      take: 10
+    });
+
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: "Search failed" });
   }
 });
 

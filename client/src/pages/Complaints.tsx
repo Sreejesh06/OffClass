@@ -14,23 +14,39 @@ import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 
 const computePoW = async (seed: string, difficulty: number): Promise<string> => {
-  let nonce = 0;
-  const targetPrefix = '0'.repeat(difficulty);
-  const encoder = new TextEncoder();
-  while (true) {
-    const input = seed + nonce.toString();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    if (hashHex.startsWith(targetPrefix)) {
-      return nonce.toString();
-    }
-    if (nonce % 500 === 0) {
-      await new Promise(r => setTimeout(r, 0));
-    }
-    nonce++;
-  }
+  return new Promise((resolve, reject) => {
+    const workerCode = `
+      self.onmessage = async (e) => {
+        const { seed, difficulty } = e.data;
+        let nonce = 0;
+        const targetPrefix = '0'.repeat(difficulty);
+        const encoder = new TextEncoder();
+        while (true) {
+          const input = seed + nonce.toString();
+          const data = encoder.encode(input);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          if (hashHex.startsWith(targetPrefix)) {
+            self.postMessage(nonce.toString());
+            break;
+          }
+          nonce++;
+        }
+      };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const worker = new Worker(URL.createObjectURL(blob));
+    worker.onmessage = (e) => {
+      resolve(e.data);
+      worker.terminate();
+    };
+    worker.onerror = (e) => {
+      reject(e);
+      worker.terminate();
+    };
+    worker.postMessage({ seed, difficulty });
+  });
 };
 
 export function Complaints() {

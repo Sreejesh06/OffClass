@@ -36,7 +36,7 @@ const HOUSE_ACCENTS: Record<House, string> = {
 };
 
 export function Redeem() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
   const [status, setStatus] = useState<'idle' | 'confirm' | 'processing' | 'success' | 'error'>('idle');
@@ -60,7 +60,7 @@ export function Redeem() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['perks'] });
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      refreshUser();
       queryClient.invalidateQueries({ queryKey: ['ledger'] });
       setStatus('success');
     },

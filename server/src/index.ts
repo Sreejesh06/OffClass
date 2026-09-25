@@ -28,12 +28,23 @@ app.use((pinoHttp as any)({
     : undefined
 }));
 
-app.use(cors({ origin: true, credentials: true }));
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+import rateLimit from "express-rate-limit";
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: { error: "Too many requests from this IP, please try again after 15 minutes" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Mount routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/complaints", complaintsRoutes);
 app.use("/api/perks", perksRoutes);
@@ -49,6 +60,11 @@ app.get("/health", (_req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  console.error("FATAL: JWT_SECRET environment variable is missing in production.");
+  process.exit(1);
+}
 
 if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {

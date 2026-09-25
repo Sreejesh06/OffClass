@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, Trophy, MapPin, CalendarBlank, GraduationCap, Money, Checks } from '@phosphor-icons/react';
+import React, { useState, useMemo } from 'react';
+import { X, Trophy, Checks } from '@phosphor-icons/react';
 import { api } from '../lib/api';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface AchievementModalProps {
   onClose: () => void;
@@ -10,13 +10,11 @@ interface AchievementModalProps {
   opportunityId?: string;
 }
 
-type AchievementCategory = 'HACKATHON' | 'CTF' | 'COMPETITION' | 'PUBLICATION' | 'OTHER';
-
 export function AchievementModal({ onClose, onSuccess, initialTitle, opportunityId }: AchievementModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     title: initialTitle || '',
-    category: 'HACKATHON' as AchievementCategory,
+    activityKey: '',
     position: '',
     date: '',
     semester: '',
@@ -25,6 +23,20 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: rubricData } = useQuery({
+    queryKey: ['rubric'],
+    queryFn: () => api.get('/users/rubric').then(r => r.data.rubric)
+  });
+
+  const groupedRubric = useMemo(() => {
+    if (!rubricData) return {};
+    return rubricData.reduce((acc: any, r: any) => {
+      if (!acc[r.category]) acc[r.category] = [];
+      acc[r.category].push(r);
+      return acc;
+    }, {});
+  }, [rubricData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +66,7 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
             <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
               <Trophy size={18} weight="fill" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 font-display">Add Achievement</h2>
+            <h2 className="text-xl font-bold text-gray-900 font-display">Add Submission</h2>
           </div>
           <button 
             onClick={onClose}
@@ -64,7 +76,6 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
           </button>
         </div>
 
-        {/* Board Tie-in Note */}
         {opportunityId && (
           <div className="px-6 pt-4">
             <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-sm flex items-center gap-2 border border-blue-100">
@@ -83,34 +94,40 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
           )}
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Event / Achievement Title *</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Event / Project / Activity Title *</label>
             <input 
               required
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="e.g. DEFCON 2026 Qualifiers"
+              placeholder="e.g. DEFCON Quals, Mentored 1st Years"
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Activity Type *</label>
+            <select 
+              required
+              name="activityKey"
+              value={formData.activityKey}
+              onChange={handleChange}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              <option value="" disabled>Select an activity...</option>
+              {Object.entries(groupedRubric).map(([category, rules]: any) => (
+                <optgroup key={category} label={category.replace(/_/g, ' ')}>
+                  {rules.map((r: any) => (
+                    <option key={r.activityKey} value={r.activityKey}>
+                      {r.description} ({r.points} pts {r.isBonus ? '+ Bonus' : ''})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Category *</label>
-              <select 
-                required
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none"
-              >
-                <option value="HACKATHON">Hackathon</option>
-                <option value="CTF">Capture The Flag</option>
-                <option value="COMPETITION">Competition</option>
-                <option value="PUBLICATION">Publication</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Date *</label>
               <input 
@@ -122,17 +139,26 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Semester (Optional)</label>
+              <input 
+                name="semester"
+                value={formData.semester}
+                onChange={handleChange}
+                placeholder="e.g. Fall 2026"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Result / Position *</label>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Result / Position (Optional)</label>
               <input 
-                required
                 name="position"
                 value={formData.position}
                 onChange={handleChange}
-                placeholder="e.g. 1st Place, Top 50"
+                placeholder="e.g. 1st Place, Speaker"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
@@ -146,17 +172,6 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Semester (Optional)</label>
-            <input 
-              name="semester"
-              value={formData.semester}
-              onChange={handleChange}
-              placeholder="e.g. Fall 2026"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
           </div>
 
           <div>
@@ -174,7 +189,7 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
           <div className="pt-2">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !formData.activityKey}
               className="w-full py-3 rounded-xl bg-orange-600 text-white font-bold hover:bg-orange-700 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
             >
               {loading ? 'Submitting...' : (

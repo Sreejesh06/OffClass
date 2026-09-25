@@ -82,6 +82,7 @@ router.post("/", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Req
     const opportunity = await prisma.opportunity.create({
       data: {
         ...payload,
+        deadline: payload.deadline ?? null,
         postedById: userId,
       }
     });
@@ -218,7 +219,7 @@ router.get("/:id/interested", requireAuth, async (req: Request, res: Response): 
       where: whereClause,
       include: {
         user: {
-          select: { id: true, name: true, house: true, avatar: true, email: true }
+          select: { id: true, name: true, house: true, avatar: true, email: userRole !== "STUDENT" }
         }
       },
       orderBy: { createdAt: "desc" }

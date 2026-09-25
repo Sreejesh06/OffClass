@@ -170,10 +170,10 @@ router.post("/certs/verify", requireAuth, async (req: Request, res: Response): P
 
     await prisma.certificate.update({
       where: { fileKey },
-      data: { status: "APPROVED", mimeType: typeInfo.mime },
+      data: { status: "UPLOADED", mimeType: typeInfo.mime },
     });
 
-    res.json({ message: "File verified", mimeType: typeInfo.mime });
+    res.json({ message: "File verified and awaiting review", mimeType: typeInfo.mime });
   } catch {
     res.status(500).json({ error: "Failed to verify file" });
   }

@@ -13,7 +13,7 @@ import { fetchHtb, parseHtb } from "../lib/platforms/htb.js";
 import { fetchGithub, parseGithub } from "../lib/platforms/github.js";
 
 type FetchFn = (handle: string) => Promise<any>;
-type ParseFn = (raw: any) => Record<string, number | string>;
+type ParseFn = (raw: any) => Record<string, unknown>;
 
 const FETCHERS: Partial<Record<string, FetchFn>> = {
   codeforces: fetchCodeforces,

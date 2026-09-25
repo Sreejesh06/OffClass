@@ -91,6 +91,7 @@ router.get("/status/:trackingCode", async (req: Request, res: Response): Promise
 router.get("/admin", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
   try {
     const complaints = await prisma.complaint.findMany({
+      take: 50,
       orderBy: { reportedDay: "desc" }
     });
     res.json({ complaints });
@@ -123,12 +124,24 @@ router.patch("/admin/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async
       ...(parsed.data.adminNotes !== undefined && { adminNotes: parsed.data.adminNotes })
     };
 
-    await prisma.complaint.update({
-      where: { id },
-      data: updateData
-    });
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "No fields to update" });
+      return;
+    }
 
-    res.json({ message: "Complaint updated" });
+    try {
+      await prisma.complaint.update({
+        where: { id },
+        data: updateData
+      });
+      res.json({ message: "Complaint updated" });
+    } catch (err: any) {
+      if (err.code === 'P2025') {
+        res.status(404).json({ error: "Complaint not found" });
+        return;
+      }
+      throw err;
+    }
   } catch {
     res.status(500).json({ error: "Failed to update complaint" });
   }

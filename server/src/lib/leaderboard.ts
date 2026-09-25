@@ -102,7 +102,7 @@ export const getTopUsers = async (
       // If there is a snapshot, use house rank if in house tab, else overall rank.
       // If no snapshot exists (new user), stub previous rank to current rank (trend = 0).
       const prevRank = prevSnapshot 
-        ? (house ? prevSnapshot.rankInHouse : prevSnapshot.rankOverall) 
+        ? (house ? (prevSnapshot.rankInHouse ?? ru.rank) : (prevSnapshot.rankOverall ?? ru.rank)) 
         : ru.rank;
 
       return {

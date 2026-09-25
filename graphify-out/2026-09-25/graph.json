@@ -9042,7 +9042,7 @@
       "file_type": "code",
       "norm_label": "searchlimiter",
       "source_file": "server/src/routes/admin.ts",
-      "source_location": "L625"
+      "source_location": "L606"
     },
     {
       "id": "server_src_routes_auth",
@@ -9529,7 +9529,7 @@
       "source_location": "L60"
     },
     {
-      "id": "server_src_routes_admin_rationale_543",
+      "id": "server_src_routes_admin_rationale_524",
       "label": "NOTE: Framework dictates discipline reduces the HOUSE score, NOT the individual\u2026",
       "_origin": "ast",
       "community": 8,
@@ -9537,7 +9537,7 @@
       "file_type": "rationale",
       "norm_label": "note: framework dictates discipline reduces the house score, not the individual...",
       "source_file": "server/src/routes/admin.ts",
-      "source_location": "L543"
+      "source_location": "L524"
     },
     {
       "id": "client_oxlintrc",
@@ -24230,7 +24230,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "server/src/routes/admin.ts",
-      "source_location": "L625",
+      "source_location": "L606",
       "weight": 1.0
     },
     {
@@ -25317,14 +25317,14 @@
       "source_file": "client/src/main.tsx"
     },
     {
-      "source": "server_src_routes_admin_rationale_543",
+      "source": "server_src_routes_admin_rationale_524",
       "target": "server_src_routes_admin",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "server/src/routes/admin.ts",
-      "source_location": "L543",
+      "source_location": "L524",
       "weight": 1.0
     },
     {

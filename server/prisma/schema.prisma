@@ -35,12 +35,37 @@ model User {
   workExperiences      WorkExperience[]
   postedOpportunities  Opportunity[]         @relation("PostedOpportunities")
   opportunityBookmarks OpportunityBookmark[]
+  disciplineRecords    DisciplineRecord[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
 
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
+  lastLoginAt          DateTime?
+  emailVerified        DateTime?
+
+  @@index([house])
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
 }
 
 model RefreshToken {
@@ -255,6 +280,18 @@ enum AchievementCategory {
   COMPETITION
   PUBLICATION
   OTHER
+  // Framework specific
+  SKILL_BADGES
+  CERTIFICATION
+  CYBER_RANGE
+  SOC_CSIRT
+  RESEARCH
+  INNOVATION
+  INDUSTRY_ENGAGEMENT
+  OPEN_SOURCE_COMMUNITY
+  KNOWLEDGE_SHARING
+  LEADERSHIP_MENTORING
+  LEARNING_PARTICIPATION
 }
 
 enum AchievementStatus {
@@ -278,8 +315,12 @@ model Achievement {
   reviewedBy    String?
   pointsAwarded Int?
   opportunityId String?
+  rubricId      String?
+  rubric        PointsRubric?       @relation(fields: [rubricId], references: [id])
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
+
+  @@index([status, userId])
 }
 
 model WorkExperience {
@@ -324,4 +365,45 @@ model OpportunityBookmark {
 
   @@unique([userId, opportunityId])
   @@index([opportunityId])
+}
+
+model PointsRubric {
+  id            String              @id @default(uuid())
+  category      AchievementCategory
+  activityKey   String              @unique
+  description   String
+  points        Int
+  isBonus       Boolean             @default(false)
+  capPerTerm    Int?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  achievements  Achievement[]
+}
+
+
+
+model DisciplineRecord {
+  id             String              @id @default(uuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  violation      String
+  pointsDeducted Int
+  evidence       String?
+  reportedBy     String
+  termName       String?
+  createdAt      DateTime            @default(now())
+}
+
+model HousePoints {
+  id            String              @id @default(uuid())
+  house         House
+  termName      String
+  category      AchievementCategory
+  earnedPoints  Int                 @default(0)
+  weightedScore Float               @default(0)
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([house, termName, category])
 }

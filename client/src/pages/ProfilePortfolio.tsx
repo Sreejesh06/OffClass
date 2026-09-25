@@ -43,7 +43,7 @@ interface ProfileData {
   rankInHouse: number | null;
   profileLinks: { provider: string; externalHandle: string; verified: boolean }[];
   syncs: { provider: string; parsedStats: Record<string, any>; lastSyncedAt: string; status: string }[];
-  certificates: { id: string; name: string; createdAt: string; mimeType: string }[];
+  certificates: { id: string; name: string; createdAt: string; mimeType: string; status?: string }[];
   recentTransactions: { delta: number; reason: string; createdAt: string }[];
   badges: { id: string; name: string; description: string; imageUrl: string | null }[];
   achievements: { id: string; title: string; category: string; position: string; date: string; prize: string | null }[];
@@ -558,10 +558,7 @@ export function ProfilePortfolio() {
                     )}
                   </div>
 
-                  {profile.certificates.length > 0 && (
-                    <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-                    </div>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -602,12 +599,17 @@ export function ProfilePortfolio() {
                 
                 {profile.certificates.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {profile.certificates.map(cert => (
-                      <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
+                    {profile.certificates.map(cert => {
+                      const isPending = cert.status && cert.status !== "APPROVED";
+                      return (
+                      <div key={cert.id} className={`flex items-center justify-between p-4 rounded-xl border ${isPending ? 'border-dashed border-gray-300 bg-gray-50/50' : 'border-gray-100 bg-gray-50'} hover:bg-gray-100 transition-colors group cursor-pointer`} onClick={() => handleViewCertificate(cert.id)}>
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <Certificate size={24} weight="fill" className="text-amber-500 flex-shrink-0" />
+                          <Certificate size={24} weight={isPending ? "regular" : "fill"} className={`${isPending ? 'text-gray-400' : 'text-amber-500'} flex-shrink-0`} />
                           <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-bold text-gray-800 truncate">{cert.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-bold truncate ${isPending ? 'text-gray-500' : 'text-gray-800'}`}>{cert.name}</span>
+                              {isPending && <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded">Pending</span>}
+                            </div>
                             <span className="text-xs text-gray-500 font-mono">
                               {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
@@ -627,7 +629,7 @@ export function ProfilePortfolio() {
                           </button>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400 italic">No certifications uploaded yet.</p>

@@ -86,6 +86,107 @@ router.get("/hall-of-fame", async (_req: Request, res: Response): Promise<void> 
   }
 });
 
+/**
+ * GET /api/leaderboard/house-score
+ * Returns the weighted category breakdown and net score for each house.
+ */
+router.get("/house-score", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const termName = typeof req.query.term === 'string' ? req.query.term : "Current";
+
+    // 1. Fetch cached weighted points
+    const points = await prisma.housePoints.findMany({
+      where: { termName }
+    });
+
+
+    // To get house-level discipline, we need to map userId -> house
+    // For now, simpler query: aggregate by fetching users
+    const records = await prisma.disciplineRecord.findMany({
+      where: { termName: termName === "Current" ? null : termName },
+      include: { user: { select: { house: true } } }
+    });
+    
+    const penalties = { RED: 0, BLUE: 0, GREEN: 0, PURPLE: 0 };
+    for (const r of records) {
+      penalties[r.user.house] += r.pointsDeducted;
+    }
+
+    const houseStandings = {
+      RED: { categories: {}, grossScore: 0, penalties: penalties.RED, netScore: 0 },
+      BLUE: { categories: {}, grossScore: 0, penalties: penalties.BLUE, netScore: 0 },
+      GREEN: { categories: {}, grossScore: 0, penalties: penalties.GREEN, netScore: 0 },
+      PURPLE: { categories: {}, grossScore: 0, penalties: penalties.PURPLE, netScore: 0 }
+    };
+
+    for (const p of points) {
+      // @ts-ignore
+      houseStandings[p.house].categories[p.category] = {
+        earned: p.earnedPoints,
+        weighted: Math.round(p.weightedScore * 100) / 100
+      };
+      // @ts-ignore
+      houseStandings[p.house].grossScore += Math.round(p.weightedScore * 100) / 100;
+    }
+
+    for (const house of ["RED", "BLUE", "GREEN", "PURPLE"]) {
+      // @ts-ignore
+      houseStandings[house].netScore = houseStandings[house].grossScore - houseStandings[house].penalties;
+    }
+
+    res.json({ termName, standings: houseStandings });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch weighted house scores" });
+  }
+});
+
+/**
+ * GET /api/leaderboard/most-improved
+ * Ranks students by the total points they earned in the last 30 days.
+ */
+router.get("/most-improved", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Sum all positive point transactions per user over the last 30 days
+    const transactions = await prisma.pointsTransaction.groupBy({
+      by: ['userId'],
+      where: {
+        createdAt: { gte: thirtyDaysAgo },
+        delta: { gt: 0 }
+      },
+      _sum: { delta: true },
+      orderBy: { _sum: { delta: 'desc' } },
+      take: 10
+    });
+
+    // Fetch user details for these top improvers
+    const userIds = transactions.map(t => t.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, house: true, avatar: true }
+    });
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const mostImproved = transactions.map((t, idx) => ({
+      rank: idx + 1,
+      id: t.userId,
+      name: userMap.get(t.userId)?.name || "Unknown",
+      house: userMap.get(t.userId)?.house || "UNKNOWN",
+      avatar: userMap.get(t.userId)?.avatar,
+      pointsGained: t._sum.delta || 0
+    }));
+
+    res.json({ leaderboard: mostImproved });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch most improved leaderboard" });
+  }
+});
+
 // Admin ONLY: Panic button to completely rebuild Redis from Postgres
 router.post(
   "/admin/rebuild",
@@ -179,7 +280,7 @@ router.post(
       // 1. Transaction: Bulk insert snapshots, then wipe points
       await prisma.$transaction([
         prisma.leaderboardSnapshot.createMany({ data: snapshots }),
-        prisma.user.updateMany({ data: { points: 0 } })
+        prisma.user.updateMany({ where: { role: "STUDENT" }, data: { points: 0 } })
       ]);
 
       // 2. Wipe active sorted sets in Redis
