@@ -21,6 +21,7 @@ const Redeem = React.lazy(() => import('./pages/Redeem').then(m => ({ default: m
 const Complaints = React.lazy(() => import('./pages/Complaints').then(m => ({ default: m.Complaints })));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const OpportunityBoard = React.lazy(() => import('./pages/OpportunityBoard').then(m => ({ default: m.OpportunityBoard })));
+const Verify = React.lazy(() => import('./pages/Verify').then(m => ({ default: m.Verify })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,8 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/hall-of-fame" element={<HallOfFame />} />
+                <Route path="/verify" element={<Layout><Verify /></Layout>} />
+                <Route path="/verify/:id" element={<Layout><Verify /></Layout>} />
                 <Route path="/complaints" element={<Layout><Complaints /></Layout>} />
                 {/* Public routes — no login needed */}
                 <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />

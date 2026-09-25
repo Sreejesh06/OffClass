@@ -5,6 +5,7 @@ import type { PrismaPromise } from "@prisma/client";
 import { logAction } from "../lib/audit.js";
 import { transferHouseLeaderboard } from "../lib/leaderboard.js";
 import { recalculateHouseScores } from "../lib/scoring.js";
+import { computeAchievementHash, anchorAchievementOnChain } from "../lib/blockchain.js";
 import { z } from "zod";
 
 import rateLimit from "express-rate-limit";
@@ -473,6 +474,19 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
 
     if (newStatus === 'APPROVED') {
       recalculateHouseScores().catch(err => console.error("Async house score recalculation failed:", err));
+      
+      const dataHash = computeAchievementHash(achievement);
+      anchorAchievementOnChain(achievement.id, dataHash)
+        .then(async (txHash) => {
+            if (txHash) {
+                await prisma.achievement.update({
+                    where: { id: achievement.id },
+                    data: { txHash }
+                });
+                console.log(`Anchored achievement ${achievement.id} in tx: ${txHash}`);
+            }
+        })
+        .catch(e => console.error("Blockchain anchor failed", e));
     }
 
     res.json({ message: `Achievement ${newStatus.toLowerCase()}` });

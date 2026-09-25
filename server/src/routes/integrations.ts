@@ -7,6 +7,7 @@ import { fileTypeFromBuffer } from "file-type";
 import type { Provider } from "@prisma/client";
 import { z } from "zod";
 import crypto from "crypto";
+import { computeAchievementHash } from "../lib/blockchain.js";
 
 const router: IRouter = Router();
 
@@ -247,6 +248,41 @@ router.patch("/certs/reorder", requireAuth, async (req: Request, res: Response):
     }
     res.status(500).json({ error: "Failed to reorder certificates" });
   }
+});
+
+router.get("/verify/:achievementId", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const achievement = await prisma.achievement.findUnique({
+            where: { id: req.params.achievementId },
+            include: { user: { select: { name: true, house: true } } }
+        });
+        
+        if (!achievement) {
+            res.status(404).json({ error: "Achievement not found" });
+            return;
+        }
+        
+        if (achievement.status !== "APPROVED") {
+            res.status(400).json({ error: "Achievement is not yet approved" });
+            return;
+        }
+
+        // Recompute what the hash *should* be based on our DB
+        const expectedHash = computeAchievementHash(achievement);
+        
+        res.json({
+            achievement: {
+                title: achievement.title,
+                category: achievement.category,
+                student: achievement.user.name,
+                date: achievement.date
+            },
+            expectedHash,
+            txHash: achievement.txHash
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Verification lookup failed" });
+    }
 });
 
 export default router;
