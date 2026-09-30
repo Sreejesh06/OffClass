@@ -23,7 +23,7 @@ export function OpportunityBoard() {
   
   // For students, their default active tab is their house
   // For teachers, default active tab is "ALL"
-  const [activeTab, setActiveTab] = useState<Tab>(user?.role === "STUDENT" ? user.house : "ALL");
+  const [activeTab, setActiveTab] = useState<Tab>((user?.role === "STUDENT" && user?.house) ? (user.house as any) : "ALL");
   const [typeFilter, setTypeFilter] = useState<OpportunityType | "ALL">("ALL");
   const [proofOpportunity, setProofOpportunity] = useState<{ id: string; title: string } | null>(null);
 
@@ -91,7 +91,7 @@ export function OpportunityBoard() {
     bookmarksData?.map((b: any) => [b.opportunityId, b.lookingForTeammate]) || []
   ), [bookmarksData]);
 
-  const tabs: { id: Tab; label: string }[] = isStudent
+  const tabs: any = isStudent
     ? [
         { id: user.house, label: `My HQ` },
         { id: "ALL", label: "All Houses" },
@@ -156,7 +156,7 @@ export function OpportunityBoard() {
             <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className={cn("p-2 rounded-xl", houseConfig?.bg, houseConfig?.text)}>
-                  <Trophy size={20} weight="fill" />
+                  <Trophy size={20} fill="currentColor" />
                 </div>
                 <h2 className="text-lg font-bold text-gray-900">House Standing</h2>
               </div>
@@ -172,7 +172,7 @@ export function OpportunityBoard() {
             <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className={cn("p-2 rounded-xl", houseConfig?.bg, houseConfig?.text)}>
-                  <Flame size={20} weight="fill" />
+                  <Flame size={20} fill="currentColor" />
                 </div>
                 <h2 className="text-lg font-bold text-gray-900">Top Members</h2>
               </div>

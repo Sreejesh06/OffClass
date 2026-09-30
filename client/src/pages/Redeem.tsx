@@ -184,7 +184,7 @@ export function Redeem() {
       )}
 
       {/* Redemption Dialog */}
-      <Dialog open={isOpen} onOpenChange={(open) => !open && handleReset()}>
+      <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && handleReset()}>
         <DialogContent className="sm:max-w-md">
           {status === 'confirm' && selectedPerk && (
             <>

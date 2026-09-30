@@ -514,7 +514,7 @@ export function ProfilePortfolio() {
                       <div className="py-6 text-center text-gray-400 text-sm">No official achievements found.</div>
                     )
                   ) : (
-                    <TransactionHistory transactions={profile.recentTransactions} filterType="ACTIVITY" />
+                    <TransactionHistory transactions={profile.recentTransactions as any} filterType="ACTIVITY" />
                   )}
                 </div>
               </div>
@@ -576,7 +576,7 @@ export function ProfilePortfolio() {
                    profile.badges.map(b => (
                      <div key={b.id} className="flex flex-col items-center gap-2 text-center w-28">
                        <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
-                         <SealCheck size={40} weight="fill" className="text-amber-500" />
+                         <SealCheck size={40} fill="currentColor" className="text-amber-500" />
                        </div>
                        <div className="font-semibold text-[11px] leading-tight text-gray-800 mt-1">{b.name}</div>
                      </div>
@@ -605,7 +605,7 @@ export function ProfilePortfolio() {
                     {profile.certificates.map(cert => (
                       <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <Certificate size={24} weight="fill" className="text-amber-500 flex-shrink-0" />
+                          <Certificate size={24} fill="currentColor" className="text-amber-500 flex-shrink-0" />
                           <div className="flex flex-col overflow-hidden">
                             <span className="text-sm font-bold text-gray-800 truncate">{cert.name}</span>
                             <span className="text-xs text-gray-500 font-mono">
