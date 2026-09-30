@@ -69,6 +69,6 @@ describe("Redemptions Concurrency", () => {
 
     const txs = await prisma.pointsTransaction.findMany({ where: { userId: user.id } });
     expect(txs.length).toBe(1);
-    expect(txs[0].delta).toBe(-200);
+    expect(txs[0]!.delta).toBe(-200);
   });
 });

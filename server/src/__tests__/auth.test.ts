@@ -41,7 +41,7 @@ describe("Auth - Refresh Token Rotation & Reuse Detection", () => {
     expect(loginRes.status).toBe(200);
     
     // Extract cookies
-    const cookies = loginRes.headers["set-cookie"] as string[];
+    const cookies = loginRes.headers["set-cookie"] as unknown as string[];
     const refreshTokenCookie1 = cookies.find(c => c.startsWith("refresh_token="));
     expect(refreshTokenCookie1).toBeDefined();
 
@@ -52,7 +52,7 @@ describe("Auth - Refresh Token Rotation & Reuse Detection", () => {
       
     expect(refreshRes1.status).toBe(200);
     
-    const cookies2 = refreshRes1.headers["set-cookie"] as string[];
+    const cookies2 = refreshRes1.headers["set-cookie"] as unknown as string[];
     const refreshTokenCookie2 = cookies2.find(c => c.startsWith("refresh_token="));
     expect(refreshTokenCookie2).toBeDefined();
     

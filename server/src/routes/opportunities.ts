@@ -98,7 +98,7 @@ router.post("/", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Req
 // PATCH /api/opportunities/:id - Update opportunity
 router.patch("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const payload = UpdateOpportunitySchema.parse(req.body);
     const userId = req.user!.userId;
     const userRole = req.user!.role;
@@ -131,7 +131,7 @@ router.patch("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req:
 // DELETE /api/opportunities/:id - Soft delete
 router.delete("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.userId;
     const userRole = req.user!.role;
 
@@ -163,7 +163,7 @@ router.delete("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req
 // POST /api/opportunities/:id/bookmark - Toggle bookmark
 router.post("/:id/bookmark", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.userId;
     const payload = ToggleBookmarkSchema.parse(req.body);
 
@@ -204,7 +204,7 @@ router.post("/:id/bookmark", requireAuth, async (req: Request, res: Response): P
 // GET /api/opportunities/:id/interested - Get interested students
 router.get("/:id/interested", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userRole = req.user!.role;
 
     let whereClause: any = { opportunityId: id };

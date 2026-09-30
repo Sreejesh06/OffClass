@@ -380,7 +380,7 @@ router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), a
  */
 router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { action, pointsAwarded } = req.body; // action: 'approve' | 'reject'
     const reviewerId = req.user!.userId;
 

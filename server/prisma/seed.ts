@@ -58,7 +58,7 @@ async function main() {
       name: `Agent ${i}`,
       passwordHash,
       role: 'STUDENT' as const,
-      house: houses[i % 4],
+      house: houses[i % 4]!,
       points: Math.floor(Math.random() * 5000)
     });
   }

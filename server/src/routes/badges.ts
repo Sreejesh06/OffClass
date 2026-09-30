@@ -7,7 +7,7 @@ const router = Router();
 
 // GET /api/badges/user/:id (or 'me')
 router.get("/user/:id", async (req: Request, res: Response): Promise<void> => {
-  const userId = req.params.id;
+  const userId = req.params.id as string;
   try {
     const userBadges = await prisma.userBadge.findMany({
       where: { userId },
