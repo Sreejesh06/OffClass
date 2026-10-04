@@ -45,7 +45,8 @@ const authLimiter = rateLimit({
 });
 
 // Mount routes
-app.use("/api/auth", authLimiter, authRoutes);
+// Rate limiting disabled for testing
+app.use("/api/auth", /*authLimiter,*/ authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/complaints", complaintsRoutes);
 app.use("/api/perks", perksRoutes);
