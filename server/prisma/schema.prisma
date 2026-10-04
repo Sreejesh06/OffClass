@@ -21,6 +21,7 @@ model User {
   avatar           String?
   workDomain       String?
   skills           String[]
+  walletAddress    String?
 
   refreshTokens        RefreshToken[]
   leaderboardSnapshots LeaderboardSnapshot[]
@@ -29,6 +30,8 @@ model User {
   certificates         Certificate[]
   pointsTransactions   PointsTransaction[]
   redemptions          Redemption[]
+  spotlightsAuthored Spotlight[] @relation("SpotlightAuthor")
+  spotlightsTagged   Spotlight[] @relation("SpotlightTags")
   badges               UserBadge[]
   houseTransferRequests HouseTransferRequest[]
   achievements         Achievement[]
@@ -100,6 +103,8 @@ model Certificate {
   fileKey    String   @unique
   mimeType   String
   status     String   @default("PENDING_VERIFICATION")
+  isAnchored       Boolean @default(false)
+  blockchainTxHash String?
   reviewedBy String?
   order      Int      @default(0)
   createdAt  DateTime @default(now())
@@ -180,6 +185,7 @@ model Complaint {
   category     ComplaintCategory
   content      String
   status       ComplaintStatus   @default(SUBMITTED)
+  attachments  String[] @default([])
   reportedDay  String
   adminNotes   String?
 }
@@ -224,6 +230,8 @@ model Redemption {
   perkItem       PerkItem         @relation(fields: [perkItemId], references: [id])
   idempotencyKey String
   createdAt      DateTime         @default(now())
+  status         RedemptionStatus @default(PENDING)
+  fulfilledAt    DateTime?
 
   @@unique([userId, idempotencyKey])
 }
@@ -275,6 +283,9 @@ model Achievement {
   prize         String?
   description   String?
   status        AchievementStatus   @default(PENDING_VERIFICATION)
+  isAnchored    Boolean @default(false)
+  blockchainTxHash String?
+  images        String[] @default([])
   reviewedBy    String?
   pointsAwarded Int?
   opportunityId String?
@@ -300,6 +311,7 @@ model Opportunity {
   title        String
   description  String
   externalUrl  String
+  image        String?              @db.Text
   type         OpportunityType
   targetHouses House[]
   deadline     DateTime?
@@ -324,4 +336,27 @@ model OpportunityBookmark {
 
   @@unique([userId, opportunityId])
   @@index([opportunityId])
+}
+
+
+enum RedemptionStatus {
+  PENDING
+  FULFILLED
+  REJECTED
+}
+
+model Spotlight {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  image       String?  // Base64 image
+  cashPrize   String?
+  department  String?
+  year        String?
+  links       Json?
+  authorId    String
+  author      User     @relation("SpotlightAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+
+  taggedStudents User[] @relation("SpotlightTags")
 }
