@@ -85,7 +85,7 @@ export function ComposeOpportunityCard() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm transition-all focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-400">
+    <div className="bg-card text-card-foreground border border-border rounded-2xl p-5 mb-6 shadow-sm transition-all focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-400">
       <div className="flex gap-4">
         
         {/* Avatar */}
@@ -97,7 +97,7 @@ export function ComposeOpportunityCard() {
               className="w-10 h-10 rounded-full object-cover border border-gray-100"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold border border-border">
               {user?.name?.charAt(0) || "T"}
             </div>
           )}
@@ -118,7 +118,7 @@ export function ComposeOpportunityCard() {
               placeholder="Give it a catchy title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent text-lg font-bold text-gray-900 placeholder:text-gray-400 outline-none"
+              className="w-full bg-transparent text-lg font-bold text-foreground placeholder:text-gray-400 outline-none"
               autoFocus
             />
           )}
@@ -129,7 +129,7 @@ export function ComposeOpportunityCard() {
             onChange={(e) => setDescription(e.target.value)}
             onFocus={() => setIsExpanded(true)}
             className={cn(
-              "w-full bg-transparent text-gray-800 placeholder:text-gray-500 outline-none resize-none overflow-hidden transition-all",
+              "w-full bg-transparent text-foreground/90 placeholder:text-muted-foreground outline-none resize-none overflow-hidden transition-all",
               isExpanded ? "min-h-[80px] text-base" : "min-h-[24px] text-lg leading-tight"
             )}
             rows={isExpanded ? 3 : 1}
@@ -139,14 +139,14 @@ export function ComposeOpportunityCard() {
             <div className="flex flex-col gap-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
               
               {/* Link Input */}
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 border border-gray-200 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-all">
+              <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2 border border-border focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-all">
                 <Link2 size={16} className="text-gray-400 shrink-0" />
                 <input 
                   type="url"
                   placeholder="https://..."
                   value={externalUrl}
                   onChange={(e) => setExternalUrl(e.target.value)}
-                  className="bg-transparent border-none outline-none w-full text-sm text-gray-700"
+                  className="bg-transparent border-none outline-none w-full text-sm text-muted-foreground"
                 />
               </div>
 
@@ -159,7 +159,7 @@ export function ComposeOpportunityCard() {
                   <select 
                     value={type}
                     onChange={(e) => setType(e.target.value as OpportunityType)}
-                    className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-lg px-2 py-1.5 outline-none focus:border-gray-400 cursor-pointer"
+                    className="bg-muted/50 border border-border text-xs font-bold text-muted-foreground rounded-lg px-2 py-1.5 outline-none focus:border-gray-400 cursor-pointer"
                   >
                     {OPPORTUNITY_TYPES.map(t => (
                       <option key={t} value={t}>{t.replace("_", " ")}</option>
@@ -174,7 +174,7 @@ export function ComposeOpportunityCard() {
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-lg px-2 py-1 outline-none focus:border-gray-400 cursor-pointer"
+                    className="bg-muted/50 border border-border text-xs font-bold text-muted-foreground rounded-lg px-2 py-1 outline-none focus:border-gray-400 cursor-pointer"
                   />
                 </div>
               </div>
@@ -193,7 +193,7 @@ export function ComposeOpportunityCard() {
                         "px-3 py-1 rounded-full text-xs font-bold transition-all border",
                         targetHouses.has(house) 
                           ? `bg-${house.toLowerCase()}-50 text-${house.toLowerCase()}-600 border-${house.toLowerCase()}-200` 
-                          : "bg-white text-gray-400 border-gray-200 hover:bg-gray-50"
+                          : "bg-card text-card-foreground text-gray-400 border-border hover:bg-muted/50"
                       )}
                     >
                       {house}
