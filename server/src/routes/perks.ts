@@ -159,7 +159,7 @@ router.put("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: R
   try {
     const data = PerkSchema.parse(req.body);
     const perk = await prisma.perkItem.update({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       data
     });
     res.json({ perk });
@@ -172,7 +172,7 @@ router.put("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: R
 router.delete("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
     await prisma.perkItem.delete({
-      where: { id: req.params.id }
+      where: { id: (req.params.id as string) }
     });
     res.json({ message: "Deleted successfully" });
   } catch (e) {
