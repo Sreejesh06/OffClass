@@ -5,7 +5,7 @@ import type { Response } from "express";
 export const generateAccessToken = (userId: string, role: string) => {
   return jwt.sign(
     { userId, role },
-    process.env.JWT_SECRET || "super_secret_fallback_key",
+    process.env.JWT_SECRET!,
     { expiresIn: "15m" }
   );
 };
@@ -41,6 +41,8 @@ export const setAuthCookies = (
 };
 
 export const clearAuthCookies = (res: Response) => {
-  res.clearCookie("access_token");
-  res.clearCookie("refresh_token");
+  const isProd = process.env.NODE_ENV === "production";
+  const opts = { httpOnly: true, secure: isProd, sameSite: "strict" as const };
+  res.clearCookie("access_token", opts);
+  res.clearCookie("refresh_token", opts);
 };

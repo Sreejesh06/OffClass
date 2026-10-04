@@ -306,9 +306,9 @@
     "semantic_hash": ""
   },
   "server/src/lib/auth.ts": {
-    "mtime": 1790354880.3013914,
-    "seen": 1790354940.377682,
-    "ast_hash": "5f15a8de88d7c8ca4ae17d14840422ca",
+    "mtime": 1790350474.7109137,
+    "seen": 1790353305.2177489,
+    "ast_hash": "189862106bcae22a9b57ea57d1abb1ee",
     "semantic_hash": ""
   },
   "server/src/lib/db.ts": {
@@ -384,15 +384,15 @@
     "semantic_hash": ""
   },
   "server/src/routes/admin.ts": {
-    "mtime": 1790354869.68488,
-    "seen": 1790354940.3776991,
-    "ast_hash": "c1bfcdac9558c86836d850febabd79e4",
+    "mtime": 1790354131.3654637,
+    "seen": 1790354243.990813,
+    "ast_hash": "ef41158fa526451c07fbf70c03ea3421",
     "semantic_hash": ""
   },
   "server/src/routes/auth.ts": {
-    "mtime": 1790354895.0375872,
-    "seen": 1790354940.3777,
-    "ast_hash": "3b7453a728395053d7d4a6411db66420",
+    "mtime": 1790351760.892369,
+    "seen": 1790353305.2177658,
+    "ast_hash": "5619cf5e39dba02e7973724d92fc33ba",
     "semantic_hash": ""
   },
   "server/src/routes/badges.ts": {
@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "server/src/routes/leaderboard.ts": {
-    "mtime": 1790354905.0993474,
-    "seen": 1790354940.3777049,
-    "ast_hash": "cbcc939ad8e0bd11e6f5db5b33b7a813",
+    "mtime": 1790354103.4534717,
+    "seen": 1790354243.990818,
+    "ast_hash": "69008799781c0d6d0d1199295d21852c",
     "semantic_hash": ""
   },
   "server/src/routes/ledger.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "server/src/workers/syncWorker.ts": {
-    "mtime": 1790354914.7016757,
-    "seen": 1790354940.37771,
-    "ast_hash": "1dd6fe6c38aa9ce9ce041e504435383c",
+    "mtime": 1789324301.4030452,
+    "seen": 1790353305.2177742,
+    "ast_hash": "558707af815cc7fc2d2c0ef3090da753",
     "semantic_hash": ""
   },
   "server/vitest.config.ts": {

@@ -84,7 +84,18 @@ If a new idea doesn't clearly help a student get recognized for real skill, help
 
 ---
 
-## 6. Rough build order
+## 6. Key Architectural Decisions (ADR)
+
+**Blockchain Integration (The "Immutable Notary" Pattern)**
+Blockchain is used strictly for third-party verification of high-value credentials, *not* as the core database.
+- **Why we use it:** To allow external recruiters to independently verify a student's achievement without needing to blindly trust the college's server.
+- **How it's built:** A lightweight contract on the Polygon Amoy testnet. The backend fires asynchronous, non-blocking transactions containing only a deterministic SHA-256 hash of the achievement.
+- **Privacy constraint:** No Personally Identifiable Information (PII) is ever placed on-chain. Only cryptographic hashes.
+- **What stays off-chain:** The points ledger, user accounts, redemptions, and anonymous complaints. Postgres remains the absolute source of truth to ensure speed, zero transaction fees, and strict privacy.
+
+---
+
+## 7. Rough build order
 
 1. Student accounts + profiles
 2. Leaderboards (house + overall)
