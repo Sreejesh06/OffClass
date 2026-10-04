@@ -21,6 +21,7 @@ model User {
   avatar           String?
   workDomain       String?
   skills           String[]
+  walletAddress    String?
 
   refreshTokens        RefreshToken[]
   leaderboardSnapshots LeaderboardSnapshot[]
@@ -29,43 +30,20 @@ model User {
   certificates         Certificate[]
   pointsTransactions   PointsTransaction[]
   redemptions          Redemption[]
+  spotlightsAuthored Spotlight[] @relation("SpotlightAuthor")
+  spotlightsTagged   Spotlight[] @relation("SpotlightTags")
   badges               UserBadge[]
   houseTransferRequests HouseTransferRequest[]
   achievements         Achievement[]
   workExperiences      WorkExperience[]
   postedOpportunities  Opportunity[]         @relation("PostedOpportunities")
   opportunityBookmarks OpportunityBookmark[]
-  disciplineRecords    DisciplineRecord[]
 
   totpSecret           String?
   isTotpEnabled        Boolean        @default(false)
 
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
-  lastLoginAt          DateTime?
-  emailVerified        DateTime?
-
-  @@index([house])
-}
-
-model VerificationToken {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@unique([email, token])
-}
-
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@unique([email, token])
 }
 
 model RefreshToken {
@@ -125,6 +103,8 @@ model Certificate {
   fileKey    String   @unique
   mimeType   String
   status     String   @default("PENDING_VERIFICATION")
+  isAnchored       Boolean @default(false)
+  blockchainTxHash String?
   reviewedBy String?
   order      Int      @default(0)
   createdAt  DateTime @default(now())
@@ -205,6 +185,7 @@ model Complaint {
   category     ComplaintCategory
   content      String
   status       ComplaintStatus   @default(SUBMITTED)
+  attachments  String[] @default([])
   reportedDay  String
   adminNotes   String?
 }
@@ -249,6 +230,8 @@ model Redemption {
   perkItem       PerkItem         @relation(fields: [perkItemId], references: [id])
   idempotencyKey String
   createdAt      DateTime         @default(now())
+  status         RedemptionStatus @default(PENDING)
+  fulfilledAt    DateTime?
 
   @@unique([userId, idempotencyKey])
 }
@@ -280,18 +263,6 @@ enum AchievementCategory {
   COMPETITION
   PUBLICATION
   OTHER
-  // Framework specific
-  SKILL_BADGES
-  CERTIFICATION
-  CYBER_RANGE
-  SOC_CSIRT
-  RESEARCH
-  INNOVATION
-  INDUSTRY_ENGAGEMENT
-  OPEN_SOURCE_COMMUNITY
-  KNOWLEDGE_SHARING
-  LEADERSHIP_MENTORING
-  LEARNING_PARTICIPATION
 }
 
 enum AchievementStatus {
@@ -312,16 +283,14 @@ model Achievement {
   prize         String?
   description   String?
   status        AchievementStatus   @default(PENDING_VERIFICATION)
+  isAnchored    Boolean @default(false)
+  blockchainTxHash String?
+  images        String[] @default([])
   reviewedBy    String?
   pointsAwarded Int?
   opportunityId String?
-  rubricId      String?
-  rubric        PointsRubric?       @relation(fields: [rubricId], references: [id])
-  txHash        String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
-
-  @@index([status, userId])
 }
 
 model WorkExperience {
@@ -342,6 +311,7 @@ model Opportunity {
   title        String
   description  String
   externalUrl  String
+  image        String?              @db.Text
   type         OpportunityType
   targetHouses House[]
   deadline     DateTime?
@@ -368,43 +338,25 @@ model OpportunityBookmark {
   @@index([opportunityId])
 }
 
-model PointsRubric {
-  id            String              @id @default(uuid())
-  category      AchievementCategory
-  activityKey   String              @unique
-  description   String
-  points        Int
-  isBonus       Boolean             @default(false)
-  capPerTerm    Int?
-  isActive      Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
 
-  achievements  Achievement[]
+enum RedemptionStatus {
+  PENDING
+  FULFILLED
+  REJECTED
 }
 
+model Spotlight {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  image       String?  // Base64 image
+  cashPrize   String?
+  department  String?
+  year        String?
+  links       Json?
+  authorId    String
+  author      User     @relation("SpotlightAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
 
-
-model DisciplineRecord {
-  id             String              @id @default(uuid())
-  userId         String
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  violation      String
-  pointsDeducted Int
-  evidence       String?
-  reportedBy     String
-  termName       String?
-  createdAt      DateTime            @default(now())
-}
-
-model HousePoints {
-  id            String              @id @default(uuid())
-  house         House
-  termName      String
-  category      AchievementCategory
-  earnedPoints  Int                 @default(0)
-  weightedScore Float               @default(0)
-  updatedAt     DateTime            @updatedAt
-
-  @@unique([house, termName, category])
+  taggedStudents User[] @relation("SpotlightTags")
 }

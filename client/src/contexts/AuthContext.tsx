@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme, type House } from '../components/ThemeProvider';
 import { api } from '../lib/api';
 
@@ -15,70 +16,43 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password?: string) => Promise<{ requireTotp?: boolean; tempToken?: string }>;
-  verifyTotp: (tempToken: string, code: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const { setHouse } = useTheme();
 
-  const fetchMe = async () => {
-    try {
-      const { data } = await api.get('/auth/me');
-      setUser(data);
-      setHouse(data.house);
-    } catch (err) {
-      setUser(null);
-      setHouse('none');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMe();
-  }, [setHouse]);
-
-  const refreshUser = async () => {
-    await fetchMe();
-  };
-
-  const login = async (email: string, password?: string): Promise<{ requireTotp?: boolean; tempToken?: string }> => {
-    setIsLoading(true);
-    try {
-      const { data: loginData } = await api.post('/auth/login', { email, password });
-      
-      if (loginData.requireTotp) {
-        return { requireTotp: true, tempToken: loginData.tempToken };
+  const { data: user, isLoading } = useQuery<User | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get('/auth/me');
+        return data;
+      } catch (err) {
+        return null;
       }
-      
-      // Fetch user profile after successful login
-      const { data } = await api.get('/auth/me');
-      setUser(data);
-      setHouse(data.house);
-      return {};
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    retry: false,
+    staleTime: Infinity, // don't auto-refetch unnecessarily
+  });
 
-  const verifyTotp = async (tempToken: string, code: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      await api.post('/auth/login/totp', { tempToken, code });
-      const { data } = await api.get('/auth/me');
-      setUser(data);
-      setHouse(data.house);
-    } finally {
-      setIsLoading(false);
+  // Sync house theme when user changes
+  useEffect(() => {
+    if (user && user.house) {
+      setHouse(user.house);
+    } else if (user === null && !isLoading) {
+      setHouse('none');
     }
+  }, [user, isLoading, setHouse]);
+
+  const login = async (email: string, password?: string) => {
+    await api.post('/auth/login', { email, password });
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
 
   const logout = async () => {
@@ -87,13 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Logout failed', err);
     } finally {
-      setUser(null);
-      setHouse('none');
+      queryClient.setQueryData(['auth', 'me'], null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, verifyTotp, logout, refreshUser, isLoading }}>
+    <AuthContext.Provider value={{ user: user || null, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

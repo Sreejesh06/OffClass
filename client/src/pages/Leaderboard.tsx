@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CaretLeft, CaretRight, CaretUp, CaretDown, Minus, Trophy, Star, Lightning, ArrowUpRight, TrendUp } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, CaretUp, CaretDown, Minus, Trophy, Star, Lightning, ArrowUpRight, TrendUp, MagnifyingGlass } from "@phosphor-icons/react";
 import { type House } from "../components/ThemeProvider";
 import { api } from "../lib/api";
 
@@ -19,7 +19,8 @@ interface LeaderboardEntry {
 
 const getAvatar = (fallbackSeed: string, avatarSeed?: string | null) => {
   const seed = avatarSeed || fallbackSeed;
-  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f8f9fa`;
+  if (seed && seed.startsWith('data:image')) return seed;
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
 };
 
 const houseGradients = {
@@ -58,7 +59,7 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
       </div>
 
       <div className="relative w-24 h-24 mt-4 shrink-0">
-        <div className={`absolute inset-0 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white`}>
+        <div className={`absolute inset-0 rounded-full border-4 border-white shadow-lg overflow-hidden bg-card text-card-foreground`}>
           <img src={getAvatar(entry.id, entry.avatar)} alt={entry.name} className="w-full h-full object-cover" />
         </div>
         <div className="absolute -bottom-2 -right-2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg border-2 border-white shadow-sm flex items-center gap-1">
@@ -68,7 +69,7 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
       </div>
 
       <div className="text-center mt-6 z-10 w-full">
-        <h3 className="font-display font-bold text-gray-900 text-xl truncate px-2">{entry.name}</h3>
+        <h3 className="font-display font-bold text-foreground text-xl truncate px-2">{entry.name}</h3>
         <span className={`inline-block mt-2 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${color}`}>
           {entry.house}
         </span>
@@ -76,8 +77,8 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
 
       <div className="flex justify-around w-full mt-6 border-t border-black/5 pt-4 z-10">
         <div className="text-center">
-          <div className="text-xs text-gray-500 font-medium">Trend</div>
-          <div className="font-bold text-gray-900 flex items-center justify-center gap-1 mt-1">
+          <div className="text-xs text-muted-foreground font-medium">Trend</div>
+          <div className="font-bold text-foreground flex items-center justify-center gap-1 mt-1">
             {rankDiff > 0 ? (
               <><CaretUp size={14} weight="bold" className="text-green-500" /> +{rankDiff}</>
             ) : rankDiff < 0 ? (
@@ -88,8 +89,8 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
           </div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-gray-500 font-medium">Rel. to Top</div>
-          <div className="font-bold text-gray-900 mt-1">
+          <div className="text-xs text-muted-foreground font-medium">Rel. to Top</div>
+          <div className="font-bold text-foreground mt-1">
             {Math.round((entry.points / Math.max(maxPoints, 1)) * 100)}%
           </div>
         </div>
@@ -97,7 +98,7 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
 
       <Link 
         to={`/profile/${entry.id}`}
-        className="w-full mt-6 py-2.5 bg-white text-gray-900 text-sm font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all text-center z-10 relative overflow-hidden group"
+        className="w-full mt-6 py-2.5 bg-card text-card-foreground text-foreground text-sm font-bold rounded-xl border border-border shadow-sm hover:bg-muted/50 hover:border-border/80 transition-all text-center z-10 relative overflow-hidden group"
       >
         <span className="relative z-10">View Profile</span>
       </Link>
@@ -110,6 +111,7 @@ const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | 
 export function Leaderboard() {
   const [activeTab, setActiveTab] = useState<House | 'overall'>('overall');
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const perPage = 50;
 
   const { data, isLoading } = useQuery({
@@ -121,7 +123,7 @@ export function Leaderboard() {
     },
   });
 
-  const allEntries: LeaderboardEntry[] = data?.leaderboard || [];
+  const allEntries: LeaderboardEntry[] = (data?.leaderboard || []).filter((e: LeaderboardEntry) => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
   
   // Podium logic: top 3
   const top1 = allEntries[0] || null;
@@ -131,7 +133,7 @@ export function Leaderboard() {
   const maxPoints = top1?.points || 1;
 
   // List logic: 4 onwards
-  const remainingEntries = allEntries.slice(3);
+  const remainingEntries = searchQuery ? allEntries : allEntries.slice(3);
   const paginatedData = remainingEntries.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.max(1, Math.ceil(remainingEntries.length / perPage));
 
@@ -149,19 +151,19 @@ export function Leaderboard() {
           <Trophy size={40} weight="fill" />
         </div>
         <div>
-          <h1 className="text-5xl md:text-6xl font-black font-display text-gray-900 tracking-tight mb-4">
+          <h1 className="text-5xl md:text-6xl font-black font-display text-foreground tracking-tight mb-4">
             Leaderboard
           </h1>
-          <p className="text-gray-500 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed">
             Season 2 is underway. Compete for your house, earn points, and climb the ranks.
           </p>
         </div>
         
         {/* House Tabs */}
-        <div className="mt-4 flex flex-wrap justify-center bg-white/80 backdrop-blur-xl p-2 rounded-2xl shadow-sm border border-gray-200/60 w-fit max-w-full overflow-x-auto gap-1">
+        <div className="mt-4 flex flex-wrap justify-center bg-card text-card-foreground/80 backdrop-blur-xl p-2 rounded-2xl shadow-sm border border-border/60 w-fit max-w-full overflow-x-auto gap-1">
           {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => {
             const isSelected = activeTab === tab;
-            let tabColorClass = 'text-gray-500 hover:text-gray-700 hover:bg-gray-100';
+            let tabColorClass = 'text-muted-foreground hover:text-muted-foreground hover:bg-muted';
             
             if (isSelected) {
               if (tab === 'red') tabColorClass = 'bg-red-500 text-white shadow-md border-red-600/20';
@@ -185,9 +187,11 @@ export function Leaderboard() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 mt-6 flex flex-col gap-12">
+
+
         
         {/* Podium */}
-        {!isLoading && allEntries.length > 0 && (
+        {!searchQuery && !isLoading && allEntries.length > 0 && (
           <div className="flex flex-col md:flex-row justify-center items-end gap-6 md:gap-8 pt-8">
             <div className="order-2 md:order-1 w-full md:w-auto flex justify-center"><PodiumCard entry={top2} position={2} maxPoints={maxPoints} /></div>
             <div className="order-1 md:order-2 w-full md:w-auto flex justify-center"><PodiumCard entry={top1} position={1} maxPoints={maxPoints} /></div>
@@ -196,14 +200,14 @@ export function Leaderboard() {
         )}
 
         {/* Highlights Strip */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 flex flex-wrap md:flex-nowrap items-center justify-between gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-100 mt-4">
+        <div className="bg-card text-card-foreground rounded-[2rem] shadow-sm border border-gray-100 p-6 flex flex-wrap md:flex-nowrap items-center justify-between gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-100 mt-4">
           <div className="flex-1 flex items-center gap-4 px-4 py-2 md:py-0">
             <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
               <TrendUp size={24} weight="duotone" />
             </div>
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Ranked</p>
-              <p className="text-2xl font-black text-gray-900 font-display">{allEntries.length}</p>
+              <p className="text-2xl font-black text-foreground font-display">{allEntries.length}</p>
             </div>
           </div>
           <div className="flex-1 flex items-center gap-4 px-4 py-2 md:py-0">
@@ -212,7 +216,7 @@ export function Leaderboard() {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Points</p>
-              <p className="text-2xl font-black text-gray-900 font-display">
+              <p className="text-2xl font-black text-foreground font-display">
                 {allEntries.reduce((sum, e) => sum + e.points, 0).toLocaleString()}
               </p>
             </div>
@@ -223,11 +227,24 @@ export function Leaderboard() {
             </div>
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Top House</p>
-              <p className="text-2xl font-black text-gray-900 font-display">
+              <p className="text-2xl font-black text-foreground font-display">
                 {activeTab === 'overall' && allEntries.length > 0 ? allEntries[0].house : (activeTab !== 'overall' ? activeTab.toUpperCase() : 'N/A')}
               </p>
             </div>
           </div>
+        </div>
+
+        
+        {/* Search */}
+        <div className="w-full max-w-lg mx-auto relative mb-6">
+          <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+          <input 
+            type="text"
+            placeholder="Search students by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-card text-foreground border-2 border-border focus:border-orange-500 rounded-xl py-3 pl-12 pr-4 font-bold outline-none transition-colors shadow-sm"
+          />
         </div>
 
         {/* List Section */}
@@ -254,23 +271,23 @@ export function Leaderboard() {
               return (
                 <div 
                   key={entry.id} 
-                  className="group flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-100 rounded-2xl p-4 md:p-3 shadow-sm hover:shadow-md hover:border-gray-200 transition-all cursor-pointer relative overflow-hidden"
+                  className="group flex flex-col md:flex-row items-start md:items-center bg-card text-card-foreground border border-gray-100 rounded-2xl p-4 md:p-3 shadow-sm hover:shadow-md hover:border-border transition-all cursor-pointer relative overflow-hidden"
                 >
                   <div className="w-full md:w-16 text-left md:text-center mb-3 md:mb-0">
-                    <span className="text-sm md:text-xl font-black text-gray-300 font-display group-hover:text-gray-900 transition-colors">
+                    <span className="text-sm md:text-xl font-black text-gray-300 font-display group-hover:text-foreground transition-colors">
                       {entry.rank}
                     </span>
                   </div>
                   
                   {/* Angled separator (desktop only) */}
-                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
                   
                   <div className="flex-1 flex items-center gap-4 w-full">
-                    <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-white shadow-sm overflow-hidden shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-muted/50 border-2 border-white shadow-sm overflow-hidden shrink-0">
                       <img src={getAvatar(entry.id, entry.avatar)} alt={entry.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 flex-1">
-                      <Link to={`/profile/${entry.id}`} className="font-bold text-gray-900 hover:text-orange-600 transition-colors text-base">
+                      <Link to={`/profile/${entry.id}`} className="font-bold text-foreground hover:text-orange-600 transition-colors text-base">
                         {entry.name}
                       </Link>
                       <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${color} w-fit`}>
@@ -279,7 +296,7 @@ export function Leaderboard() {
                     </div>
                   </div>
 
-                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
 
                   <div className="w-24 flex justify-center hidden md:flex">
                     <div className="flex flex-col items-center">
@@ -295,7 +312,7 @@ export function Leaderboard() {
                     </div>
                   </div>
 
-                  <div className="hidden md:block w-px h-10 bg-gray-100 transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
 
                   <div className="w-32 flex justify-start md:justify-end items-center mt-3 md:mt-0 pr-4">
                     <div className="flex items-center gap-1.5 bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-inner">
@@ -307,7 +324,7 @@ export function Leaderboard() {
                   <div className="w-16 flex justify-end absolute right-4 top-4 md:static">
                     <Link 
                       to={`/profile/${entry.id}`}
-                      className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-400 flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all"
+                      className="w-8 h-8 rounded-full bg-muted/50 border border-border text-gray-400 flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all"
                     >
                       <ArrowUpRight size={16} weight="bold" />
                     </Link>
@@ -320,23 +337,23 @@ export function Leaderboard() {
 
         {/* Pagination Controls */}
         {!isLoading && totalPages > 1 && (
-          <div className="flex justify-between items-center bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+          <div className="flex justify-between items-center bg-card text-card-foreground border border-border rounded-2xl p-4 shadow-sm">
             <button 
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <CaretLeft weight="bold" /> Prev
             </button>
             
-            <span className="font-mono text-gray-500 text-sm font-medium">
+            <span className="font-mono text-muted-foreground text-sm font-medium">
               Page {page} of {totalPages}
             </span>
 
             <button 
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Next <CaretRight weight="bold" />
             </button>

@@ -16,6 +16,7 @@ export const CreateOpportunitySchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(1000),
   externalUrl: z.string().url("Must be a valid URL"),
+  image: z.string().optional().nullable(),
   type: OpportunityTypeEnum,
   targetHouses: z.array(HouseEnum).min(1, "Pick at least one house"),
   deadline: z.string().datetime().optional().nullable(),

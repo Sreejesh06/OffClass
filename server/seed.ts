@@ -13,7 +13,7 @@ async function main() {
         email: `student${i}@test.com`,
         passwordHash: 'dummy',
         name: `Student ${i}`,
-        house: house,
+        house: house!,
         role: 'STUDENT',
         points: points,
       }

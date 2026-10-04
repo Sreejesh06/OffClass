@@ -22,6 +22,7 @@ const SubmitSchema = z.object({
   nonce: z.string(),
   category: z.enum(["GRADING", "HARASSMENT", "PLATFORM_BUG", "OTHER"]),
   content: z.string().min(10).max(2000),
+  attachments: z.array(z.string()).optional(),
 });
 
 router.post("/submit", async (req: Request, res: Response): Promise<void> => {
@@ -32,7 +33,7 @@ router.post("/submit", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { seed, nonce, category, content } = parsed.data;
+    const { seed, nonce, category, content, attachments } = parsed.data;
 
     // 1. Identity-free rate limit check (Proof of Work)
     const isValid = await verifyChallenge(seed, nonce);

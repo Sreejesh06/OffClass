@@ -13,7 +13,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-screen overflow-hidden">
       <NotchNavbar />
       
-      <main id="main-content" className="flex-1 mt-16 overflow-y-auto w-full bg-[var(--color-crypto-bg)] relative">
+      <main id="main-content" className="flex-1 mt-16 overflow-y-auto w-full bg-background transition-colors relative">
         <div className="min-h-full pb-12">
           {children}
         </div>

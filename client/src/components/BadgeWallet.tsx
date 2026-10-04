@@ -48,8 +48,8 @@ export function BadgeWallet() {
               
               {/* Info */}
               <div>
-                <div className="font-semibold text-sm leading-tight text-gray-800">{badge.name}</div>
-                <div className="text-[10px] text-gray-500 mt-1 flex flex-col gap-0.5">
+                <div className="font-semibold text-sm leading-tight text-foreground/90">{badge.name}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 flex flex-col gap-0.5">
                   <span>{badge.description}</span>
                   <span className="font-mono opacity-70">{new Date(awardedAt).toLocaleDateString()}</span>
                 </div>

@@ -32,9 +32,9 @@ export function TransactionHistory({ transactions, filterType = 'ALL' }: Transac
         {filtered.length === 0 ? (
           <div className="py-6 text-center text-gray-400 text-sm">No recent {filterType === 'ACHIEVEMENTS' ? 'achievements' : 'activity'} found.</div>
         ) : filtered.map(tx => (
-          <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-            <span className="text-sm font-medium text-gray-800">{tx.reason}</span>
-            <span className="text-xs font-mono text-gray-500">
+          <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border border-gray-100 bg-muted/50/50 hover:bg-muted/50 transition-colors">
+            <span className="text-sm font-medium text-foreground/90">{tx.reason}</span>
+            <span className="text-xs font-mono text-muted-foreground">
               {new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>

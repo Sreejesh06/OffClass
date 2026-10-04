@@ -27,7 +27,7 @@ const RedeemSchema = z.object({
 // 2. Redeem a perk
 router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const itemId = req.params.id!;
+    const itemId = req.params.id as string;
     const { idempotencyKey } = RedeemSchema.parse(req.body);
     const userId = req.user!.userId;
 

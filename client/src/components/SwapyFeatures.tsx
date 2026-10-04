@@ -35,9 +35,9 @@ export function TeamCard() {
         Red Team Operations
       </div>
       <div>
-        <p className="font-bold text-gray-800 font-sans">Machines Pwned</p>
+        <p className="font-bold text-foreground/90 font-sans">Machines Pwned</p>
         <div className="flex items-end gap-2">
-          <span className="text-6xl font-extrabold text-gray-900 font-heading">54</span>
+          <span className="text-6xl font-extrabold text-foreground font-heading">54</span>
           <span className="text-green-600 font-bold mb-1">+40%</span>
         </div>
       </div>
@@ -67,7 +67,7 @@ export function LogoCard() {
       <div className="w-16 h-16 mb-4 flex items-center justify-center bg-black rounded-2xl shadow-[4px_4px_0_0_rgba(0,0,0,1)] text-white">
         <Shield size={32} />
       </div>
-      <h2 className="2xl:text-3xl text-xl font-extrabold text-gray-900 font-heading">Security First</h2>
+      <h2 className="2xl:text-3xl text-xl font-extrabold text-foreground font-heading">Security First</h2>
     </div>
   );
 }
@@ -95,9 +95,9 @@ export function UserTrustCard() {
 
 export function FontCard() {
   return (
-    <div className="bg-white rounded-xl h-full p-6 col-span-1 shadow-[4px_4px_0_0_rgba(0,0,0,1)] border-2 border-black cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform">
-      <h2 className="text-2xl font-extrabold mb-1 text-gray-900 font-heading">Houses</h2>
-      <p className="mb-6 text-gray-500 font-mono text-sm font-bold">Choose your path</p>
+    <div className="bg-card text-card-foreground rounded-xl h-full p-6 col-span-1 shadow-[4px_4px_0_0_rgba(0,0,0,1)] border-2 border-black cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform">
+      <h2 className="text-2xl font-extrabold mb-1 text-foreground font-heading">Houses</h2>
+      <p className="mb-6 text-muted-foreground font-mono text-sm font-bold">Choose your path</p>
 
       <div className="flex gap-3 mt-4">
         <div className="w-10 h-10 bg-red-500 rounded-md shadow-sm border-2 border-black hover:rotate-12 transition-transform"></div>
@@ -184,15 +184,15 @@ export function SwapyFeatures() {
   }, []);
 
   return (
-    <section className="py-24 bg-white px-6 overflow-hidden relative">
+    <section className="py-24 bg-card text-card-foreground px-6 overflow-hidden relative">
       <div className="max-w-5xl mx-auto text-center mb-12 relative z-10">
         <div className="inline-block px-3 py-1 bg-crypto-yellow text-black rounded-full text-sm font-mono font-bold mb-6 border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transform -rotate-2">
           #Interactive
         </div>
-        <h2 className="text-4xl md:text-5xl font-heading font-extrabold text-gray-900 mb-6">
+        <h2 className="text-4xl md:text-5xl font-heading font-extrabold text-foreground mb-6">
           Drag & Drop Dashboard
         </h2>
-        <p className="text-gray-700 font-medium max-w-2xl mx-auto font-sans text-lg">
+        <p className="text-muted-foreground font-medium max-w-2xl mx-auto font-sans text-lg">
           Try dragging the cards below.
         </p>
       </div>

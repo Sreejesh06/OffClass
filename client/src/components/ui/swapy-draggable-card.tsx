@@ -60,7 +60,7 @@ export const DragHandle = ({className}:{className?:string}) => {
   return (
     <div
       data-swapy-handle
-      className={cn("absolute top-2 left-2 cursor-grab text-gray-500 rounded-md active:cursor-grabbing dark:border-gray-700 dark:bg-gray-800",className)}
+      className={cn("absolute top-2 left-2 cursor-grab text-muted-foreground rounded-md active:cursor-grabbing dark:border-gray-700 dark:bg-gray-800",className)}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

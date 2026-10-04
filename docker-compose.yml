@@ -117,5 +117,5 @@ volumes:
 networks:
   # Internal network isolates the databases completely from the host/internet
   internal:
-    internal: true
+    # internal: true
   proxy:

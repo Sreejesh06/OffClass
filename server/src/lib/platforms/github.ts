@@ -30,8 +30,8 @@ export const fetchGithub = async (handle: string): Promise<GitHubRaw> => {
       const date = match[1];
       const text = match[3];
       let count = 0;
-      if (!text.startsWith('No ')) {
-        count = parseInt(text.split(' ')[0]!, 10);
+      if (!text || !text.startsWith('No ')) {
+        if (text) count = parseInt(text.split(' ')[0]!, 10);
       }
       if (count > 0 && date) {
         contributions.push({ date, count });

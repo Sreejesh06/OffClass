@@ -80,12 +80,12 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 relative">
+      <div className="bg-card text-card-foreground rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 relative">
         
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors z-20"
+          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-foreground hover:bg-muted rounded-full transition-colors z-20"
         >
           <X size={18} weight="bold" />
         </button>
@@ -93,21 +93,21 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
         {submitted ? (
           <div className="flex flex-col items-center justify-center text-center p-12">
             <CheckCircle size={56} weight="fill" className="text-emerald-500 mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 font-display mb-2">Ticket Submitted</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-xl font-bold text-foreground font-display mb-2">Ticket Submitted</h2>
+            <p className="text-sm text-muted-foreground">
               Your house transfer ticket has been routed to department teachers for verification.
             </p>
           </div>
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center gap-3 bg-white/90 backdrop-blur-md sticky top-0 z-10">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center gap-3 bg-card text-card-foreground/90 backdrop-blur-md sticky top-0 z-10">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} weight="fill" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 font-display">House Transfer</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Submit a ticket for faculty review.</p>
+                <h2 className="text-lg font-bold text-foreground font-display">House Transfer</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Submit a ticket for faculty review.</p>
               </div>
             </div>
 
@@ -115,10 +115,10 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex flex-col gap-6">
               
               {/* Policy Banner */}
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-200/60 text-xs text-gray-600 leading-relaxed">
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/50 border border-border/60 text-xs text-muted-foreground leading-relaxed">
                 <Info size={16} className="text-gray-400 shrink-0 mt-0.5" weight="fill" />
                 <p>
-                  <strong className="text-gray-900">Policy:</strong> Transfers require faculty approval. Your accumulated points will move to the new leaderboard upon acceptance.
+                  <strong className="text-foreground">Policy:</strong> Transfers require faculty approval. Your accumulated points will move to the new leaderboard upon acceptance.
                 </p>
               </div>
 
@@ -140,17 +140,17 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
                         className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
                           isSelected 
                             ? `${info.bg} ${info.border.split(' ')[0]} ring-1 ring-${info.color.split('-')[1]}-500/50` 
-                            : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            : 'bg-card text-card-foreground border-border hover:border-border/80 hover:bg-muted/50'
                         }`}
                       >
                         <div>
-                          <div className={`font-bold text-sm ${isSelected ? info.color : 'text-gray-700'}`}>
+                          <div className={`font-bold text-sm ${isSelected ? info.color : 'text-muted-foreground'}`}>
                             {info.label}
                           </div>
-                          <div className="text-xs text-gray-500 mt-0.5">{info.desc}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{info.desc}</div>
                         </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? `border-${info.color.split('-')[1]}-500 bg-${info.color.split('-')[1]}-500 text-white` : 'border-gray-300'}`}>
-                          {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? `border-${info.color.split('-')[1]}-500 bg-${info.color.split('-')[1]}-500 text-white` : 'border-border/80'}`}>
+                          {isSelected && <div className="w-1.5 h-1.5 bg-card text-card-foreground rounded-full" />}
                         </div>
                       </button>
                     );
@@ -174,7 +174,7 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
                   maxLength={500}
                   rows={3}
                   placeholder="e.g. Project alignment, focus on red-teaming..."
-                  className="w-full p-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-sm"
+                  className="w-full p-3 rounded-xl bg-card text-card-foreground border border-border text-sm text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-sm"
                 />
               </div>
 
@@ -191,7 +191,7 @@ export function HouseTransferModal({ currentHouse, onClose, onSuccess }: HouseTr
                   type="button"
                   onClick={onClose}
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-bold text-muted-foreground bg-card text-card-foreground border border-border rounded-xl hover:bg-muted/50 hover:text-foreground transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>

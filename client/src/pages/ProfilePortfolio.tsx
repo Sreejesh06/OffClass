@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  GithubLogo, Code, Trophy, Certificate, Sword, Shield as ShieldIcon,
+  Certificate, 
   Star, CalendarBlank, PencilSimple, Check, X, Copy,
   ArrowSquareOut, WarningCircle, Wrench, CaretDown, CaretUp as CaretUpIcon,
   ArrowsLeftRight, HourglassMedium, Trash, Plus, SealCheck,
@@ -29,6 +29,7 @@ interface ProfileData {
   avatar: string | null;
   bio: string | null;
   workDomain: string | null;
+  walletAddress: string | null;
   skills: string[];
   workExperiences: {
     id: string;
@@ -43,10 +44,10 @@ interface ProfileData {
   rankInHouse: number | null;
   profileLinks: { provider: string; externalHandle: string; verified: boolean }[];
   syncs: { provider: string; parsedStats: Record<string, any>; lastSyncedAt: string; status: string }[];
-  certificates: { id: string; name: string; createdAt: string; mimeType: string; status?: string }[];
+  certificates: { id: string; name: string; createdAt: string; mimeType: string; blockchainTxHash: string | null; isAnchored: boolean }[];
   recentTransactions: { delta: number; reason: string; createdAt: string }[];
   badges: { id: string; name: string; description: string; imageUrl: string | null }[];
-  achievements: { id: string; title: string; category: string; position: string; date: string; prize: string | null }[];
+  achievements: { id: string; title: string; category: string; position: string; date: string; prize: string | null; blockchainTxHash: string | null; isAnchored: boolean; images?: string[] }[];
   heatmap: { date: string; points: number; summary?: string; details?: Record<string, number> }[];
   activePlatforms: string[];
 }
@@ -135,11 +136,11 @@ function ActivityHeatmap({ heatmap = [], houseColor, activePlatforms = [] }: { h
   });
 
   return (
-    <div className="w-full bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+    <div className="w-full bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 font-display">Activity Matrix</h3>
-          <p className="text-sm text-gray-500 font-sans mt-1">Platform engagement over the last year</p>
+          <h3 className="text-lg font-bold text-foreground font-display">Activity Matrix</h3>
+          <p className="text-sm text-muted-foreground font-sans mt-1">Platform engagement over the last year</p>
         </div>
         
         {availablePlatforms.length > 1 && (
@@ -204,7 +205,7 @@ function ActivityHeatmap({ heatmap = [], houseColor, activePlatforms = [] }: { h
                         setTooltip({ x: rect.left + rect.width / 2, y: rect.top, content: tooltipContent });
                       }}
                       onMouseLeave={() => setTooltip(null)}
-                      className={`w-3 h-3 rounded-sm transition-opacity hover:ring-2 ring-gray-300 ${cell.points === 0 ? 'bg-gray-100/50' : ''}`}
+                      className={`w-3 h-3 rounded-sm transition-opacity hover:ring-2 ring-gray-300 ${cell.points === 0 ? 'bg-muted/50' : ''}`}
                       style={cell.points > 0 ? { backgroundColor: houseColor, opacity: intensity } : {}}
                     />
                   );
@@ -217,7 +218,7 @@ function ActivityHeatmap({ heatmap = [], houseColor, activePlatforms = [] }: { h
       <div className="flex items-center gap-1 mt-2 justify-end text-[10px] text-gray-400 font-mono">
         <span>Less</span>
         {[0, 0.3, 0.55, 0.8, 1].map((op, i) => (
-          <div key={i} className={`w-3 h-3 rounded-sm ${op === 0 ? 'bg-gray-100/50' : ''}`} style={op > 0 ? { backgroundColor: houseColor, opacity: op } : {}} />
+          <div key={i} className={`w-3 h-3 rounded-sm ${op === 0 ? 'bg-muted/50' : ''}`} style={op > 0 ? { backgroundColor: houseColor, opacity: op } : {}} />
         ))}
         <span>More</span>
       </div>
@@ -292,7 +293,7 @@ export function ProfilePortfolio() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-gray-500 font-mono">Loading dossier...</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground font-mono">Loading dossier...</div>;
   if (error || !data) return <div className="p-8 text-center text-rose-500 font-mono">Profile not found.</div>;
 
   const profile: ProfileData = data;
@@ -310,22 +311,22 @@ export function ProfilePortfolio() {
           <div className="lg:col-span-4 flex flex-col gap-6">
             
             {/* Profile Avatar Card */}
-            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col items-center text-center relative overflow-hidden group">
+            <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col items-center text-center relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-32 opacity-20" style={{ background: `linear-gradient(135deg, ${hColor} 0%, transparent 100%)` }}></div>
               
               <div className="absolute top-6 right-6">
                 <button
                   onClick={handleShare}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-gray-200 text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-card text-card-foreground rounded-full border border-border text-muted-foreground text-xs font-semibold hover:bg-muted/50 transition-colors shadow-sm"
                 >
                   {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   {copied ? 'Copied' : 'Share'}
                 </button>
               </div>
 
-              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-white shadow-md bg-white overflow-hidden mb-5 mt-4 flex items-center justify-center group-hover:shadow-lg transition-shadow">
+              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-white shadow-md bg-card text-card-foreground overflow-hidden mb-5 mt-4 flex items-center justify-center group-hover:shadow-lg transition-shadow">
                 <img 
-                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(profile.avatar || profile.name)}&backgroundColor=e5e7eb`} 
+                  src={profile.avatar?.startsWith("data:image") ? profile.avatar : `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(profile.avatar || profile.name)}&backgroundColor=transparent`} 
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
@@ -339,7 +340,7 @@ export function ProfilePortfolio() {
                 )}
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 font-display mb-1">{profile.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground font-display mb-1">{profile.name}</h1>
               <div className="flex items-center gap-2 mb-6">
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hConf.bg, color: hColor, border: `1px solid ${hColor}40` }}>
                   {hConf.label}
@@ -350,7 +351,7 @@ export function ProfilePortfolio() {
                       <HourglassMedium size={10} weight="bold" /> Pending
                     </span>
                   ) : (
-                    <button onClick={() => setShowTransferModal(true)} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 flex items-center gap-1 transition-colors">
+                    <button onClick={() => setShowTransferModal(true)} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-muted/50 text-muted-foreground border border-border hover:bg-muted flex items-center gap-1 transition-colors">
                       <ArrowsLeftRight size={10} /> Transfer
                     </button>
                   )
@@ -358,34 +359,34 @@ export function ProfilePortfolio() {
               </div>
               
               <div className="w-full flex mt-2">
-                <div className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center w-full">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Points</p>
+                <div className="bg-muted/50 rounded-2xl p-4 flex flex-col items-center justify-center w-full">
+                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Total Points</p>
                   <p className="text-3xl font-black font-heading" style={{ color: hColor }}>{profile.points.toLocaleString()}</p>
                 </div>
               </div>
             </div>
 
             {/* Contact & Details */}
-            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+            <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-900 font-display">Identity & Focus</h3>
+                <h3 className="text-lg font-bold text-foreground font-display">Identity & Focus</h3>
                 {isOwner && (
-                  <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                  <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
                     <PencilSimple size={18} />
                   </button>
                 )}
               </div>
               <div className="space-y-4">
-                <div className="flex items-center gap-4 text-gray-600">
-                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-gray-400">
                     <CalendarBlank size={18} />
                   </div>
                   <span className="font-medium text-sm">Joined {new Date(profile.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                 </div>
 
                 {profile.workDomain && (
-                  <div className="flex items-center gap-4 text-gray-600">
-                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-gray-400">
                       <Briefcase size={18} />
                     </div>
                     <span className="font-medium text-sm">{profile.workDomain}</span>
@@ -396,7 +397,7 @@ export function ProfilePortfolio() {
               {/* Bio directly in Identity block to save space */}
               {(profile.bio || isOwner) && (
                 <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className={`text-sm leading-relaxed ${profile.bio ? 'text-gray-600' : 'text-gray-400 italic'}`}>
+                  <p className={`text-sm leading-relaxed ${profile.bio ? 'text-muted-foreground' : 'text-gray-400 italic'}`}>
                     {profile.bio || (isOwner ? 'No bio yet. Click the pencil icon above to add a summary for your public profile.' : 'No bio provided.')}
                   </p>
                 </div>
@@ -405,11 +406,11 @@ export function ProfilePortfolio() {
 
             {/* Skills Card (Dynamic) */}
             {(profile.skills.length > 0 || isOwner) && (
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 font-display">Technical Skills</h3>
+                  <h3 className="text-lg font-bold text-foreground font-display">Technical Skills</h3>
                   {isOwner && (
-                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
                       <PencilSimple size={18} />
                     </button>
                   )}
@@ -417,7 +418,7 @@ export function ProfilePortfolio() {
                 {profile.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {profile.skills.map((skill, index) => (
-                      <span key={index} className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg">
+                      <span key={index} className="px-3 py-1.5 bg-muted/50 border border-border text-muted-foreground text-sm font-medium rounded-lg">
                         {skill}
                       </span>
                     ))}
@@ -435,11 +436,11 @@ export function ProfilePortfolio() {
             
             {/* Work Experience (Dynamic) */}
             {(profile.workExperiences.length > 0 || isOwner) && (
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 font-display">Work Experience</h3>
+                  <h3 className="text-lg font-bold text-foreground font-display">Work Experience</h3>
                   {isOwner && (
-                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
                       <PencilSimple size={18} />
                     </button>
                   )}
@@ -450,14 +451,14 @@ export function ProfilePortfolio() {
                       <div key={exp.id} className="relative pl-6 before:absolute before:left-0 before:top-2 before:bottom-[-24px] last:before:hidden before:w-px before:bg-gray-200">
                         <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-gray-300 ring-4 ring-white" style={{ backgroundColor: hColor }}></div>
                         <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-base font-bold text-gray-900">{exp.role}</h4>
-                          <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 shrink-0 ml-2">
+                          <h4 className="text-base font-bold text-foreground">{exp.role}</h4>
+                          <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border shrink-0 ml-2">
                             {exp.duration}
                           </span>
                         </div>
-                        <p className="text-sm font-medium text-gray-600 mb-2">{exp.company}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">{exp.company}</p>
                         {exp.description && (
-                          <p className="text-sm text-gray-500 leading-relaxed">{exp.description}</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{exp.description}</p>
                         )}
                       </div>
                     ))
@@ -472,13 +473,13 @@ export function ProfilePortfolio() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Point History / Public Activity */}
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
                       <Medal size={18} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 font-display">Activity & Achievements</h3>
+                    <h3 className="text-lg font-bold text-foreground font-display">Activity & Achievements</h3>
                   </div>
                   {isOwner && activityTab === 'ACHIEVEMENTS' && (
                     <button 
@@ -490,23 +491,37 @@ export function ProfilePortfolio() {
                   )}
                 </div>
 
-                <div className="flex bg-gray-100/50 p-1 rounded-xl mb-4 flex-shrink-0">
-                  <button onClick={() => setActivityTab('ACHIEVEMENTS')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACHIEVEMENTS' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>Achievements</button>
-                  <button onClick={() => setActivityTab('ACTIVITY')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACTIVITY' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>Activity Log</button>
+                <div className="flex bg-muted/50 p-1 rounded-xl mb-4 flex-shrink-0">
+                  <button onClick={() => setActivityTab('ACHIEVEMENTS')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACHIEVEMENTS' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-muted-foreground'}`}>Achievements</button>
+                  <button onClick={() => setActivityTab('ACTIVITY')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACTIVITY' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-muted-foreground'}`}>Activity Log</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-3">
                   {activityTab === 'ACHIEVEMENTS' ? (
                     profile.achievements && profile.achievements.length > 0 ? (
                       profile.achievements.map((ach) => (
-                        <div key={ach.id} className="flex flex-col p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                        <div key={ach.id} className="flex flex-col p-3 rounded-lg border border-gray-100 bg-muted/50/50 hover:bg-muted/50 transition-colors">
                           <div className="flex justify-between items-start mb-1">
-                            <span className="text-sm font-bold text-gray-900">{ach.title}</span>
-                            <span className="text-xs font-mono text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">{ach.category}</span>
+                            <span className="text-sm font-bold text-foreground">{ach.title}</span>
+                            <span className="text-xs font-mono text-muted-foreground bg-card text-card-foreground px-2 py-0.5 rounded border border-border">{ach.category}</span>
                           </div>
-                          <div className="flex justify-between items-center text-xs text-gray-600">
+                          <div className="flex justify-between items-center text-xs text-muted-foreground mt-1.5">
                             <span className="font-medium text-orange-600">{ach.position} {ach.prize && `• ${ach.prize}`}</span>
-                            <span className="font-mono text-gray-500">{new Date(ach.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            <div className="flex items-center gap-2">
+                                {ach.blockchainTxHash && (
+                                    <a 
+                                        href={`https://amoy.polygonscan.com/tx/${ach.blockchainTxHash}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full hover:bg-purple-100 transition-colors"
+                                        title="Verified on Polygon Amoy Blockchain"
+                                    >
+                                        <SealCheck weight="fill" size={12} />
+                                        Verified SBT
+                                    </a>
+                                )}
+                                <span className="font-mono text-muted-foreground">{new Date(ach.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -514,19 +529,19 @@ export function ProfilePortfolio() {
                       <div className="py-6 text-center text-gray-400 text-sm">No official achievements found.</div>
                     )
                   ) : (
-                    <TransactionHistory transactions={profile.recentTransactions} filterType="ACTIVITY" />
+                    <TransactionHistory transactions={profile.recentTransactions as any} filterType="ACTIVITY" />
                   )}
                 </div>
               </div>
 
               {/* Linked Accounts */}
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                       <Briefcase size={18} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 font-display">Integrations</h3>
+                    <h3 className="text-lg font-bold text-foreground font-display">Integrations</h3>
                   </div>
                   {isOwner && (
                     <button 
@@ -544,13 +559,13 @@ export function ProfilePortfolio() {
                     ) : (
                       profile.profileLinks.map(link => (
                         <a key={link.provider} href={PROVIDER_URLS[link.provider]?.(link.externalHandle) || '#'} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors"
+                          className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-muted/50 hover:bg-muted transition-colors"
                         >
                           <span className="flex items-center gap-2 font-medium" style={{ color: hColor }}>
                             {PROVIDER_ICONS[link.provider]}
-                            <span className="text-gray-900 text-sm">{link.provider}</span>
+                            <span className="text-foreground text-sm">{link.provider}</span>
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-gray-500 font-mono">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
                             {link.externalHandle} <ArrowSquareOut size={12} />
                           </span>
                         </a>
@@ -558,14 +573,17 @@ export function ProfilePortfolio() {
                     )}
                   </div>
 
-
+                  {profile.certificates.length > 0 && (
+                    <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Badges Full Width */}
-            <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
-               <h3 className="text-lg font-bold text-gray-900 mb-6 font-display">Badges</h3>
+            <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+               <h3 className="text-lg font-bold text-foreground mb-6 font-display">Badges</h3>
                <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
                  {profile.badges.length === 0 ? (
                    <div className="w-full text-center text-gray-400 py-4 text-sm italic">No badges earned yet.</div>
@@ -573,9 +591,9 @@ export function ProfilePortfolio() {
                    profile.badges.map(b => (
                      <div key={b.id} className="flex flex-col items-center gap-2 text-center w-28">
                        <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
-                         <SealCheck size={40} weight="fill" className="text-amber-500" />
+                         <SealCheck size={40} fill="currentColor" className="text-amber-500" />
                        </div>
-                       <div className="font-semibold text-[11px] leading-tight text-gray-800 mt-1">{b.name}</div>
+                       <div className="font-semibold text-[11px] leading-tight text-foreground/90 mt-1">{b.name}</div>
                      </div>
                    ))
                  )}
@@ -584,13 +602,13 @@ export function ProfilePortfolio() {
 
             {/* Certifications (Dynamic) */}
             {(profile.certificates.length > 0 || isOwner) && (
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 font-display">Certifications</h3>
+                  <h3 className="text-lg font-bold text-foreground font-display">Certifications</h3>
                   {isOwner && (
                     <button 
                       onClick={() => setShowCertificateModal(true)} 
-                      className="flex items-center gap-1 text-xs font-bold bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-1 text-xs font-bold bg-card text-card-foreground border border-border shadow-sm px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <Plus size={14} weight="bold" /> Add
                     </button>
@@ -599,20 +617,30 @@ export function ProfilePortfolio() {
                 
                 {profile.certificates.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {profile.certificates.map(cert => {
-                      const isPending = cert.status && cert.status !== "APPROVED";
-                      return (
-                      <div key={cert.id} className={`flex items-center justify-between p-4 rounded-xl border ${isPending ? 'border-dashed border-gray-300 bg-gray-50/50' : 'border-gray-100 bg-gray-50'} hover:bg-gray-100 transition-colors group cursor-pointer`} onClick={() => handleViewCertificate(cert.id)}>
+                    {profile.certificates.map(cert => (
+                      <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-muted/50 hover:bg-muted transition-colors group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <Certificate size={24} weight={isPending ? "regular" : "fill"} className={`${isPending ? 'text-gray-400' : 'text-amber-500'} flex-shrink-0`} />
+                          <Certificate size={24} fill="currentColor" className="text-amber-500 flex-shrink-0" />
                           <div className="flex flex-col overflow-hidden">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-bold truncate ${isPending ? 'text-gray-500' : 'text-gray-800'}`}>{cert.name}</span>
-                              {isPending && <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded">Pending</span>}
+                            <span className="text-sm font-bold text-foreground/90 truncate">{cert.name}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {cert.blockchainTxHash && (
+                                <a 
+                                  href={`https://amoy.polygonscan.com/tx/${cert.blockchainTxHash}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-100 px-1.5 rounded-full hover:bg-purple-200 transition-colors"
+                                  title="Verified on Polygon Amoy Blockchain"
+                                >
+                                  <SealCheck weight="fill" size={12} />
+                                  Anchored
+                                </a>
+                              )}
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
                             </div>
-                            <span className="text-xs text-gray-500 font-mono">
-                              {new Date(cert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </span>
                           </div>
                         </div>
                         {isOwner && (
@@ -622,14 +650,14 @@ export function ProfilePortfolio() {
                               deleteCertMutation.mutate(cert.id);
                             }} 
                             disabled={deleteCertMutation.isPending}
-                            className="p-2 text-gray-400 hover:text-rose-500 bg-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-gray-200 shadow-sm disabled:opacity-50"
+                            className="p-2 text-gray-400 hover:text-rose-500 bg-card text-card-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-border shadow-sm disabled:opacity-50"
                             title="Delete Certificate"
                           >
                             <Trash size={16} />
                           </button>
                         )}
                       </div>
-                    )})}
+                    ))}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400 italic">No certifications uploaded yet.</p>

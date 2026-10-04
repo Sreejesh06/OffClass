@@ -18,7 +18,7 @@ const HeatmapCell = ({ intensity }: { intensity: number }) => {
       case 2: return 'bg-crypto-cyan/60';
       case 3: return 'bg-crypto-cyan/80';
       case 4: return 'bg-crypto-cyan';
-      default: return 'bg-gray-100/50';
+      default: return 'bg-muted/50';
     }
   };
 
@@ -40,13 +40,13 @@ export const ActivityHeatmap = () => {
   }
 
   return (
-    <div className="w-full bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+    <div className="w-full bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 font-display">Activity Matrix</h3>
-          <p className="text-sm text-gray-500 font-sans mt-1">Platform engagement over the last year</p>
+          <h3 className="text-lg font-bold text-foreground font-display">Activity Matrix</h3>
+          <p className="text-sm text-muted-foreground font-sans mt-1">Platform engagement over the last year</p>
         </div>
-        <div className="text-sm font-bold font-mono text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-200/50">
+        <div className="text-sm font-bold font-mono text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border border-border/50">
           1,024 Contributions
         </div>
       </div>
@@ -61,10 +61,10 @@ export const ActivityHeatmap = () => {
         ))}
       </div>
       
-      <div className="mt-4 flex items-center justify-end gap-2 text-xs text-gray-500 font-mono">
+      <div className="mt-4 flex items-center justify-end gap-2 text-xs text-muted-foreground font-mono">
         <span>Less</span>
         <div className="flex gap-1">
-          <div className="w-3 h-3 rounded-sm bg-gray-100/50"></div>
+          <div className="w-3 h-3 rounded-sm bg-muted/50"></div>
           <div className="w-3 h-3 rounded-sm bg-crypto-cyan/30"></div>
           <div className="w-3 h-3 rounded-sm bg-crypto-cyan/60"></div>
           <div className="w-3 h-3 rounded-sm bg-crypto-cyan/80"></div>

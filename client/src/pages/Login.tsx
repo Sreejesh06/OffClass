@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Eye, EyeSlash } from '@phosphor-icons/react';
 
 const ASCII_ART = `:-:.:.:.......:............................................................:-=-==+=*%#%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 :::........................................... ..... ........ ..............:--==+**#%%%@%%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -67,13 +68,11 @@ const ASCII_ART = `:-:.:.:.......:..............................................
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, verifyTotp, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [requiresTotp, setRequiresTotp] = useState(false);
-  const [tempToken, setTempToken] = useState('');
-  const [totpCode, setTotpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const from = location.state?.from?.pathname || "/profile";
@@ -82,37 +81,19 @@ export function Login() {
     e.preventDefault();
     setError(null);
 
-    if (!requiresTotp) {
-      if (!email) {
-        setError("Email is required.");
-        return;
-      }
+    if (!email) {
+      setError("Email is required.");
+      return;
+    }
 
-      if (!email.endsWith('@sece.ac.in')) {
-        setError("Only @sece.ac.in emails are permitted.");
-        return;
-      }
-    } else {
-      if (!totpCode || totpCode.length !== 6) {
-        setError("Please enter a valid 6-digit code.");
-        return;
-      }
+    if (!email.endsWith('@sece.ac.in')) {
+      setError("Only @sece.ac.in emails are permitted.");
+      return;
     }
 
     try {
-      if (requiresTotp) {
-        await verifyTotp(tempToken, totpCode);
-        navigate(from, { replace: true });
-        return;
-      }
-
-      const res = await login(email, password);
-      if (res?.requireTotp) {
-        setRequiresTotp(true);
-        setTempToken(res.tempToken || '');
-      } else {
-        navigate(from, { replace: true });
-      }
+      await login(email, password);
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.error || "Invalid credentials.");
     }
@@ -120,7 +101,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-crypto-bg flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-5xl bg-white rounded-[2rem] border-2 border-gray-200 shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+      <div className="w-full max-w-5xl bg-card text-card-foreground rounded-[2rem] border-2 border-border shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
         
         {/* Left: Branding & ASCII Showcase */}
         <div className="hidden md:flex flex-1 bg-crypto-purple relative overflow-hidden flex-col justify-between p-12 text-white border-r border-gray-100">
@@ -140,69 +121,59 @@ export function Login() {
         </div>
 
         {/* Right: Login Form */}
-        <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative bg-white">
+        <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative bg-card text-card-foreground">
           <div className="max-w-sm w-full mx-auto">
-            <Link to="/" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-black transition-colors mb-8 group">
+            <Link to="/" className="inline-flex items-center text-sm font-bold text-muted-foreground hover:text-black transition-colors mb-8 group">
               <svg className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Back to Home
             </Link>
             
             <div className="mb-10 text-center md:text-left">
-              <h1 className="font-heading font-extrabold text-3xl text-gray-900 mb-2">Sign In</h1>
-              <p className="text-gray-600 font-medium text-sm">Enter your SECE email to continue.</p>
+              <h1 className="font-heading font-extrabold text-3xl text-foreground mb-2">Sign In</h1>
+              <p className="text-muted-foreground font-medium text-sm">Enter your SECE email to continue.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               
-              {!requiresTotp ? (
-                <>
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-bold text-gray-900">College Email</label>
-                    <input 
-                      id="email"
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="student@sece.ac.in"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                        error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
-                      }`}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-bold text-foreground">College Email</label>
+                <input 
+                  id="email"
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="student@sece.ac.in"
+                  className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-black bg-muted/50 text-foreground'
+                  }`}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label htmlFor="password" className="block text-sm font-bold text-gray-900">Password</label>
-                      <Link to="/forgot-password" className="text-xs font-bold text-crypto-purple hover:text-purple-700 transition-colors">Forgot?</Link>
-                    </div>
-                    <input 
-                      id="password"
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                        error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
-                      }`}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <label htmlFor="totpCode" className="block text-sm font-bold text-gray-900">Authenticator Code</label>
-                  <input 
-                    id="totpCode"
-                    type="text" 
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    placeholder="123456"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm tracking-widest text-center outline-none transition-all ${
-                      error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
-                    }`}
-                    maxLength={6}
-                  />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
+                  <a href="#" className="text-xs font-bold text-crypto-purple hover:text-purple-700 transition-colors">Forgot?</a>
                 </div>
-              )}
+                <div className="relative">
+                  <input 
+                    id="password"
+                    type={showPassword ? "text" : "password"} 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full pl-4 pr-12 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
+                      error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-orange-500 bg-muted/50 text-foreground'
+                    }`}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
 
               {error && (
                 <div className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded-lg border border-red-200 flex items-center">
@@ -220,8 +191,8 @@ export function Login() {
               </button>
             </form>
             
-            <div className="mt-8 text-center text-sm font-medium text-gray-600">
-              Don't have an account? <Link to="/signup" className="text-black font-bold hover:underline underline-offset-4">Sign Up</Link>
+            <div className="mt-8 text-center text-sm font-medium text-muted-foreground">
+              Don't have an account? <a href="#" className="text-black font-bold hover:underline underline-offset-4">Sign Up</a>
             </div>
           </div>
         </div>

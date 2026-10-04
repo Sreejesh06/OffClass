@@ -1,47 +1,58 @@
-import { ethers } from "ethers";
-import crypto from "crypto";
+import { ethers } from 'ethers';
+import CryptidRegistryABI from './CryptidRegistry.json' with { type: 'json' };
 
-const ABI = [
-    "function anchorHash(bytes32 achievementId, bytes32 dataHash) external",
-    "event AchievementAnchored(bytes32 indexed achievementId, bytes32 dataHash, uint256 timestamp)"
-];
+// Initialize provider and wallet
+const rpcUrl = process.env.POLYGON_AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology';
+const privateKey = process.env.BLOCKCHAIN_PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
+const contractAddress = process.env.CRYPTID_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000';
 
-let contract: ethers.Contract | null = null;
+const provider = new ethers.JsonRpcProvider(rpcUrl);
+// Default to a random wallet if no private key is provided (for dev without keys)
+const wallet = privateKey !== '0x0000000000000000000000000000000000000000000000000000000000000000' 
+  ? new ethers.Wallet(privateKey, provider) 
+  : ethers.Wallet.createRandom().connect(provider);
 
-if (process.env.POLYGON_RPC_URL && process.env.ANCHOR_WALLET_PRIVATE_KEY && process.env.ANCHOR_CONTRACT_ADDRESS) {
-    const provider = new ethers.JsonRpcProvider(process.env.POLYGON_RPC_URL);
-    const wallet = new ethers.Wallet(process.env.ANCHOR_WALLET_PRIVATE_KEY, provider);
-    contract = new ethers.Contract(process.env.ANCHOR_CONTRACT_ADDRESS, ABI, wallet);
-}
+export const cryptidRegistry = new ethers.Contract(contractAddress, CryptidRegistryABI.abi, wallet);
 
-/**
- * Deterministically hash the core, immutable fields of an achievement.
- */
-export function computeAchievementHash(achievement: any): string {
-    // IMPORTANT: Only include fields that will never change. 
-    // Status, dates, and txHashes must be excluded.
-    const payload = `${achievement.id}:${achievement.userId}:${achievement.title}:${achievement.category}`;
-    return crypto.createHash('sha256').update(payload).digest('hex');
-}
+export const blockchainEnabled = () => {
+    return privateKey !== '0x0000000000000000000000000000000000000000000000000000000000000000' && 
+           contractAddress !== '0x0000000000000000000000000000000000000000';
+};
 
 /**
- * Anchors the computed hash on the Polygon testnet.
+ * Anchors a certificate hash to the blockchain
+ * @param hash SHA-256 hash of the certificate
+ * @param studentWallet Wallet address of the student
+ * @returns Transaction hash or null if disabled
  */
-export async function anchorAchievementOnChain(id: string, hashHex: string): Promise<string | null> {
-    if (!contract) {
-        console.warn("Blockchain anchoring skipped: Missing environment variables.");
-        return null;
-    }
-    
-    // Convert UUID to bytes32 (strip hyphens and right-pad to 64 hex chars = 32 bytes)
-    const idBytes = '0x' + id.replace(/-/g, '').padEnd(64, '0');
-    const hashBytes = '0x' + hashHex;
+export async function anchorCertificateHash(hash: string, studentWallet: string): Promise<string | null> {
+    if (!blockchainEnabled()) return null;
     
     try {
-        const tx = await contract.anchorHash(idBytes, hashBytes);
-        return tx.hash;
-    } catch (e) {
-        console.error("Blockchain anchor failed", e);
-        return null;
+        const tx = await (cryptidRegistry as any).anchorHash(hash, studentWallet);
+        const receipt = await tx.wait();
+        return receipt.hash;
+    } catch (error) {
+        console.error("Error anchoring hash to blockchain:", error);
+        throw error;
+    }
+}
+
+/**
+ * Mints an achievement SBT to the student
+ * @param to Student wallet address
+ * @param achievementId ID of the achievement
+ * @returns Transaction hash or null if disabled
+ */
+export async function mintAchievementSBT(to: string, achievementId: number): Promise<string | null> {
+    if (!blockchainEnabled()) return null;
+    
+    try {
+        const tx = await (cryptidRegistry as any).mintAchievement(to, achievementId, 1, "0x");
+        const receipt = await tx.wait();
+        return receipt.hash;
+    } catch (error) {
+        console.error("Error minting SBT:", error);
+        throw error;
     }
 }

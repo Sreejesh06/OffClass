@@ -20,7 +20,7 @@ const Navbar = () => {
 
   return (
     <div className="flex justify-center w-full py-6 px-4 absolute top-0 z-50">
-      <div className="flex items-center justify-between px-6 py-3 bg-white rounded-full shadow-sm border border-gray-100 w-full max-w-4xl relative z-10">
+      <div className="flex items-center justify-between px-6 py-3 bg-card text-card-foreground rounded-full shadow-sm border border-gray-100 w-full max-w-4xl relative z-10">
         <div className="flex items-center">
           <Link to="/" className="flex items-center gap-2">
             <motion.div
@@ -40,7 +40,7 @@ const Navbar = () => {
                 </defs>
               </svg>
             </motion.div>
-            <span className="font-heading font-extrabold text-2xl tracking-tight text-gray-900 hidden sm:block">Offclass</span>
+            <span className="font-heading font-extrabold text-2xl tracking-tight text-foreground hidden sm:block">Offclass</span>
           </Link>
         </div>
         
@@ -54,7 +54,7 @@ const Navbar = () => {
               transition={{ duration: 0.3 }}
               whileHover={{ scale: 1.05 }}
             >
-              <Link to={item.path} className="text-sm text-gray-900 hover:text-crypto-purple transition-colors font-medium">
+              <Link to={item.path} className="text-sm text-foreground hover:text-crypto-purple transition-colors font-medium">
                 {item.name}
               </Link>
             </motion.div>
@@ -71,7 +71,7 @@ const Navbar = () => {
         >
           <Link
             to="/login"
-            className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors mr-2"
+            className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-foreground bg-card text-card-foreground border border-border rounded-full hover:bg-muted/50 transition-colors mr-2"
           >
             Sign in
           </Link>
@@ -85,7 +85,7 @@ const Navbar = () => {
 
         {/* Mobile Menu Button */}
         <motion.button className="md:hidden flex items-center" onClick={toggleMenu} whileTap={{ scale: 0.9 }}>
-          <Menu className="h-6 w-6 text-gray-900" />
+          <Menu className="h-6 w-6 text-foreground" />
         </motion.button>
       </div>
 
@@ -93,7 +93,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 bg-white z-50 pt-24 px-6 md:hidden"
+            className="fixed inset-0 bg-card text-card-foreground z-50 pt-24 px-6 md:hidden"
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
@@ -107,7 +107,7 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <X className="h-6 w-6 text-gray-900" />
+              <X className="h-6 w-6 text-foreground" />
             </motion.button>
             <div className="flex flex-col space-y-6">
               {navItems.map((item, i) => (
@@ -118,7 +118,7 @@ const Navbar = () => {
                   transition={{ delay: i * 0.1 + 0.1 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <Link to={item.path} className="text-xl text-gray-900 font-medium" onClick={toggleMenu}>
+                  <Link to={item.path} className="text-xl text-foreground font-medium" onClick={toggleMenu}>
                     {item.name}
                   </Link>
                 </motion.div>
@@ -133,7 +133,7 @@ const Navbar = () => {
               >
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center w-full px-5 py-3 text-base font-semibold text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center justify-center w-full px-5 py-3 text-base font-semibold text-foreground bg-card text-card-foreground border border-border rounded-full hover:bg-muted/50 transition-colors"
                   onClick={toggleMenu}
                 >
                   Sign in

@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import type { House } from "shared";
 import { cn } from "../lib/utils";
+import { Link } from "react-router-dom";
 
 interface Props {
   opportunityId: string;
@@ -45,26 +46,27 @@ export function InterestedStudentsModal({ opportunityId, opportunityTitle, onClo
   const getAvatarUrl = (avatarStr: string | null | undefined, fallbackName: string) => {
     if (avatarStr?.startsWith("http")) return avatarStr;
     const seed = avatarStr || fallbackName;
-    return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb`;
+    if (seed && seed.startsWith('data:image')) return seed;
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-gray-200 shadow-xl">
+      <div className="bg-card text-card-foreground rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-border shadow-xl">
         
         {/* Header */}
         <div className="p-6 border-b border-gray-100 flex justify-between items-start gap-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
+            <h2 className="text-xl font-bold text-foreground mb-1">
               {user?.role === "STUDENT" ? "Looking for Teammates" : "Interested Students"}
             </h2>
-            <p className="text-sm font-medium text-gray-500 m-0">
+            <p className="text-sm font-medium text-muted-foreground m-0">
               {opportunityTitle}
             </p>
           </div>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-lg hover:bg-gray-100"
+            className="text-gray-400 hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted"
           >
             <X size={20} />
           </button>
@@ -73,11 +75,11 @@ export function InterestedStudentsModal({ opportunityId, opportunityTitle, onClo
         {/* List */}
         <div className="p-6 overflow-y-auto flex-1">
           {isLoading ? (
-            <div className="text-center text-gray-500 py-8 font-medium">
+            <div className="text-center text-muted-foreground py-8 font-medium">
               Loading...
             </div>
           ) : data?.length === 0 ? (
-            <div className="text-center text-gray-500 py-8 font-medium">
+            <div className="text-center text-muted-foreground py-8 font-medium">
               {user?.role === "STUDENT" 
                 ? "No one has indicated they are looking for teammates yet."
                 : "No students have bookmarked this opportunity yet."}
@@ -85,18 +87,22 @@ export function InterestedStudentsModal({ opportunityId, opportunityTitle, onClo
           ) : (
             <div className="flex flex-col gap-4">
               {data?.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <Link 
+                  key={item.id} 
+                  to={`/profile/${item.user.id}`}
+                  className="flex items-center justify-between p-4 bg-muted/50 hover:bg-muted rounded-xl border border-border transition-colors hover:border-orange-500/50 group"
+                >
                   <div className="flex items-center gap-4">
                     <img 
                       src={getAvatarUrl(item.user.avatar, item.user.name)} 
                       alt={item.user.name}
-                      className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-gray-50"
+                      className="w-10 h-10 rounded-full object-cover border border-border bg-muted/50 group-hover:border-orange-500 transition-colors"
                     />
                     <div>
-                      <div className="font-bold text-gray-900">
+                      <div className="font-bold text-foreground group-hover:text-orange-500 transition-colors">
                         {item.user.name}
                       </div>
-                      <div className="text-sm text-gray-500 font-medium">
+                      <div className="text-sm text-muted-foreground font-medium">
                         {item.user.email}
                       </div>
                       <div className="flex items-center gap-2 text-xs mt-1">
@@ -111,14 +117,18 @@ export function InterestedStudentsModal({ opportunityId, opportunityTitle, onClo
                         </span>
                         {item.lookingForTeammate && user?.role !== "STUDENT" && (
                           <>
-                            <span className="text-gray-300">•</span>
-                            <span className="text-blue-600 font-bold">Looking for team</span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-blue-500 font-bold">Looking for team</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
+                  <div className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                     <span className="text-xs font-bold mr-1">View</span>
+                     →
+                  </div>
+                </Link>
               ))}
             </div>
           )}

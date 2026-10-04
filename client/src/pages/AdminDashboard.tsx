@@ -1,436 +1,340 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { DownloadSimple, Check, X, Warning, MagnifyingGlass, Shield } from '@phosphor-icons/react';
-import { Navigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
-
-import { AdminRubricTab } from '../components/AdminRubricTab';
-import { AdminDisciplineTab } from '../components/AdminDisciplineTab';
-
-type Tab = 'approvals' | 'moderation' | 'risk' | 'export' | 'rubric' | 'discipline';
-
-interface ApprovalItem {
-  id: string;
-  studentName: string;
-  studentHouse: string;
-  targetHouse?: string;
-  type: string;
-  description: string;
-  date: string;
-  reason?: string;
-}
-
-interface ComplaintItem {
-  id: string;
-  trackingCode: string;
-  category: string;
-  date: string;
-  status: string;
-  content: string;
-  notes: string;
-}
-
-interface AtRiskStudent {
-  id: string;
-  name: string;
-  house: string;
-  points: number;
-  lastActive: string;
-}
+import React, { useState } from "react";
+import { CheckCircle, XCircle, Warning, DownloadSimple, Shield, MagnifyingGlass, UserCircle, Export, ChartLineUp, Storefront, FileText } from "@phosphor-icons/react";
+import { useAuth } from "../contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../lib/api";
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
-  const [activeTab, setActiveTab] = useState<Tab>('approvals');
-  const [selectedApprovals, setSelectedApprovals] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'fulfillment' | 'approvals' | 'moderation' | 'risk' | 'export'>('fulfillment');
+  const [expandedComplaint, setExpandedComplaint] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
 
-  // Fetch Approvals
+  // FULFILLMENT QUEUE
+  const { data: fulfillments = [], isLoading: loadingFills } = useQuery({
+    queryKey: ['admin-fulfillment'],
+    queryFn: async () => {
+      const res = await api.get('/admin/redemptions');
+      return res.data.redemptions || [];
+    }
+  });
+
+  const fulfillMutation = useMutation({
+    mutationFn: async (redemptionId: string) => {
+      await api.patch(`/admin/redemptions/${redemptionId}`, { action: 'fulfill' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-fulfillment'] });
+    }
+  });
+
+  // APPROVALS QUEUE
   const { data: approvalsData } = useQuery({
-    queryKey: ['admin', 'approvals'],
+    queryKey: ['admin-approvals'],
     queryFn: async () => {
       const res = await api.get('/admin/approvals');
       return res.data;
     }
   });
-  const approvals: ApprovalItem[] = approvalsData?.approvals || [];
+  const approvals = approvalsData?.approvals || approvalsData || [];
 
-  // Fetch At Risk Students
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, approved }: { id: string, approved: boolean }) => {
+      await api.post('/admin/approve', { items: [id], action: approved ? 'approve' : 'reject' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-approvals'] });
+    }
+  });
+
+  // COMPLAINTS
+  const { data: complaintsData } = useQuery({
+    queryKey: ['admin-complaints'],
+    queryFn: async () => {
+      const res = await api.get('/complaints/admin');
+      return res.data;
+    }
+  });
+  const complaints = complaintsData?.complaints || [];
+
+  const complaintMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: string, status: string, adminNotes: string }) => {
+      await api.patch(`/complaints/admin/${id}`, { status, adminNotes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-complaints'] });
+      setExpandedComplaint(null);
+    }
+  });
+
+  // AT RISK
   const { data: riskData } = useQuery({
-    queryKey: ['admin', 'risk'],
+    queryKey: ['admin-risk'],
     queryFn: async () => {
       const res = await api.get('/admin/students/at-risk');
       return res.data;
     }
   });
-  const riskStudents: AtRiskStudent[] = riskData?.students || [];
+  const riskStudents = riskData?.students || [];
 
-  // Bulk Approve Mutation
-  const approveMutation = useMutation({
-    mutationFn: async ({ action, items }: { action: 'approve' | 'reject', items: string[] }) => {
-      await api.post('/admin/approve', { action, items });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'approvals'] });
-      setSelectedApprovals(new Set());
-    }
-  });
-
-  // Single Item Review Mutation
-  const reviewMutation = useMutation({
-    mutationFn: async ({ id, action, type }: { id: string; action: 'approve' | 'reject'; type: string }) => {
-      if (type === 'HOUSE_TRANSFER') {
-        await api.post(`/admin/house-transfers/${id}/review`, { action });
-      } else {
-        await api.post('/admin/approve', { action, items: [id] });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'approvals'] });
-      setSelectedApprovals(new Set());
-    }
-  });
-
-  // Fetch Complaints
-  const { data: complaintsData, isLoading: isLoadingComplaints } = useQuery({
-    queryKey: ['admin', 'complaints'],
-    queryFn: async () => {
-      const res = await api.get('/complaints/admin');
-      return res.data;
-    },
-    enabled: user?.role === 'ADMIN' || user?.role === 'TEACHER'
-  });
-  const complaints: ComplaintItem[] = complaintsData?.complaints || [];
-
-  // Update Complaint Mutation
-  const updateComplaintMutation = useMutation({
-    mutationFn: async ({ id, status, adminNotes }: { id: string; status: string; adminNotes?: string }) => {
-      await api.patch(`/complaints/admin/${id}`, { status, adminNotes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'complaints'] });
-    }
-  });
-
-  const [expandedComplaint, setExpandedComplaint] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({});
-
-  // Role check AFTER all hooks
-  if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
-    return <Navigate to="/profile" replace />;
-  }
-
-  // Bulk Actions
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedApprovals(new Set(approvals.map(a => a.id)));
-    } else {
-      setSelectedApprovals(new Set());
-    }
+  const handleApprove = (id: string, approved: boolean) => {
+    approveMutation.mutate({ id, approved });
   };
 
-  const handleSelect = (id: string) => {
-    const newSet = new Set(selectedApprovals);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedApprovals(newSet);
-  };
-
-  const handleBulkAction = (action: 'approve' | 'reject') => {
-    if (selectedApprovals.size === 0) return;
-    approveMutation.mutate({ action, items: Array.from(selectedApprovals) });
-  };
-
-  // Complaint Actions
   const handleSaveNotes = (id: string, newStatus: string) => {
-    updateComplaintMutation.mutate({ 
-      id, 
-      status: newStatus, 
-      adminNotes: editingNotes[id] !== undefined ? editingNotes[id] : complaints.find(c => c.id === id)?.notes 
-    });
-    setExpandedComplaint(null);
+    const adminNotes = editingNotes[id] || '';
+    complaintMutation.mutate({ id, status: newStatus, adminNotes });
   };
 
   const handleExport = async (format: 'csv' | 'json') => {
-    try {
-      const response = await api.get(`/admin/export/students?format=${format}`, {
-        responseType: format === 'csv' ? 'blob' : 'json'
-      });
-      
-      if (format === 'csv') {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } else {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(response.data, null, 2));
-        const link = document.createElement('a');
-        link.href = dataStr;
-        link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.json`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
-    } catch (e) {
-      console.error('Export failed', e);
-      alert('Failed to export data');
-    }
+    window.open(`/api/admin/export/students?format=${format}`, '_blank');
   };
 
+  if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
+    return <div className="p-12 text-center text-red-500 font-bold text-xl">Access Denied</div>;
+  }
+
+  const tabs = [
+    { id: 'fulfillment', label: 'Fulfillment', icon: <Storefront size={18} weight={activeTab === 'fulfillment' ? 'fill' : 'regular'} /> },
+    { id: 'approvals', label: 'Point Approvals', icon: <CheckCircle size={18} weight={activeTab === 'approvals' ? 'fill' : 'regular'} /> },
+    { id: 'moderation', label: 'Complaints', icon: <FileText size={18} weight={activeTab === 'moderation' ? 'fill' : 'regular'} /> },
+    { id: 'risk', label: 'At-Risk Watch', icon: <Warning size={18} weight={activeTab === 'risk' ? 'fill' : 'regular'} /> },
+    { id: 'export', label: 'Export Data', icon: <Export size={18} weight={activeTab === 'export' ? 'fill' : 'regular'} /> },
+  ] as const;
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col gap-6 font-sans">
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h1 style={{ margin: '0 0 0.5rem 0' }}>Department Tools</h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Welcome, {user.name} ({user.role})</p>
-        </div>
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl md:text-4xl font-black text-foreground m-0 flex items-center gap-3">
+          <Shield size={36} className="text-blue-500" weight="duotone" /> 
+          Department Command
+        </h1>
+        <p className="text-muted-foreground font-medium text-lg m-0">
+          Manage point approvals, fulfill perks, and oversee department health.
+        </p>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', gap: '2rem', overflowX: 'auto', paddingBottom: '2px' }}>
-        {(['approvals', 'moderation', 'rubric', 'discipline', 'risk', 'export'] as Tab[]).map((tab) => (
-          <button 
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '0.75rem 0',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab ? '2px solid var(--text-primary)' : '2px solid transparent',
-              color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontWeight: activeTab === tab ? 600 : 400,
-              cursor: 'pointer',
-              textTransform: 'capitalize',
-              whiteSpace: 'nowrap'
-            }}
+      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide border-b border-border">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${
+              activeTab === tab.id 
+                ? "border-blue-500 text-blue-500 bg-blue-500/10 rounded-t-xl" 
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted rounded-t-xl"
+            }`}
           >
-            {tab === 'approvals' ? `Approvals (${approvals.length})` : 
-             tab === 'moderation' ? `Moderation (${complaints.filter(c => c.status !== 'RESOLVED').length})` :
-             tab === 'rubric' ? 'Rubric Config' : 
-             tab === 'discipline' ? 'Discipline Log' : 
-             tab === 'risk' ? 'At-Risk Students' : 'Export & Reports'}
+            {tab.icon} {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="dossier-card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Content Container */}
+      <div className="bg-card border border-border shadow-sm rounded-3xl overflow-hidden min-h-[400px]">
         
-        {/* APPROVALS QUEUE */}
-        {activeTab === 'approvals' && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                {selectedApprovals.size} selected
+        {/* FULFILLMENT QUEUE */}
+        {activeTab === 'fulfillment' && (
+          <div className="flex flex-col">
+            {loadingFills ? (
+              <div className="p-12 text-center text-muted-foreground font-bold">Loading queue...</div>
+            ) : fulfillments.length === 0 ? (
+              <div className="p-16 flex flex-col items-center justify-center text-center">
+                <Storefront size={48} className="text-muted-foreground opacity-20 mb-4" />
+                <h3 className="text-lg font-bold text-foreground">Queue is clear</h3>
+                <p className="text-muted-foreground">No pending perk fulfillments at this time.</p>
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button 
-                  onClick={() => handleBulkAction('reject')}
-                  disabled={selectedApprovals.size === 0}
-                  style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid #e11d48', color: '#e11d48', borderRadius: 'var(--radius-sm)', cursor: selectedApprovals.size === 0 ? 'not-allowed' : 'pointer', opacity: selectedApprovals.size === 0 ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <X /> Reject Selected
-                </button>
-                <button 
-                  onClick={() => handleBulkAction('approve')}
-                  disabled={selectedApprovals.size === 0}
-                  style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', cursor: selectedApprovals.size === 0 ? 'not-allowed' : 'pointer', opacity: selectedApprovals.size === 0 ? 0.5 : 1, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <Check weight="bold" /> Approve Selected
-                </button>
-              </div>
-            </div>
-
-            <div className="responsive-table-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-strong)' }}>
-                    <th style={{ padding: '1rem', width: '40px' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={approvals.length > 0 && selectedApprovals.size === approvals.length}
-                        onChange={handleSelectAll}
-                        aria-label="Select all approvals"
-                      />
-                    </th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Student</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Type</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Details</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Submitted</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvals.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No pending approvals.</td></tr>
-                  ) : (
-                    approvals.map(a => (
-                      <tr key={a.id} style={{ borderBottom: '1px solid var(--border-subtle)', background: selectedApprovals.has(a.id) ? 'color-mix(in srgb, var(--accent-house) 5%, transparent)' : 'transparent' }}>
-                        <td style={{ padding: '1rem' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={selectedApprovals.has(a.id)}
-                            onChange={() => handleSelect(a.id)}
-                            aria-label={`Select approval for ${a.studentName}`}
-                          />
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <div style={{ fontWeight: 600 }}>{a.studentName}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span>{a.studentHouse}</span>
-                            {a.targetHouse && (
-                              <>
-                                <span>➔</span>
-                                <span style={{ fontWeight: 700, color: 'var(--accent-house)' }}>{a.targetHouse}</span>
-                              </>
-                            )}
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Item</th>
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Student</th>
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Requested</th>
+                      <th className="p-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fulfillments.map((f: any) => (
+                      <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-foreground">{f.perkItem.name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <span className="bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded uppercase font-bold">{f.perkItem.type}</span>
                           </div>
                         </td>
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            background: a.type === 'HOUSE_TRANSFER' ? 'rgba(234, 179, 8, 0.12)' : 'var(--bg-surface)',
-                            border: a.type === 'HOUSE_TRANSFER' ? '1px solid #eab308' : '1px solid var(--border-strong)',
-                            color: a.type === 'HOUSE_TRANSFER' ? '#eab308' : 'inherit',
-                            borderRadius: 'var(--radius-sm)',
-                            fontSize: '0.72rem',
-                            fontWeight: 600,
-                            letterSpacing: '0.04em'
-                          }}>
-                            {a.type === 'HOUSE_TRANSFER' ? 'HOUSE TRANSFER' : a.type}
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            {f.user.avatar ? (
+                              <img src={f.user.avatar} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">{f.user.name.charAt(0)}</div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm text-foreground">{f.user.name}</span>
+                              <span className="text-xs text-muted-foreground">{f.user.house}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            NEEDS FULFILLMENT
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', maxWidth: '300px', fontSize: '0.85rem' }}>
-                          <div>{a.description}</div>
-                          {a.type === 'CERTIFICATE' && (
-                            <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#eab308', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(234, 179, 8, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '4px', width: 'fit-content' }}>
-                              <Warning size={12} weight="bold" />
-                              Defaults to 10pts. Override manually if higher tier.
-                            </div>
-                          )}
+                        <td className="p-4 text-sm font-medium text-muted-foreground">
+                          {new Date(f.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="mono" style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(a.date).toLocaleDateString()}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => reviewMutation.mutate({ id: a.id, action: 'reject', type: a.type })}
-                              disabled={reviewMutation.isPending}
-                              title="Reject"
-                              style={{
-                                padding: '5px 10px',
-                                background: 'transparent',
-                                border: '1px solid #e11d48',
-                                color: '#e11d48',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px'
-                              }}
-                            >
-                              <X size={13} /> Reject
+                        <td className="p-4 text-right">
+                          <button 
+                            onClick={() => fulfillMutation.mutate(f.id)}
+                            disabled={fulfillMutation.isPending}
+                            className="inline-flex items-center gap-1.5 bg-green-500 text-white hover:bg-green-600 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-colors disabled:opacity-50"
+                          >
+                            <CheckCircle weight="bold" /> Fulfill
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* APPROVALS QUEUE */}
+        {activeTab === 'approvals' && (
+          <div className="flex flex-col">
+            {approvals.length === 0 ? (
+              <div className="p-16 flex flex-col items-center justify-center text-center">
+                <CheckCircle size={48} className="text-muted-foreground opacity-20 mb-4" />
+                <h3 className="text-lg font-bold text-foreground">Inbox Zero</h3>
+                <p className="text-muted-foreground">All point submissions have been reviewed.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Student</th>
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Submission</th>
+                      
+                      <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</th>
+                      <th className="p-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approvals.map(a => (
+                      <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-sm text-foreground">{a.studentName}</div>
+                          <div className="text-xs text-muted-foreground font-bold">{a.studentHouse}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-bold text-sm text-foreground">{a.type}</div>
+                          <div className="text-xs text-muted-foreground">{a.description}</div>
+                        </td>
+                        
+                        <td className="p-4 text-sm font-medium text-muted-foreground">{new Date(a.date).toLocaleDateString()}</td>
+                        <td className="p-4">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => handleApprove(a.id, true)} className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition-colors" title="Approve">
+                              <CheckCircle size={20} weight="bold" />
                             </button>
-                            <button
-                              onClick={() => reviewMutation.mutate({ id: a.id, action: 'approve', type: a.type })}
-                              disabled={reviewMutation.isPending}
-                              title="Approve"
-                              style={{
-                                padding: '5px 10px',
-                                background: '#10b981',
-                                border: 'none',
-                                color: '#fff',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px'
-                              }}
-                            >
-                              <Check size={13} weight="bold" /> Approve
+                            <button onClick={() => handleApprove(a.id, false)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Reject">
+                              <XCircle size={20} weight="bold" />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* COMPLAINT MODERATION */}
+        {/* COMPLAINTS */}
         {activeTab === 'moderation' && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="flex flex-col">
             {complaints.length === 0 ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No active complaints in your scope.</div>
+              <div className="p-16 flex flex-col items-center justify-center text-center">
+                <FileText size={48} className="text-muted-foreground opacity-20 mb-4" />
+                <h3 className="text-lg font-bold text-foreground">No active complaints</h3>
+                <p className="text-muted-foreground">The department is quiet.</p>
+              </div>
             ) : (
               complaints.map(c => (
-                <div key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <div key={c.id} className="border-b border-border last:border-0">
                   {/* Row Summary */}
                   <div 
                     onClick={() => {
                       setExpandedComplaint(expandedComplaint === c.id ? null : c.id);
-                      if (expandedComplaint !== c.id) setEditingNotes({ ...editingNotes, [c.id]: c.notes || '' });
+                      if (expandedComplaint !== c.id) setEditingNotes({ ...editingNotes, [c.id]: c.adminNotes });
                     }}
-                    style={{ padding: '1rem', display: 'flex', gap: '2rem', cursor: 'pointer', background: expandedComplaint === c.id ? 'var(--bg-surface)' : 'transparent', alignItems: 'center' }}
+                    className={`p-4 flex items-center gap-4 cursor-pointer transition-colors ${expandedComplaint === c.id ? 'bg-muted/50' : 'hover:bg-muted/30'}`}
                   >
-                    <div className="mono" style={{ fontSize: '0.875rem', fontWeight: 600 }}>{c.trackingCode}</div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.5rem', background: 'var(--border-strong)', borderRadius: 'var(--radius-sm)' }}>
+                    <div className="font-mono text-sm font-bold text-foreground bg-background border border-border px-2 py-1 rounded-md">{c.trackingCode}</div>
+                    <div className="text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-orange-500 border border-orange-500/20 px-2 py-1 rounded-md">
                       {c.category}
                     </div>
-                    <div className="mono" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{new Date(c.date || c.reportedDay).toLocaleDateString()}</div>
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: c.status === 'SUBMITTED' ? '#e11d48' : 'var(--text-secondary)', fontWeight: 600 }}>
+                    <div className="text-sm font-medium text-muted-foreground hidden md:block">{new Date(c.reportedDay).toLocaleDateString()}</div>
+                    <div className="ml-auto flex items-center gap-3">
+                      <span className={`text-xs font-bold uppercase ${c.status === 'SUBMITTED' ? 'text-red-500' : 'text-blue-500'}`}>
                         {c.status.replace('_', ' ')}
                       </span>
-                      <MagnifyingGlass color="var(--text-secondary)" />
+                      <div className="p-1.5 bg-background border border-border rounded-lg text-muted-foreground">
+                        <MagnifyingGlass size={16} weight="bold" />
+                      </div>
                     </div>
                   </div>
 
                   {/* Expanded Detail */}
                   {expandedComplaint === c.id && (
-                    <div style={{ padding: '2rem', borderTop: '1px dashed var(--border-strong)', background: 'var(--bg-surface)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                      <div>
-                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Complaint Content</div>
-                        <p style={{ margin: 0, padding: '1rem', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)' }}>
+                    <div className="p-6 bg-muted/20 border-t border-border flex flex-col gap-6">
+                      <div className="flex flex-col gap-2">
+                        <div className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Complaint Content</div>
+                        <p className="m-0 p-4 bg-background border border-border rounded-xl text-sm leading-relaxed text-foreground">
                           {c.content}
                         </p>
                       </div>
 
-                      <div>
-                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Admin Notes (Visible to Student)</div>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Admin Notes (Visible to Student)</div>
                         <textarea 
                           value={editingNotes[c.id] || ''}
                           onChange={(e) => setEditingNotes({ ...editingNotes, [c.id]: e.target.value })}
                           rows={3}
-                          style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                          className="w-full p-4 bg-background border border-border focus:border-blue-500 rounded-xl text-sm text-foreground outline-none transition-colors resize-y min-h-[100px]"
                           placeholder="Updates or resolution details..."
                         />
                       </div>
 
-                      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                      <div className="flex flex-wrap justify-end gap-3">
                         <button 
-                          onClick={() => handleSaveNotes(c.id, 'RESOLVED')}
-                          disabled={updateComplaintMutation.isPending}
-                          style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', cursor: updateComplaintMutation.isPending ? 'not-allowed' : 'pointer', opacity: updateComplaintMutation.isPending ? 0.5 : 1 }}
+                          onClick={() => handleSaveNotes(c.id, 'REJECTED')}
+                          className="px-4 py-2 bg-background hover:bg-red-500/10 hover:text-red-500 border border-border hover:border-red-500/20 text-foreground rounded-xl text-sm font-bold transition-colors"
                         >
-                          Mark Resolved
+                          Reject Complaint
+                        </button>
+                        <button 
+                          onClick={() => handleSaveNotes(c.id, 'PUBLISHED')}
+                          className="px-4 py-2 bg-background hover:bg-green-500/10 hover:text-green-500 border border-border hover:border-green-500/20 text-foreground rounded-xl text-sm font-bold transition-colors"
+                        >
+                          Publish Resolution
                         </button>
                         <button 
                           onClick={() => handleSaveNotes(c.id, 'UNDER_REVIEW')}
-                          disabled={updateComplaintMutation.isPending}
-                          style={{ padding: '0.5rem 1rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', cursor: updateComplaintMutation.isPending ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: updateComplaintMutation.isPending ? 0.5 : 1 }}
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-bold shadow-md transition-colors"
                         >
-                          Save Notes & Mark In Progress
+                          Save Notes & In Progress
                         </button>
                       </div>
                     </div>
@@ -443,27 +347,27 @@ export function AdminDashboard() {
 
         {/* AT RISK STUDENTS */}
         {activeTab === 'risk' && (
-          <div className="responsive-table-wrapper">
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-strong)' }}>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Student</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>House</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Points</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Last Active</th>
-                  <th style={{ padding: '1rem' }}></th>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Student</th>
+                  <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">House</th>
+                  <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Points</th>
+                  <th className="p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Last Active</th>
+                  <th className="p-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {riskStudents.map(s => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '1rem', fontWeight: 500 }}>{s.name}</td>
-                    <td style={{ padding: '1rem' }}>{s.house}</td>
-                    <td className="mono" style={{ padding: '1rem', color: '#e11d48' }}>{s.points}</td>
-                    <td className="mono" style={{ padding: '1rem' }}>{s.lastActive}</td>
-                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <button disabled title="Not Implemented Yet" style={{ padding: '0.25rem 0.75rem', background: 'transparent', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', cursor: 'not-allowed', opacity: 0.5, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Warning weight="fill" /> Flag for Check-in
+                  <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="p-4 font-bold text-sm text-foreground">{s.name}</td>
+                    <td className="p-4 text-xs font-bold text-muted-foreground">{s.house}</td>
+                    <td className="p-4 font-mono font-bold text-red-500">{s.points}</td>
+                    <td className="p-4 text-sm font-medium text-muted-foreground">{s.lastActive}</td>
+                    <td className="p-4 text-right">
+                      <button className="inline-flex items-center gap-1.5 bg-background border border-border hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                        <Warning weight="bold" /> Flag
                       </button>
                     </td>
                   </tr>
@@ -475,29 +379,30 @@ export function AdminDashboard() {
 
         {/* EXPORT */}
         {activeTab === 'export' && (
-          <div style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-            <Shield weight="duotone" size={48} color="var(--border-strong)" />
-            <div>
-              <h2 style={{ margin: 0 }}>Department Records</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Export full point standings, redemptions, and activity logs for accreditation.</p>
+          <div className="p-12 md:p-20 flex flex-col items-center justify-center text-center gap-6">
+            <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500">
+              <DownloadSimple size={48} weight="duotone" />
+            </div>
+            
+            <div className="max-w-md">
+              <h2 className="text-2xl font-black text-foreground mb-2">Department Records</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Export full point standings, redemptions, and activity logs for official college accreditation or department review.
+              </p>
             </div>
             
             <button 
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 2rem', background: 'var(--text-primary)', border: 'none', color: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
               onClick={() => handleExport('csv')}
+              className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-8 py-4 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95"
             >
-              <DownloadSimple weight="bold" /> Download Full CSV Report
+              <DownloadSimple size={20} weight="bold" /> Download Full CSV Report
             </button>
           </div>
         )}
-
-        {/* RUBRIC */}
-        {activeTab === 'rubric' && <AdminRubricTab />}
-
-        {/* DISCIPLINE */}
-        {activeTab === 'discipline' && <AdminDisciplineTab />}
       </div>
 
     </div>
   );
 }
+
+export default AdminDashboard;

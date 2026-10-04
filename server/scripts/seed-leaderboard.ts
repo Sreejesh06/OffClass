@@ -20,7 +20,7 @@ async function main() {
           email: `student${i}@test.com`,
           passwordHash: 'dummy',
           name: `Operative ${i}`,
-          house: house,
+          house: house!,
           role: 'STUDENT',
           points: 0,
         }

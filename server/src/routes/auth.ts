@@ -1,7 +1,6 @@
 import { Router, type Router as IRouter, type Request, type Response } from "express";
 import bcrypt from "bcrypt";
-import * as otplib from "otplib";
-const { authenticator } = otplib;
+import { generateSecret, generateURI, verify } from "otplib";
 import qrcode from "qrcode";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -268,7 +267,7 @@ router.post("/login/totp", async (req: Request, res: Response): Promise<void> =>
     }
 
     // Verify 6-digit code natively using otplib
-    const isValid = authenticator.check(code, user.totpSecret);
+    const isValid = await verify({ token: code, secret: user.totpSecret });
     if (!isValid) {
       res.status(401).json({ error: "Invalid 2FA code" });
       return;
@@ -315,8 +314,8 @@ router.post("/2fa/setup", requireAuth, async (req: Request, res: Response): Prom
       return;
     }
 
-    const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(user.email, "Cryptid", secret);
+    const secret = generateSecret();
+    const otpauth = generateURI({ label: user.email, issuer: "Cryptid", secret });
     
     // Save secret temporarily (not fully enabled yet until verified)
     await prisma.user.update({
@@ -342,7 +341,7 @@ router.post("/2fa/verify-setup", requireAuth, async (req: Request, res: Response
       return;
     }
 
-    const isValid = authenticator.check(code, user.totpSecret);
+    const isValid = await verify({ token: code, secret: user.totpSecret });
     if (!isValid) {
       res.status(400).json({ error: "Invalid code" });
       return;

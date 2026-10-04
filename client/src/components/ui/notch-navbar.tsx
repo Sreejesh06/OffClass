@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Shield, User, Trophy, Gift, Flag, ShieldCheck, List, X, Compass } from "@phosphor-icons/react"
+import { Shield, User, Trophy, Gift, Flag, ShieldCheck, List, X, Compass, Moon, Sun, Star } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
@@ -24,18 +24,20 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const location = useLocation()
-  const { house } = useTheme()
+  const { house, isDarkMode, toggleDarkMode } = useTheme()
 
   // Navigation items configuration
   const publicItems = [
     { label: "Home", href: "/", icon: Shield },
-    { label: "Leaderboard", href: "/leaderboard", icon: Trophy }
+    { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
+    { label: "Spotlight", href: "/hall-of-fame", icon: Star }
   ];
 
   const loggedInItemsLeft = [
     { label: "Profile", href: "/profile", icon: User },
     { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { label: "Headquarters", href: "/opportunities", icon: Compass },
+    { label: "Spotlight", href: "/hall-of-fame", icon: Star }
   ];
 
   const loggedInItemsRight = [
@@ -55,7 +57,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
       <header className={cn("fixed top-0 inset-x-0 z-50 h-16 flex px-0 drop-shadow-sm", className)} {...props}>
         
         {/* Left Side Bar - Flexible width */}
-        <div className="flex-1 h-10 bg-white z-20 relative min-w-0">
+        <div className="flex-1 h-10 bg-white dark:bg-background z-20 relative min-w-0 transition-colors">
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
             <line x1="0" y1="39.5" x2="100%" y2="39.5" stroke="currentColor" strokeOpacity={0.15} strokeWidth={1} className="text-foreground" />
           </svg>
@@ -67,7 +69,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
           {/* Left Slice (Corner) */}
           <div className="w-[50px] h-full relative shrink-0">
             {/* Glass Background */}
-            <div className="absolute inset-0 bg-white" style={{ clipPath: "path('M0 0 H50 V64 C25 64 25 40 0 40 Z')" }} />
+            <div className="absolute inset-0 bg-white dark:bg-background transition-colors" style={{ clipPath: "path('M0 0 H50 V64 C25 64 25 40 0 40 Z')" }} />
             {/* Outlines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 50 64">
               <path d="M0 39.5 C25 39.5 25 63.5 50 63.5" fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={1} className="text-foreground" />
@@ -77,7 +79,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
           {/* Center Slice (Flexible Content Area) */}
           <div className="flex-1 h-full relative min-w-0 -ml-px">
              {/* Background & Lines Layer */}
-             <div className="absolute inset-0 bg-white">
+             <div className="absolute inset-0 bg-white dark:bg-background transition-colors">
                  <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
                    <line x1="0" y1="63.5" x2="100%" y2="63.5" stroke="currentColor" strokeOpacity={0.15} strokeWidth={1} className="text-foreground" />
                  </svg>
@@ -105,7 +107,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
               {/* Logo (Center) */}
               <div className="flex justify-center shrink-0 mx-2 md:mx-4 mt-1">
                 <Link to="/" className="flex items-center justify-center relative group gap-2">
-                  <Shield weight="duotone" size={28} className="transition-transform relative z-10" style={{ color: 'var(--accent-house, #111827)' }} />
+                  <Shield weight="duotone" size={28} className="transition-transform relative z-10" style={{ color: 'var(--accent-house, currentColor)' }} />
                   <span className="font-bold tracking-tight text-lg hidden sm:block font-mono">OFFCLASS</span>
                 </Link>
               </div>
@@ -117,6 +119,14 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                 ))}
                 
                 <div className="flex gap-4 pl-4 border-l border-foreground/10 shrink-0 items-center">
+                  <button 
+                    onClick={toggleDarkMode} 
+                    className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-foreground/5 rounded-full transition-colors"
+                    aria-label="Toggle dark mode"
+                  >
+                    {isDarkMode ? <Sun weight="fill" className="w-5 h-5" /> : <Moon weight="fill" className="w-5 h-5" />}
+                  </button>
+
                   {!user ? (
                     <Link to="/login" className="px-4 py-1.5 text-sm font-bold text-background bg-foreground rounded-2xl hover:bg-foreground/90 transition-colors shadow-sm whitespace-nowrap font-sans">
                       Sign In
@@ -134,6 +144,13 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
 
               {/* Mobile Right Actions */}
               <div className="md:hidden flex items-center gap-2 mb-1">
+                 <button 
+                    onClick={toggleDarkMode} 
+                    className="p-1 text-foreground/70 hover:text-foreground hover:bg-foreground/5 rounded-full transition-colors mr-1"
+                 >
+                    {isDarkMode ? <Sun weight="fill" className="w-4 h-4" /> : <Moon weight="fill" className="w-4 h-4" />}
+                 </button>
+
                  {!user ? (
                    <Link to="/login" className="px-3 py-1 text-xs font-bold text-background bg-foreground rounded-2xl hover:bg-foreground/90 transition-colors shadow-sm whitespace-nowrap">
                      Sign In
@@ -154,7 +171,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
           {/* Right Slice (Corner) */}
           <div className="w-[50px] h-full relative shrink-0 -ml-px">
             {/* Glass Background */}
-            <div className="absolute inset-0 bg-white" style={{ clipPath: "path('M0 0 H50 V40 C25 40 25 64 0 64 Z')" }} />
+            <div className="absolute inset-0 bg-white dark:bg-background transition-colors" style={{ clipPath: "path('M0 0 H50 V40 C25 40 25 64 0 64 Z')" }} />
             {/* Outlines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 50 64">
               <path d="M0 63.5 C25 63.5 25 39.5 50 39.5" fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={1} className="text-foreground" />
@@ -164,7 +181,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
         </div>
 
         {/* Right Side Bar - Flexible width */}
-        <div className="flex-1 h-10 bg-white z-20 relative min-w-0 -ml-px">
+        <div className="flex-1 h-10 bg-white dark:bg-background z-20 relative min-w-0 -ml-px transition-colors">
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
             <line x1="0" y1="39.5" x2="100%" y2="39.5" stroke="currentColor" strokeOpacity={0.15} strokeWidth={1} className="text-foreground" />
           </svg>
@@ -180,7 +197,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-16 z-40 bg-white border-b border-foreground/10 p-4 md:hidden shadow-lg"
+            className="fixed inset-x-0 top-16 z-40 bg-white dark:bg-background border-b border-foreground/10 p-4 md:hidden shadow-lg"
           >
              <nav className="flex flex-col gap-2">
                {/* Combine all items */}

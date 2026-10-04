@@ -1,7 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { prisma } from "../lib/db.js";
-import { requireAuth, optionalAuth } from "../middlewares/requireAuth.js";
+import { requireAuth } from "../middlewares/requireAuth.js";
 import { z } from "zod";
+import { generatePresignedPut } from "../lib/minio.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -10,7 +12,7 @@ const router = Router();
  * Public — no auth required. Used for shareable profile URLs.
  * Returns everything needed to render the portfolio card.
  */
-router.get("/:id/profile", optionalAuth, async (req: Request, res: Response): Promise<void> => {
+router.get("/:id/profile", async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params["id"] as string;
 
@@ -21,11 +23,11 @@ router.get("/:id/profile", optionalAuth, async (req: Request, res: Response): Pr
           select: { provider: true, externalHandle: true, verified: true },
         },
         profileSyncs: {
-          select: { provider: true, parsedStats: true, lastSyncedAt: true },
+          select: { provider: true, parsedStats: true, lastSyncedAt: true, status: true },
         },
         certificates: {
-          where: req.user?.userId === id ? undefined : { status: "APPROVED" },
-          select: { id: true, name: true, createdAt: true, mimeType: true, fileKey: true, order: true, status: true },
+          where: { status: "APPROVED" },
+          select: { id: true, name: true, createdAt: true, mimeType: true, fileKey: true, order: true, blockchainTxHash: true, isAnchored: true },
           orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         },
         pointsTransactions: {
@@ -119,6 +121,7 @@ router.get("/:id/profile", optionalAuth, async (req: Request, res: Response): Pr
       activePlatforms,
       avatar: user.avatar,
       workDomain: user.workDomain,
+      walletAddress: user.walletAddress,
       skills: user.skills,
       workExperiences: user.workExperiences,
     });
@@ -163,6 +166,7 @@ const ProfileSchema = z.object({
   bio: z.string().max(400, "Bio must be 400 characters or fewer").nullable().optional(),
   workDomain: z.string().max(100, "Domain must be 100 characters or fewer").nullable().optional(),
   skills: z.array(z.string()).max(20, "Cannot have more than 20 skills").optional(),
+  walletAddress: z.string().optional(),
   workExperiences: z.array(z.object({
     id: z.string().optional(),
     company: z.string().min(1, "Company is required"),
@@ -186,6 +190,7 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
           bio: data.bio,
           workDomain: data.workDomain,
           skills: data.skills,
+          walletAddress: data.walletAddress,
         },
       });
 
@@ -203,13 +208,13 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
         // Upsert incoming experiences
         for (const exp of data.workExperiences) {
           if (exp.id) {
-            await tx.workExperience.updateMany({
-              where: { id: exp.id, userId },
+            await tx.workExperience.update({
+              where: { id: exp.id },
               data: {
                 company: exp.company,
                 role: exp.role,
                 duration: exp.duration,
-                description: exp.description ?? null,
+                description: exp.description,
                 isCurrent: exp.isCurrent,
               }
             });
@@ -220,7 +225,7 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
                 company: exp.company,
                 role: exp.role,
                 duration: exp.duration,
-                description: exp.description ?? null,
+                description: exp.description,
                 isCurrent: exp.isCurrent,
               }
             });
@@ -245,7 +250,24 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
  * Authenticated — update the current user's avatar.
  */
 const AvatarSchema = z.object({
-  avatar: z.string().max(50, "Avatar seed must be 50 characters or fewer"),
+  avatar: z.string().max(50000, "Avatar is too large"),
+});
+
+
+router.post("/me/avatar/presign", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { mimeType } = req.body;
+    if (!mimeType || !["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+      res.status(400).json({ error: "Invalid mime type" });
+      return;
+    }
+    const ext = mimeType.split("/")[1];
+    const fileKey = `avatars/${req.user!.userId}-${crypto.randomBytes(8).toString("hex")}.${ext}`;
+    const uploadUrl = await generatePresignedPut(fileKey, mimeType);
+    res.json({ uploadUrl, fileKey });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to generate presigned URL" });
+  }
 });
 
 router.patch("/me/avatar", requireAuth, async (req: Request, res: Response): Promise<void> => {
@@ -370,36 +392,13 @@ router.post("/me/house-transfer", requireAuth, async (req: Request, res: Respons
  * POST /api/users/me/achievements
  * Submit a new achievement request for admin approval
  */
-const AchievementSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  activityKey: z.string().min(1, "Activity type is required"),
-  position: z.string().max(100).optional().default("Participant"),
-  date: z.string().min(1, "Date is required"),
-  semester: z.string().max(50).nullable().optional(),
-  prize: z.string().max(100).nullable().optional(),
-  description: z.string().max(1000).nullable().optional(),
-  opportunityId: z.string().uuid().nullable().optional(),
-});
-
 router.post("/me/achievements", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const parsed = AchievementSchema.safeParse(req.body);
-    
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
-      return;
-    }
+    const { title, category, position, date, semester, prize, description, opportunityId, images } = req.body;
 
-    const { title, activityKey, position, date, semester, prize, description, opportunityId } = parsed.data;
-
-    // Lookup the rubric entry
-    const rubric = await prisma.pointsRubric.findUnique({
-      where: { activityKey }
-    });
-
-    if (!rubric) {
-      res.status(400).json({ error: "Invalid activity type selected." });
+    if (!title || !category || !position || !date) {
+      res.status(400).json({ error: "Title, category, position, and date are required" });
       return;
     }
 
@@ -407,43 +406,24 @@ router.post("/me/achievements", requireAuth, async (req: Request, res: Response)
       data: {
         userId,
         title,
-        category: rubric.category, // Auto-assigned from rubric
+        category,
         position,
         date: new Date(date),
         semester: semester || null,
         prize: prize || null,
         description: description || null,
         opportunityId: opportunityId || null,
-        rubricId: rubric.id,
+        images: images || [],
       },
     });
 
     res.status(201).json({
-      message: "Submission received for review",
+      message: "Achievement submitted for review",
       achievement,
     });
   } catch (error) {
     console.error("Failed to submit achievement:", error);
-    res.status(500).json({ error: "Failed to process submission" });
-  }
-});
-
-/**
- * GET /api/users/rubric
- * Fetch the active points rubric so the frontend can populate the submission dropdown
- */
-router.get("/rubric", requireAuth, async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const rubric = await prisma.pointsRubric.findMany({
-      where: { isActive: true },
-      orderBy: [
-        { category: 'asc' },
-        { points: 'desc' }
-      ]
-    });
-    res.json({ rubric });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch rubric" });
+    res.status(500).json({ error: "Failed to submit achievement" });
   }
 });
 
