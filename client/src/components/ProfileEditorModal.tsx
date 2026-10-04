@@ -16,6 +16,7 @@ interface ProfileData {
   bio: string | null;
   workDomain: string | null;
   skills: string[];
+  walletAddress?: string | null;
   workExperiences: WorkExperience[];
 }
 
@@ -29,6 +30,7 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
   const queryClient = useQueryClient();
   const [bio, setBio] = useState(initialData.bio || '');
   const [workDomain, setWorkDomain] = useState(initialData.workDomain || '');
+  const [walletAddress, setWalletAddress] = useState(initialData.walletAddress || '');
   const [skills, setSkills] = useState<string[]>(initialData.skills || []);
   const [newSkill, setNewSkill] = useState('');
   const [experiences, setExperiences] = useState<WorkExperience[]>(initialData.workExperiences || []);
@@ -38,6 +40,7 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
       await api.patch('/users/me/profile', {
         bio: bio.trim() || null,
         workDomain: workDomain.trim() || null,
+        walletAddress: walletAddress.trim() || null,
         skills,
         workExperiences: experiences.map(e => ({
             ...e,
@@ -81,52 +84,64 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-xl overflow-hidden my-8 flex flex-col max-h-[90vh]">
+      <div className="bg-card text-card-foreground rounded-3xl w-full max-w-2xl shadow-xl overflow-hidden my-8 flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-card text-card-foreground z-10">
           <div>
-            <h2 className="text-xl font-bold font-display text-gray-900">
+            <h2 className="text-xl font-bold font-display text-foreground">
               {isOnboarding ? 'Complete Your Profile' : 'Edit Profile'}
             </h2>
             {isOnboarding && (
-              <p className="text-sm text-gray-500 mt-1">Add your skills and experience to get recognized!</p>
+              <p className="text-sm text-muted-foreground mt-1">Add your skills and experience to get recognized!</p>
             )}
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
+            className="p-2 text-gray-400 hover:text-muted-foreground hover:bg-muted/50 rounded-full transition-colors"
           >
             <X size={20} weight="bold" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-gray-50/30">
+        <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-muted/50/30">
           
           {/* Identity Section */}
           <section>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Identity & Focus</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Identity & Focus</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Work Domain / Title</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Work Domain / Title</label>
                 <input 
                   type="text" 
                   value={workDomain}
                   onChange={e => setWorkDomain(e.target.value)}
                   placeholder="e.g. Offensive Security, React Developer"
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full bg-card text-card-foreground border border-border rounded-xl p-3 text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   maxLength={100}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Web3 Wallet Address (Polygon Amoy)</label>
+                <input 
+                  type="text" 
+                  value={walletAddress}
+                  onChange={e => setWalletAddress(e.target.value)}
+                  placeholder="e.g. 0x1234... (for claiming achievement SBTs)"
+                  className="w-full bg-card text-card-foreground border border-border rounded-xl p-3 text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 font-mono text-sm"
+                  maxLength={42}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">About Me (Bio)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">About Me (Bio)</label>
                 <textarea 
                   value={bio}
                   onChange={e => setBio(e.target.value)}
                   placeholder="Tell us a bit about yourself..."
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                  className="w-full bg-card text-card-foreground border border-border rounded-xl p-3 text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
                   rows={3}
                   maxLength={400}
                 />
@@ -138,7 +153,7 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
 
           {/* Skills Section */}
           <section>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Technical Skills</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Technical Skills</h3>
             <div>
               <div className="flex gap-2 mb-3">
                 <input 
@@ -147,7 +162,7 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
                   onChange={e => setNewSkill(e.target.value)}
                   onKeyDown={handleAddSkill}
                   placeholder="Add a skill (e.g. Python, Docker)"
-                  className="flex-1 bg-white border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="flex-1 bg-card text-card-foreground border border-border rounded-xl p-3 text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   disabled={skills.length >= 20}
                 />
                 <button 
@@ -161,7 +176,7 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
               {skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {skills.map((skill, index) => (
-                    <div key={index} className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700 font-medium">
+                    <div key={index} className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg text-sm text-muted-foreground font-medium">
                       <span>{skill}</span>
                       <button onClick={() => removeSkill(index)} className="text-gray-400 hover:text-rose-500 ml-1">
                         <X size={14} weight="bold" />
@@ -180,10 +195,10 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
           {/* Work Experience Section */}
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">Work Experience</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Work Experience</h3>
               <button 
                 onClick={addExperience}
-                className="flex items-center gap-1 text-xs font-bold bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1 text-xs font-bold bg-card text-card-foreground border border-border shadow-sm px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <Plus size={14} weight="bold" /> Add Entry
               </button>
@@ -191,12 +206,12 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
             
             <div className="space-y-4">
               {experiences.length === 0 ? (
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center">
+                <div className="bg-card text-card-foreground border border-gray-100 rounded-2xl p-6 text-center">
                   <p className="text-gray-400 text-sm">Add internships, roles, or major projects here.</p>
                 </div>
               ) : (
                 experiences.map((exp, index) => (
-                  <div key={index} className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 relative group">
+                  <div key={index} className="bg-card text-card-foreground border border-gray-100 shadow-sm rounded-2xl p-5 relative group">
                     <button 
                       onClick={() => removeExperience(index)}
                       className="absolute top-4 right-4 p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
@@ -207,42 +222,42 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 mt-2">
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Company / Org</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">Company / Org</label>
                         <input 
                           type="text" 
                           value={exp.company}
                           onChange={e => updateExperience(index, 'company', e.target.value)}
                           placeholder="e.g. Google, Cryptid CTF Team"
-                          className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:bg-white"
+                          className="w-full bg-muted/50 border border-border rounded-lg p-2.5 text-sm focus:bg-card text-card-foreground"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Role / Title</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">Role / Title</label>
                         <input 
                           type="text" 
                           value={exp.role}
                           onChange={e => updateExperience(index, 'role', e.target.value)}
                           placeholder="e.g. Security Intern"
-                          className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:bg-white"
+                          className="w-full bg-muted/50 border border-border rounded-lg p-2.5 text-sm focus:bg-card text-card-foreground"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Duration</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">Duration</label>
                         <input 
                           type="text" 
                           value={exp.duration}
                           onChange={e => updateExperience(index, 'duration', e.target.value)}
                           placeholder="e.g. Jun 2025 - Present"
-                          className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:bg-white"
+                          className="w-full bg-muted/50 border border-border rounded-lg p-2.5 text-sm focus:bg-card text-card-foreground"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Description (Optional)</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">Description (Optional)</label>
                         <textarea 
                           value={exp.description}
                           onChange={e => updateExperience(index, 'description', e.target.value)}
                           placeholder="What did you do there?"
-                          className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:bg-white resize-none"
+                          className="w-full bg-muted/50 border border-border rounded-lg p-2.5 text-sm focus:bg-card text-card-foreground resize-none"
                           rows={2}
                         />
                       </div>
@@ -256,11 +271,11 @@ export function ProfileEditorModal({ initialData, onClose, isOnboarding = false 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-end gap-3 sticky bottom-0">
+        <div className="px-6 py-4 border-t border-gray-100 bg-card text-card-foreground flex justify-end gap-3 sticky bottom-0">
           {!isOnboarding && (
             <button 
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>

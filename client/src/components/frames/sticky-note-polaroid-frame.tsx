@@ -48,7 +48,7 @@ function MediaSkeleton() {
 function MediaPlaceholder() {
   return (
     <div className="flex size-full items-center justify-center bg-neutral-100">
-      <div className="size-10 rounded-md border border-neutral-200 bg-white text-neutral-300">
+      <div className="size-10 rounded-md border border-neutral-200 bg-card text-card-foreground text-neutral-300">
         <svg
           viewBox="0 0 20 20"
           aria-hidden
@@ -160,7 +160,7 @@ export const StickyNotePolaroidFrame = forwardRef<
         style={frameStyle}
         {...props}
       >
-        <div className="relative overflow-visible bg-white px-3.5 pt-3.5 pb-14 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_24px_rgba(15,23,42,0.12),0_22px_48px_-6px_rgba(15,23,42,0.1)]">
+        <div className="relative overflow-visible bg-card text-card-foreground px-3.5 pt-3.5 pb-14 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_24px_rgba(15,23,42,0.12),0_22px_48px_-6px_rgba(15,23,42,0.1)]">
           <div
             className={cn(
               "relative overflow-hidden bg-neutral-100",

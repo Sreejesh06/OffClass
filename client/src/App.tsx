@@ -12,11 +12,13 @@ const Home = React.lazy(() => import('./pages/Home').then(m => ({ default: m.Hom
 const Login = React.lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const ProfilePortfolio = React.lazy(() => import('./pages/ProfilePortfolio').then(m => ({ default: m.ProfilePortfolio })));
 const HallOfFame = React.lazy(() => import('./pages/HallOfFame').then(m => ({ default: m.HallOfFame })));
+const SpotlightCompose = React.lazy(() => import('./pages/SpotlightCompose').then(m => ({ default: m.SpotlightCompose })));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
 const Redeem = React.lazy(() => import('./pages/Redeem').then(m => ({ default: m.Redeem })));
 const Complaints = React.lazy(() => import('./pages/Complaints').then(m => ({ default: m.Complaints })));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const OpportunityBoard = React.lazy(() => import('./pages/OpportunityBoard').then(m => ({ default: m.OpportunityBoard })));
+const OpportunityCompose = React.lazy(() => import('./pages/OpportunityCompose').then(m => ({ default: m.OpportunityCompose })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,7 +50,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/hall-of-fame" element={<HallOfFame />} />
+                <Route path="/hall-of-fame" element={<Layout><HallOfFame /></Layout>} />
+                <Route path="/hall-of-fame/new" element={<Layout><SpotlightCompose /></Layout>} />
                 <Route path="/complaints" element={<Layout><Complaints /></Layout>} />
                 {/* Public routes — no login needed */}
                 <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />
@@ -59,6 +62,7 @@ function App() {
                   <Route path="/redeem" element={<Redeem />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/opportunities" element={<OpportunityBoard />} />
+                  <Route path="/opportunities/new" element={<OpportunityCompose />} />
                 </Route>
               </Routes>
             </Suspense>

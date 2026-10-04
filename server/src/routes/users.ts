@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from "express";
 import { prisma } from "../lib/db.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { z } from "zod";
+import { generatePresignedPut } from "../lib/minio.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -25,7 +27,7 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
         },
         certificates: {
           where: { status: "APPROVED" },
-          select: { id: true, name: true, createdAt: true, mimeType: true, fileKey: true, order: true },
+          select: { id: true, name: true, createdAt: true, mimeType: true, fileKey: true, order: true, blockchainTxHash: true, isAnchored: true },
           orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         },
         pointsTransactions: {
@@ -119,6 +121,7 @@ router.get("/:id/profile", async (req: Request, res: Response): Promise<void> =>
       activePlatforms,
       avatar: user.avatar,
       workDomain: user.workDomain,
+      walletAddress: user.walletAddress,
       skills: user.skills,
       workExperiences: user.workExperiences,
     });
@@ -163,6 +166,7 @@ const ProfileSchema = z.object({
   bio: z.string().max(400, "Bio must be 400 characters or fewer").nullable().optional(),
   workDomain: z.string().max(100, "Domain must be 100 characters or fewer").nullable().optional(),
   skills: z.array(z.string()).max(20, "Cannot have more than 20 skills").optional(),
+  walletAddress: z.string().optional(),
   workExperiences: z.array(z.object({
     id: z.string().optional(),
     company: z.string().min(1, "Company is required"),
@@ -186,6 +190,7 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
           bio: data.bio,
           workDomain: data.workDomain,
           skills: data.skills,
+          walletAddress: data.walletAddress,
         },
       });
 
@@ -245,7 +250,24 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
  * Authenticated — update the current user's avatar.
  */
 const AvatarSchema = z.object({
-  avatar: z.string().max(50, "Avatar seed must be 50 characters or fewer"),
+  avatar: z.string().max(50000, "Avatar is too large"),
+});
+
+
+router.post("/me/avatar/presign", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { mimeType } = req.body;
+    if (!mimeType || !["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+      res.status(400).json({ error: "Invalid mime type" });
+      return;
+    }
+    const ext = mimeType.split("/")[1];
+    const fileKey = `avatars/${req.user!.userId}-${crypto.randomBytes(8).toString("hex")}.${ext}`;
+    const uploadUrl = await generatePresignedPut(fileKey, mimeType);
+    res.json({ uploadUrl, fileKey });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to generate presigned URL" });
+  }
 });
 
 router.patch("/me/avatar", requireAuth, async (req: Request, res: Response): Promise<void> => {
@@ -373,7 +395,7 @@ router.post("/me/house-transfer", requireAuth, async (req: Request, res: Respons
 router.post("/me/achievements", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { title, category, position, date, semester, prize, description, opportunityId } = req.body;
+    const { title, category, position, date, semester, prize, description, opportunityId, images } = req.body;
 
     if (!title || !category || !position || !date) {
       res.status(400).json({ error: "Title, category, position, and date are required" });
@@ -391,6 +413,7 @@ router.post("/me/achievements", requireAuth, async (req: Request, res: Response)
         prize: prize || null,
         description: description || null,
         opportunityId: opportunityId || null,
+        images: images || [],
       },
     });
 

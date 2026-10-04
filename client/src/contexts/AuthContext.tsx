@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme, type House } from '../components/ThemeProvider';
 import { api } from '../lib/api';
 
@@ -23,38 +24,35 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const { setHouse } = useTheme();
 
-  useEffect(() => {
-    // Check session on mount
-    const fetchMe = async () => {
+  const { data: user, isLoading } = useQuery<User | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
       try {
         const { data } = await api.get('/auth/me');
-        setUser(data);
-        setHouse(data.house);
+        return data;
       } catch (err) {
-        setUser(null);
-        setHouse('none');
-      } finally {
-        setIsLoading(false);
+        return null;
       }
-    };
-    fetchMe();
-  }, [setHouse]);
+    },
+    retry: false,
+    staleTime: Infinity, // don't auto-refetch unnecessarily
+  });
+
+  // Sync house theme when user changes
+  useEffect(() => {
+    if (user && user.house) {
+      setHouse(user.house);
+    } else if (user === null && !isLoading) {
+      setHouse('none');
+    }
+  }, [user, isLoading, setHouse]);
 
   const login = async (email: string, password?: string) => {
-    setIsLoading(true);
-    try {
-      await api.post('/auth/login', { email, password });
-      // Fetch user profile after successful login
-      const { data } = await api.get('/auth/me');
-      setUser(data);
-      setHouse(data.house);
-    } finally {
-      setIsLoading(false);
-    }
+    await api.post('/auth/login', { email, password });
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
 
   const logout = async () => {
@@ -63,13 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Logout failed', err);
     } finally {
-      setUser(null);
-      setHouse('none');
+      queryClient.setQueryData(['auth', 'me'], null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user: user || null, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
