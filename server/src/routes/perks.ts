@@ -139,8 +139,7 @@ const PerkSchema = z.object({
   description: z.string().min(1),
   cost: z.number().int().min(0),
   quantityRemaining: z.number().int().min(0).nullable().optional(),
-  type: z.string().optional().default("OTHER"),
-  isActive: z.boolean().optional().default(true)
+    isActive: z.boolean().optional().default(true)
 });
 
 // Create perk

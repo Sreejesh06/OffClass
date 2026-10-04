@@ -55,8 +55,7 @@ export function ManagePerkModal({ isOpen, onClose, perk }: ManagePerkModalProps)
       description,
       cost: parseInt(cost, 10),
       quantityRemaining: quantity ? parseInt(quantity, 10) : null,
-      isActive: true,
-      type: "OTHER"
+      isActive: true
     });
   };
 
