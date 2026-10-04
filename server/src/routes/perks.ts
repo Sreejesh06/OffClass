@@ -4,6 +4,7 @@ import { prisma } from "../lib/db.js";
 import { getOverallKey, getHouseKey } from "../lib/leaderboard.js";
 import { redis } from "../lib/redis.js";
 import { z } from "zod";
+import { notifyAdminsAndTeachers } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -114,6 +115,9 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
     pipeline.zadd(getHouseKey(result.house), result.currentPoints, userId);
     await pipeline.exec();
 
+    const student = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    await notifyAdminsAndTeachers("New Perk Redeemed", `${student?.name || "A student"} has redeemed the perk: "${item.name}"`);
+    
     res.json({ message: "Success", redemption: result.redemption });
 
   } catch (err: unknown) {

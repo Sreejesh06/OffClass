@@ -4,6 +4,7 @@ import { prisma } from "../lib/db.js";
 import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { z } from "zod";
 import crypto from "crypto";
+import { notifyAdminsAndTeachers } from "../lib/notifications.js";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,7 @@ router.post("/submit", async (req: Request, res: Response): Promise<void> => {
       }
     });
 
+    await notifyAdminsAndTeachers("New Anonymous Complaint", `A new anonymous complaint has been submitted in category: ${category}.`);
     res.json({ trackingCode, message: "Complaint securely submitted. Save this tracking code." });
   } catch {
     res.status(500).json({ error: "Failed to submit complaint" });
