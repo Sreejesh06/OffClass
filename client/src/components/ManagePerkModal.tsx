@@ -37,9 +37,9 @@ export function ManagePerkModal({ isOpen, onClose, perk }: ManagePerkModalProps)
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       if (perk) {
-        return api.put(`/api/perks/${perk.id}`, data);
+        return api.put(`/perks/${perk.id}`, data);
       } else {
-        return api.post(`/api/perks`, data);
+        return api.post(`/perks`, data);
       }
     },
     onSuccess: () => {

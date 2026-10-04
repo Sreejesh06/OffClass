@@ -45,7 +45,7 @@ export function Redeem() {
   const [status, setStatus] = useState<'idle' | 'confirm' | 'processing' | 'success' | 'error'>('idle');
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/perks/${id}`),
+    mutationFn: (id: string) => api.delete(`/perks/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['perks'] });
     }
