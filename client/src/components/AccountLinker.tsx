@@ -12,7 +12,7 @@ const getPlatformIcon = (id: string) => {
     case 'THM': return <div className="w-8 h-8 rounded-lg bg-[#212C42]/10 text-[#212C42] flex items-center justify-center"><SiTryhackme size={18} /></div>;
     case 'LEETCODE': return <div className="w-8 h-8 rounded-lg bg-[#FFA116]/10 text-[#FFA116] flex items-center justify-center"><SiLeetcode size={18} /></div>;
     case 'GFG': return <div className="w-8 h-8 rounded-lg bg-[#2F8D46]/10 text-[#2F8D46] flex items-center justify-center"><SiGeeksforgeeks size={18} /></div>;
-    default: return <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center"><Link size={18} weight="bold" /></div>;
+    default: return <div className="w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center"><Link size={18} weight="bold" /></div>;
   }
 };
 
@@ -124,14 +124,14 @@ export function AccountLinker() {
       case 'UP_TO_DATE':
         return (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+            <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
               <CheckCircle size={16} className="text-emerald-500" weight="fill" />
               <span>Synced {platform.lastSync}</span>
             </div>
             <button 
               onClick={() => handleSync(platform.id)}
               disabled={syncMutation.isPending}
-              className="text-xs px-3 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="text-xs px-3 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-50 transition-colors"
             >
               Sync
             </button>
@@ -140,14 +140,14 @@ export function AccountLinker() {
       case 'STALE':
         return (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+            <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
               <Clock size={16} />
               <span>Last updated {platform.lastSync}</span>
             </div>
             <button 
               onClick={() => handleSync(platform.id)}
               disabled={syncMutation.isPending}
-              className="text-xs px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 transition-colors"
+              className="text-xs px-3 py-1 rounded-md border border-border/80 text-muted-foreground hover:bg-muted/50 font-medium disabled:opacity-50 transition-colors"
             >
               Sync Now
             </button>
@@ -182,7 +182,7 @@ export function AccountLinker() {
           <button 
             onClick={() => handleLink(platform.id)}
             disabled={linkingPlatform === platform.id}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-all shadow-sm"
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-border text-muted-foreground bg-card text-card-foreground hover:bg-muted/50 hover:border-border/80 disabled:opacity-50 transition-all shadow-sm"
           >
             <Link size={14} weight="bold" />
             {linkingPlatform === platform.id ? 'Linking...' : 'Link'}
@@ -199,10 +199,10 @@ export function AccountLinker() {
         <div className="flex flex-col gap-3">
           {platforms?.map(platform => (
             <div key={platform.id} className="flex flex-col gap-2">
-              <div className={`flex items-center justify-between gap-3 p-3 rounded-2xl border ${platform.state === 'FAILED' ? 'border-rose-200 bg-rose-50/50' : 'border-gray-100 bg-gray-50/50'} shadow-sm`}>
+              <div className={`flex items-center justify-between gap-3 p-3 rounded-2xl border ${platform.state === 'FAILED' ? 'border-rose-200 bg-rose-50/50' : 'border-gray-100 bg-muted/50/50'} shadow-sm`}>
                 <div className="flex items-center gap-3">
                   {getPlatformIcon(platform.id)}
-                  <span className="font-bold text-gray-900 text-sm">{platform.name}</span>
+                  <span className="font-bold text-foreground text-sm">{platform.name}</span>
                 </div>
                 <div>
                   {renderStatus(platform)}

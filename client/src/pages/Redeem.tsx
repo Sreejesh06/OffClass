@@ -109,11 +109,11 @@ export function Redeem() {
           </p>
         </div>
         
-        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 flex flex-col items-end min-w-[200px]">
+        <div className="relative z-10 bg-black/20 text-white backdrop-blur-md border border-white/20 rounded-2xl p-6 flex flex-col items-end min-w-[200px]">
           <span className="text-white/80 text-sm uppercase tracking-wider font-bold mb-1">Available Balance</span>
           <div className="flex items-center gap-2">
             <Coins size={32} className="text-yellow-400" />
-            <span className="font-mono text-4xl font-black">{userPoints}</span>
+            <span className="font-mono text-4xl font-black text-white">{userPoints}</span>
           </div>
         </div>
       </div>
