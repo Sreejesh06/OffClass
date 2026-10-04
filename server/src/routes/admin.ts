@@ -226,12 +226,14 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
           }),
         ]);
         await logAction(reviewerId, "ACHIEVEMENT_APPROVED", "ACHIEVEMENT", a.id, { points: pointsToAward });
+        await prisma.notification.create({ data: { userId: a.userId, title: "Achievement Approved", message: `Your achievement "${a.title}" was approved! You earned ${pointsToAward} points.` } });
       } else {
         await prisma.achievement.update({
           where: { id: a.id },
           data: { status: "REJECTED", reviewedBy: reviewerId },
         });
         await logAction(reviewerId, "ACHIEVEMENT_REJECTED", "ACHIEVEMENT", a.id);
+        await prisma.notification.create({ data: { userId: a.userId, title: "Achievement Rejected", message: `Your achievement "${a.title}" was rejected.` } });
       }
     }
 
@@ -475,6 +477,7 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
     }
 
     await logAction(reviewerId, `REVIEW_ACHIEVEMENT_${newStatus}`, "ACHIEVEMENT", id, { points });
+    await prisma.notification.create({ data: { userId: achievement.userId, title: newStatus === "APPROVED" ? "Achievement Approved" : "Achievement Rejected", message: newStatus === "APPROVED" ? `Your achievement "${achievement.title}" was approved! You earned ${points} points.` : `Your achievement "${achievement.title}" was rejected.` } });
 
     res.json({ message: `Achievement ${newStatus.toLowerCase()}` });
   } catch (error) {
@@ -532,6 +535,7 @@ router.patch("/redemptions/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]),
         data: { status: "FULFILLED", fulfilledAt: new Date() }
       });
       await logAction(req.user!.userId, "REDEMPTION_FULFILLED", "REDEMPTION", redemption.id);
+      await prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Fulfilled", message: `Your redemption for "${redemption.perkItem.name}" has been fulfilled!` } });
     } else {
       // Reject and refund
       await prisma.$transaction([
@@ -555,6 +559,7 @@ router.patch("/redemptions/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]),
         })
       ]);
       await logAction(req.user!.userId, "REDEMPTION_REJECTED", "REDEMPTION", redemption.id);
+      await prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Rejected", message: `Your redemption for "${redemption.perkItem.name}" was rejected. Your points have been refunded.` } });
     }
     res.json({ success: true });
   } catch (e) {

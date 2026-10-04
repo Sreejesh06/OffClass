@@ -6,6 +6,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
+import { NotificationBell } from "./components/NotificationBell";
 import './App.css'
 
 const Home = React.lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
@@ -76,6 +77,7 @@ function App() {
                 </Route>
               </Routes>
             </Suspense>
+            <NotificationBell />
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>
