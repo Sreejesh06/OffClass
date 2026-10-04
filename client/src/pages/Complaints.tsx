@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Shield, AlertTriangle, CheckCircle, Search, Loader2, ArrowRight, Info } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, Search, Loader2, ArrowRight, Info, GraduationCap, ShieldAlert, Bug, MessageSquare, UploadCloud, Trash, Image as ImageIcon } from "lucide-react";
 import { api } from "../lib/api";
 
 // Shadcn UI Components
@@ -37,6 +37,8 @@ export function Complaints() {
   // Submit State
   const [category, setCategory] = useState("GRADING");
   const [content, setContent] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [trackingCode, setTrackingCode] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -45,6 +47,7 @@ export function Complaints() {
   const [lookupCode, setLookupCode] = useState("");
   const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading' | 'found' | 'not_found'>('idle');
   const [lookupResult, setLookupResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +67,8 @@ export function Complaints() {
         seed: challengeData.seed,
         nonce,
         category,
-        content
+        content,
+        attachments
       });
       
       setTrackingCode(submitData.trackingCode);
@@ -73,6 +77,50 @@ export function Complaints() {
       setSubmitStatus('error');
       setErrorMsg(err?.response?.data?.error || "Failed to submit complaint. Please try again.");
     }
+  };
+
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    if (attachments.length >= 5) {
+      setError("You can only upload up to 5 attachments.");
+      return;
+    }
+
+    setIsProcessingImg(true);
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 800;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > h && w > MAX_DIM) {
+          h *= MAX_DIM / w;
+          w = MAX_DIM;
+        } else if (h > MAX_DIM) {
+          w *= MAX_DIM / h;
+          h = MAX_DIM;
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64 = canvas.toDataURL('image/jpeg', 0.8);
+          setAttachments(prev => [...prev, base64]);
+        }
+        setIsProcessingImg(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleLookup = async (e: React.FormEvent) => {
@@ -135,7 +183,7 @@ export function Complaints() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="font-bold">Save this tracking code now</AlertTitle>
                   <AlertDescription className="mt-4 flex flex-col items-center">
-                    <div className="font-mono text-4xl tracking-[0.2em] font-black py-4 px-6 bg-white rounded-xl border shadow-inner w-full text-center">
+                    <div className="font-mono text-4xl tracking-[0.2em] font-black py-4 px-6 bg-card text-card-foreground rounded-xl border shadow-inner w-full text-center">
                       {trackingCode}
                     </div>
                     <span className="text-sm mt-4 font-medium opacity-90 text-center">
@@ -164,18 +212,38 @@ export function Complaints() {
                 </Alert>
 
                 <div className="flex flex-col gap-3">
-                  <Label htmlFor="category" className="text-base font-bold">What is this regarding?</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="category" className="h-14 text-base">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="GRADING">Grading dispute / Unfair marking</SelectItem>
-                      <SelectItem value="HARASSMENT">Harassment / Bullying / Code of Conduct violation</SelectItem>
-                      <SelectItem value="PLATFORM_BUG">OffClass platform bug or missing points</SelectItem>
-                      <SelectItem value="OTHER">Other concern</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-base font-bold">What is this regarding?</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {[
+                      { id: 'GRADING', title: 'Grading Dispute', desc: 'Unfair marking or point errors', icon: GraduationCap, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+                      { id: 'HARASSMENT', title: 'Harassment', desc: 'Bullying or Code of Conduct', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+                      { id: 'PLATFORM_BUG', title: 'Platform Bug', desc: 'Missing points or errors', icon: Bug, color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+                      { id: 'OTHER', title: 'Other Concern', desc: 'Anything else', icon: MessageSquare, color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/30' }
+                    ].map((opt) => {
+                      const isSelected = category === opt.id;
+                      const Icon = opt.icon;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setCategory(opt.id)}
+                          className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                            isSelected 
+                              ? `border-orange-500 bg-orange-500/5 shadow-md scale-[1.02]` 
+                              : `border-border hover:border-border/80 hover:bg-muted/50`
+                          }`}
+                        >
+                          <div className={`p-2 rounded-lg ${opt.bg} ${opt.color}`}>
+                            <Icon size={24} />
+                          </div>
+                          <div>
+                            <div className={`font-bold ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>{opt.title}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{opt.desc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -191,8 +259,48 @@ export function Complaints() {
                     onChange={(e) => setContent(e.target.value)}
                     rows={6}
                     placeholder="Explain the situation in detail..."
-                    className="resize-y min-h-[150px] p-4 text-base bg-white"
+                    className="resize-y min-h-[150px] p-4 text-base bg-card text-card-foreground"
                   />
+
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-sm font-bold text-muted-foreground">Evidence Attachments (Optional, Max 5)</Label>
+                      <span className="text-xs text-muted-foreground">{attachments.length}/5</span>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      {attachments.map((img, i) => (
+                        <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border group shadow-sm">
+                          <img src={img} alt="Attachment" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash className="w-6 h-6 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      {attachments.length < 5 && (
+                        <button
+                          type="button"
+                          disabled={isProcessingImg}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-20 h-20 rounded-xl border-2 border-dashed border-border hover:border-orange-500 hover:text-orange-500 hover:bg-orange-500/5 transition-colors flex flex-col justify-center items-center gap-1 text-muted-foreground"
+                        >
+                          {isProcessingImg ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Add</span>
+                        </button>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        ref={fileInputRef} 
+                        onChange={handleImageUpload} 
+                        className="hidden" 
+                      />
+                    </div>
+                  </div>
+
                 </div>
 
                 {errorMsg && (
@@ -231,7 +339,7 @@ export function Complaints() {
                   value={lookupCode}
                   onChange={(e) => setLookupCode(e.target.value.toUpperCase())}
                   placeholder="Enter 8-character code"
-                  className="h-14 font-mono font-bold tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal text-base bg-white"
+                  className="h-14 font-mono font-bold tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal text-base bg-card text-card-foreground"
                 />
                 <Button 
                   type="submit"

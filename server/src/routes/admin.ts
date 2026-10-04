@@ -106,19 +106,42 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
     const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
 
     // 1. Process any Certificate items
-    const certs = await prisma.certificate.findMany({ where: { id: { in: items } } });
+    const certs = await prisma.certificate.findMany({ 
+        where: { id: { in: items } },
+        include: { user: { select: { walletAddress: true } } }
+    });
     if (certs.length > 0) {
       await prisma.certificate.updateMany({
         where: { id: { in: certs.map((c) => c.id) } },
-        data: { status: newStatus, reviewedBy: reviewerId },
+        data: { status: action === "approve" ? "APPROVED" : "REJECTED" }
       });
-
+      
       if (action === 'approve') {
+      if (action === 'approve') {
+        const { anchorCertificateHash } = await import('../lib/blockchain.js');
+        const crypto = await import('crypto');
+        
         for (const cert of certs) {
           await prisma.user.update({
             where: { id: cert.userId },
             data: { points: { increment: 100 } },
           });
+          
+          if (cert.user.walletAddress) {
+              try {
+                  const hash = crypto.createHash('sha256').update(cert.fileKey).digest('hex');
+                  const txHash = await anchorCertificateHash(hash, cert.user.walletAddress);
+                  if (txHash) {
+                      await prisma.certificate.update({
+                          where: { id: cert.id },
+                          data: { blockchainTxHash: txHash, isAnchored: true }
+                      });
+                  }
+              } catch(e) {
+                  console.error("Failed to anchor cert:", e);
+              }
+          }
+
           await prisma.pointsTransaction.create({
             data: {
               userId: cert.userId,
@@ -129,6 +152,7 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
           });
         }
       }
+    }
     }
 
     // 2. Process any HouseTransferRequest items
@@ -403,6 +427,8 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
     const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
     const points = action === 'approve' ? (Number(pointsAwarded) || 0) : null;
 
+    const user = await prisma.user.findUnique({ where: { id: achievement.userId }, select: { walletAddress: true } });
+
     await prisma.achievement.update({
       where: { id },
       data: {
@@ -427,6 +453,25 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
           referenceId: achievement.id,
         },
       });
+      
+      // Blockchain Minting
+      if (user?.walletAddress) {
+          try {
+              const { mintAchievementSBT } = await import('../lib/blockchain.js');
+              const categoryToId: Record<string, number> = { HACKATHON: 1, CTF: 2, COMPETITION: 3, PUBLICATION: 4, OTHER: 5 };
+              const sbtId = categoryToId[achievement.category] || 5;
+              const txHash = await mintAchievementSBT(user.walletAddress, sbtId);
+              if (txHash) {
+                  await prisma.achievement.update({
+                      where: { id },
+                      data: { blockchainTxHash: txHash, isAnchored: true }
+                  });
+              }
+          } catch (e) {
+              console.error("Failed to mint SBT:", e);
+              // Do not fail the API call if blockchain fails
+          }
+      }
     }
 
     await logAction(reviewerId, `REVIEW_ACHIEVEMENT_${newStatus}`, "ACHIEVEMENT", id, { points });
@@ -435,6 +480,85 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to review achievement" });
+  }
+});
+
+
+/**
+ * GET /api/admin/redemptions
+ * Get pending redemptions
+ */
+router.get("/redemptions", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req, res) => {
+  try {
+    const redemptions = await prisma.redemption.findMany({
+      where: { status: "PENDING" },
+      include: {
+        user: { select: { name: true, house: true, email: true } },
+        perkItem: { select: { name: true, type: true, cost: true } }
+      },
+      orderBy: { createdAt: "asc" }
+    });
+    res.json({ redemptions });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch redemptions" });
+  }
+});
+
+/**
+ * PATCH /api/admin/redemptions/:id
+ * Fulfill or reject a redemption
+ */
+router.patch("/redemptions/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req, res) => {
+  try {
+    const { action } = req.body; // 'fulfill' or 'reject'
+    if (action !== 'fulfill' && action !== 'reject') {
+      res.status(400).json({ error: "Invalid action" });
+      return;
+    }
+
+    const redemption = await prisma.redemption.findUnique({
+      where: { id: req.params.id as string },
+      include: { perkItem: true }
+    });
+
+    if (!redemption || redemption.status !== "PENDING") {
+      res.status(404).json({ error: "Redemption not found or already processed" });
+      return;
+    }
+
+    if (action === 'fulfill') {
+      await prisma.redemption.update({
+        where: { id: redemption.id },
+        data: { status: "FULFILLED", fulfilledAt: new Date() }
+      });
+      await logAction(req.user!.userId, "REDEMPTION_FULFILLED", "REDEMPTION", redemption.id);
+    } else {
+      // Reject and refund
+      await prisma.$transaction([
+        prisma.redemption.update({
+          where: { id: redemption.id },
+          data: { status: "REJECTED" }
+        }),
+        prisma.user.update({
+          where: { id: redemption.userId },
+          data: { points: { increment: (redemption as any).perkItem.cost } }
+        }),
+        prisma.pointsTransaction.create({
+          data: {
+            userId: redemption.userId,
+            delta: (redemption as any).perkItem.cost,
+            reason: `Refund: ${(redemption as any).perkItem.name} rejected`,
+            createdBy: req.user!.userId,
+            referenceType: "REDEMPTION",
+            referenceId: redemption.id
+          }
+        })
+      ]);
+      await logAction(req.user!.userId, "REDEMPTION_REJECTED", "REDEMPTION", redemption.id);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to process redemption" });
   }
 });
 
