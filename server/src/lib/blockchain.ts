@@ -56,3 +56,8 @@ export async function mintAchievementSBT(to: string, achievementId: number): Pro
         throw error;
     }
 }
+
+export function computeAchievementHash(achievement: any): string {
+  const data = `${achievement.id}:${achievement.userId}:${achievement.title}:${achievement.points}`;
+  return require('crypto').createHash('sha256').update(data).digest('hex');
+}

@@ -1,9 +1,10 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middlewares/requireAuth.js";
+import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { prisma } from "../lib/db.js";
 import { getOverallKey, getHouseKey } from "../lib/leaderboard.js";
 import { redis } from "../lib/redis.js";
 import { z } from "zod";
+import { notifyAdminsAndTeachers } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -114,6 +115,9 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
     pipeline.zadd(getHouseKey(result.house), result.currentPoints, userId);
     await pipeline.exec();
 
+    const student = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    await notifyAdminsAndTeachers("New Perk Redeemed", `${student?.name || "A student"} has redeemed the perk: "${item.name}"`);
+    
     res.json({ message: "Success", redemption: result.redemption });
 
   } catch (err: unknown) {
@@ -126,6 +130,56 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
     } else {
       res.status(500).json({ error: "Server error" });
     }
+  }
+});
+
+
+// ---------------------------------------------------------
+// ADMIN ROUTES
+// ---------------------------------------------------------
+
+const PerkSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  cost: z.number().int().min(0),
+  quantityRemaining: z.number().int().min(0).nullable().optional(),
+    isActive: z.boolean().optional().default(true)
+});
+
+// Create perk
+router.post("/", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = PerkSchema.parse(req.body);
+    const perk = await prisma.perkItem.create({ data });
+    res.json({ perk });
+  } catch (e: any) {
+    res.status(400).json({ error: "Invalid data", details: e.errors });
+  }
+});
+
+// Update perk
+router.put("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = PerkSchema.parse(req.body);
+    const perk = await prisma.perkItem.update({
+      where: { id: (req.params.id as string) },
+      data
+    });
+    res.json({ perk });
+  } catch (e: any) {
+    res.status(400).json({ error: "Invalid data", details: e.errors });
+  }
+});
+
+// Delete perk
+router.delete("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    await prisma.perkItem.delete({
+      where: { id: (req.params.id as string) }
+    });
+    res.json({ message: "Deleted successfully" });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to delete perk" });
   }
 });
 

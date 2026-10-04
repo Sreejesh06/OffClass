@@ -417,6 +417,9 @@ router.post("/me/achievements", requireAuth, async (req: Request, res: Response)
       },
     });
 
+    const student = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+    await notifyAdminsAndTeachers("New Achievement Pending", `${student?.name || "A student"} submitted a new achievement: "${title}"`);
+    
     res.status(201).json({
       message: "Achievement submitted for review",
       achievement,

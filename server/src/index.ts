@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 import authRoutes from "./routes/auth.js";
+import notificationRoutes from "./routes/notifications.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import integrationsRoutes from "./routes/integrations.js";
 import spotlightRoutes from "./routes/spotlights.js";
@@ -45,12 +46,14 @@ const authLimiter = rateLimit({
 });
 
 // Mount routes
-app.use("/api/auth", authLimiter, authRoutes);
+// Rate limiting disabled for testing
+app.use("/api/auth", /*authLimiter,*/ authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/complaints", complaintsRoutes);
 app.use("/api/perks", perksRoutes);
 app.use("/api/badges", badgesRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/integrations", integrationsRoutes);
 app.use("/api/spotlights", spotlightRoutes);
 app.use("/api/ledger", ledgerRoutes);

@@ -152,7 +152,7 @@ export function Login() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
-                  <a href="#" className="text-xs font-bold text-crypto-purple hover:text-purple-700 transition-colors">Forgot?</a>
+                  <Link to="/forgot-password" className="text-xs font-bold text-crypto-purple hover:text-purple-700 transition-colors">Forgot?</Link>
                 </div>
                 <div className="relative">
                   <input 
@@ -192,7 +192,7 @@ export function Login() {
             </form>
             
             <div className="mt-8 text-center text-sm font-medium text-muted-foreground">
-              Don't have an account? <a href="#" className="text-black font-bold hover:underline underline-offset-4">Sign Up</a>
+              Don't have an account? <Link to="/signup" className="text-black font-bold hover:underline underline-offset-4">Sign Up</Link>
             </div>
           </div>
         </div>
