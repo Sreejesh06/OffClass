@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gift, CheckCircle, XCircle, Store, Coins, Loader2 } from "lucide-react";
+import { Gift, CheckCircle, XCircle, Store, Coins, Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
+import { ManagePerkModal } from "../components/ManagePerkModal";
 
 interface Perk {
   id: string;
@@ -39,7 +40,16 @@ export function Redeem() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [perkToEdit, setPerkToEdit] = useState<Perk | null>(null);
   const [status, setStatus] = useState<'idle' | 'confirm' | 'processing' | 'success' | 'error'>('idle');
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/perks/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['perks'] });
+    }
+  });
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
   const { data: catalogueData, isLoading } = useQuery({
@@ -116,6 +126,19 @@ export function Redeem() {
             <span className="font-mono text-4xl font-black text-white">{userPoints}</span>
           </div>
         </div>
+        {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
+          <Button 
+            variant="secondary" 
+            className="absolute top-6 right-6 font-bold z-20"
+            onClick={() => {
+              setPerkToEdit(null);
+              setIsManageModalOpen(true);
+            }}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Perk
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -147,7 +170,10 @@ export function Redeem() {
                   </Badge>
                 )}
                 <CardHeader>
-                  <CardTitle className="text-xl leading-tight pr-12">{perk.name}</CardTitle>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl leading-tight pr-12">{perk.name}</CardTitle>
+                    
+                  </div>
                   <CardDescription className="flex items-center gap-2 mt-2">
                     <span className={cn(
                       "font-mono font-bold text-lg",
@@ -166,16 +192,33 @@ export function Redeem() {
                       {perk.quantityRemaining} remaining
                     </div>
                   )}
-                  <Button
-                    onClick={() => handleSelect(perk)}
-                    disabled={disabled}
-                    className="w-full font-bold"
-                    variant={canAfford && isAvailable ? "default" : "secondary"}
-                    size="lg"
-                  >
-                    <Gift className="w-5 h-5 mr-2" />
-                    {isAvailable ? (canAfford ? "Redeem Perk" : "Insufficient Points") : "Sold Out"}
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    <Button
+                      onClick={() => handleSelect(perk)}
+                      disabled={disabled}
+                      className="flex-1 font-bold"
+                      variant={canAfford && isAvailable ? "default" : "secondary"}
+                      size="lg"
+                    >
+                      <Gift className="w-5 h-5 mr-2" />
+                      {isAvailable ? (canAfford ? "Redeem" : "Insufficient") : "Sold Out"}
+                    </Button>
+                    {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
+                      <>
+                        <Button size="lg" variant="secondary" className="px-3" onClick={() => {
+                          setPerkToEdit(perk);
+                          setIsManageModalOpen(true);
+                        }}>
+                          <Edit className="h-5 w-5" />
+                        </Button>
+                        <Button size="lg" variant="destructive" className="px-3" onClick={() => {
+                          if (confirm('Are you sure you want to delete this perk?')) deleteMutation.mutate(perk.id);
+                        }}>
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </CardFooter>
               </Card>
             );
@@ -255,6 +298,11 @@ export function Redeem() {
           )}
         </DialogContent>
       </Dialog>
+      <ManagePerkModal 
+        isOpen={isManageModalOpen} 
+        onClose={() => setIsManageModalOpen(false)} 
+        perk={perkToEdit}
+      />
     </div>
   );
 }
