@@ -494,7 +494,7 @@ router.get("/redemptions", requireAuth, requireRole(["ADMIN", "TEACHER"]), async
       where: { status: "PENDING" },
       include: {
         user: { select: { name: true, house: true, email: true } },
-        perkItem: { select: { name: true, type: true, cost: true } }
+        perkItem: { select: { name: true, cost: true } }
       },
       orderBy: { createdAt: "asc" }
     });

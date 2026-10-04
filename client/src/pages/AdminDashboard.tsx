@@ -166,7 +166,7 @@ export function AdminDashboard() {
                         <td className="p-4">
                           <div className="font-bold text-foreground">{f.perkItem.name}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <span className="bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded uppercase font-bold">{f.perkItem.type}</span>
+                            <span className="bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded uppercase font-bold">STORE ITEM</span>
                           </div>
                         </td>
                         <td className="p-4">
