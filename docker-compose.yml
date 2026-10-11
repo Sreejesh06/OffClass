@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: cryptid
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-app_password}
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
@@ -55,9 +56,12 @@ services:
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc alias set myminio http://minio:9000 $$MINIO_ACCESS_KEY $$MINIO_SECRET_KEY;
       /usr/bin/mc mb myminio/cryptid-certs || true;
       "
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
     networks:
       - internal
 
@@ -76,6 +80,18 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - HTB_APP_TOKEN=${HTB_APP_TOKEN:-}
+      - FRONTEND_URL=${FRONTEND_URL:-https://cryptid.sece.ac.in}
+      - CLIENT_URL=${CLIENT_URL:-https://cryptid.sece.ac.in}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-noreply@sece.ac.in}
+      - ALLOWED_EMAIL_DOMAIN=${ALLOWED_EMAIL_DOMAIN:-@sece.ac.in}
+      - REQUIRE_EMAIL_VERIFICATION=${REQUIRE_EMAIL_VERIFICATION:-false}
+      - POLYGON_AMOY_RPC_URL=${POLYGON_AMOY_RPC_URL:-https://rpc-amoy.polygon.technology}
+      - BLOCKCHAIN_PRIVATE_KEY=${BLOCKCHAIN_PRIVATE_KEY:-}
+      - CRYPTID_REGISTRY_ADDRESS=${CRYPTID_REGISTRY_ADDRESS:-}
     depends_on:
       - pgbouncer
       - redis
@@ -99,6 +115,8 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    environment:
+      - DOMAIN=${DOMAIN:-cryptid.sece.ac.in, localhost}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -117,5 +135,5 @@ volumes:
 networks:
   # Internal network isolates the databases completely from the host/internet
   internal:
-    # internal: true
+    internal: true
   proxy:

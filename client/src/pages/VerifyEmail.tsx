@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
+import { cn } from "cn";
 
 export function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -48,9 +49,9 @@ export function VerifyEmail() {
         </CardContent>
         {status !== 'loading' && (
           <CardFooter>
-            <Button asChild className="w-full">
-              <Link to="/login">Go to Login</Link>
-            </Button>
+            <Link to="/login" className={cn(buttonVariants({ variant: "default" }), "w-full")}>
+              Go to Login
+            </Link>
           </CardFooter>
         )}
       </Card>

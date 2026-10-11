@@ -44,6 +44,9 @@ importers:
       cn:
         specifier: ^0.3.0
         version: 0.3.0
+      ethers:
+        specifier: ^6.17.0
+        version: 6.17.0
       framer-motion:
         specifier: ^13.2.0
         version: 13.2.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

@@ -16,6 +16,9 @@ export const UserSchema = z.object({
   house: HouseEnum,
   role: RoleEnum,
   points: z.number().int().min(0).default(0),
+  avatar: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  workDomain: z.string().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

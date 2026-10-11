@@ -117,7 +117,6 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
       });
       
       if (action === 'approve') {
-      if (action === 'approve') {
         const { anchorCertificateHash } = await import('../lib/blockchain.js');
         const crypto = await import('crypto');
         
@@ -128,18 +127,18 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
           });
           
           if (cert.user.walletAddress) {
-              try {
-                  const hash = crypto.createHash('sha256').update(cert.fileKey).digest('hex');
-                  const txHash = await anchorCertificateHash(hash, cert.user.walletAddress);
-                  if (txHash) {
-                      await prisma.certificate.update({
-                          where: { id: cert.id },
-                          data: { blockchainTxHash: txHash, isAnchored: true }
-                      });
-                  }
-              } catch(e) {
-                  console.error("Failed to anchor cert:", e);
+            try {
+              const hash = crypto.createHash('sha256').update(cert.fileKey).digest('hex');
+              const txHash = await anchorCertificateHash(hash, cert.user.walletAddress);
+              if (txHash) {
+                await prisma.certificate.update({
+                  where: { id: cert.id },
+                  data: { blockchainTxHash: txHash, isAnchored: true }
+                });
               }
+            } catch(e) {
+              console.error("Failed to anchor cert:", e);
+            }
           }
 
           await prisma.pointsTransaction.create({
@@ -152,7 +151,6 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
           });
         }
       }
-    }
     }
 
     // 2. Process any HouseTransferRequest items
@@ -357,49 +355,9 @@ router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), 
     res.status(500).json({ error: "Failed to fetch at-risk students" });
   }
 });
-// Scoped export endpoint for students
-router.get("/export/students", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const students = await prisma.user.findMany({
-      where: { role: "STUDENT" },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        house: true,
-        points: true,
-        githubUsername: true,
-        htbUsername: true,
-      },
-      orderBy: { points: 'desc' }
-    });
-
-    const format = req.query.format === 'csv' ? 'csv' : 'json';
-
-    if (format === 'csv') {
-      const headers = ['id', 'name', 'email', 'house', 'points', 'github', 'htb'];
-      const rows = students.map(s => [
-        s.id,
-        s.name,
-        s.email,
-        s.house,
-        s.points.toString(),
-        s.githubUsername || '',
-        s.htbUsername || ''
-      ].map(v => `"${v}"`).join(','));
-      
-      const csv = [headers.join(','), ...rows].join('\n');
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="students_export.csv"');
-      res.send(csv);
-    } else {
-      res.json({ students });
-    }
-  } catch (e) {
-    res.status(500).json({ error: "Failed to export students" });
-  }
-});
+// NOTE: The canonical /export/students route is defined above (line ~10).
+// That version correctly uses profileLinks to surface github/htb handles.
+// The duplicate that referenced non-existent User columns has been removed.
 /**
  * POST /api/admin/achievements/:id/review
  * Approve or reject an achievement submission, optionally awarding points.

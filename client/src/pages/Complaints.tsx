@@ -85,7 +85,7 @@ export function Complaints() {
     if (!files || files.length === 0) return;
     
     if (attachments.length >= 5) {
-      setError("You can only upload up to 5 attachments.");
+      setErrorMsg("You can only upload up to 5 attachments.");
       return;
     }
 

@@ -230,7 +230,7 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {approvals.map(a => (
+                    {approvals.map((a: any) => (
                       <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-4">
                           <div className="font-bold text-sm text-foreground">{a.studentName}</div>
@@ -271,7 +271,7 @@ export function AdminDashboard() {
                 <p className="text-muted-foreground">The department is quiet.</p>
               </div>
             ) : (
-              complaints.map(c => (
+              complaints.map((c: any) => (
                 <div key={c.id} className="border-b border-border last:border-0">
                   {/* Row Summary */}
                   <div 
@@ -359,7 +359,7 @@ export function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {riskStudents.map(s => (
+                {riskStudents.map((s: any) => (
                   <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="p-4 font-bold text-sm text-foreground">{s.name}</td>
                     <td className="p-4 text-xs font-bold text-muted-foreground">{s.house}</td>

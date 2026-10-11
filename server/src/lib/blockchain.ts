@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { createHash } from 'crypto';
 import CryptidRegistryABI from './CryptidRegistry.json' with { type: 'json' };
 
 // Initialize provider and wallet
@@ -58,6 +59,6 @@ export async function mintAchievementSBT(to: string, achievementId: number): Pro
 }
 
 export function computeAchievementHash(achievement: any): string {
-  const data = `${achievement.id}:${achievement.userId}:${achievement.title}:${achievement.points}`;
-  return require('crypto').createHash('sha256').update(data).digest('hex');
+  const data = `${achievement.id}:${achievement.userId}:${achievement.title}:${achievement.pointsAwarded || achievement.points || 0}`;
+  return createHash('sha256').update(data).digest('hex');
 }

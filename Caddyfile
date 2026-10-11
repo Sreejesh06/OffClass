@@ -2,7 +2,7 @@
     email sreejesh.s2024csecs@sece.ac.in
 }
 
-cryptid.local, localhost {
+{$DOMAIN:cryptid.sece.ac.in, localhost} {
     # 1. Security Headers (Frontend)
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"

@@ -105,7 +105,7 @@ export function OpportunityBoard() {
     ? [
         { id: user.house, label: `My HQ` },
         { id: "ALL", label: "All Houses" },
-        ...((["RED", "BLUE", "GREEN", "PURPLE"] as House[]).filter(h => h !== user.house).map(h => ({ id: h as Tab, label: h }))),
+        ...((["RED", "BLUE", "GREEN", "PURPLE"] as string[]).filter(h => h !== (user.house as string)).map(h => ({ id: h as Tab, label: h }))),
         { id: "MY_BOOKMARKS", label: "Saved" }
       ]
     : [
@@ -248,7 +248,7 @@ export function OpportunityBoard() {
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {tabs.map((tab) => (
+              {tabs.map((tab: any) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -311,7 +311,7 @@ export function OpportunityBoard() {
                   key={opp.id} 
                   opportunity={opp} 
                   isBookmarked={bookmarkedState.has(opp.id)}
-                  isLookingForTeammate={bookmarkedState.get(opp.id) || false}
+                  isLookingForTeammate={Boolean(bookmarkedState.get(opp.id))}
                   userRole={user!.role}
                   onSubmitProof={() => setProofOpportunity({ id: opp.id, title: opp.title })}
                 />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { Warning, Plus, X, MagnifyingGlass, ShieldMinus } from '@phosphor-icons/react';
+import { Warning, Plus, X, MagnifyingGlass, ShieldWarning } from '@phosphor-icons/react';
 
 interface DisciplineRecord {
   id: string;
@@ -32,7 +32,7 @@ export function AdminDisciplineTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ShieldMinus weight="duotone" />
+            <ShieldWarning weight="duotone" />
             Discipline Log
           </h2>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>

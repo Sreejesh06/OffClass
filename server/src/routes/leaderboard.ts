@@ -107,7 +107,7 @@ router.get("/house-score", async (req: Request, res: Response): Promise<void> =>
       include: { user: { select: { house: true } } }
     });
     
-    const penalties = { RED: 0, BLUE: 0, GREEN: 0, PURPLE: 0 };
+    const penalties: Record<House, number> = { RED: 0, BLUE: 0, GREEN: 0, PURPLE: 0 };
     for (const r of records) {
       penalties[r.user.house] += r.pointsDeducted;
     }
