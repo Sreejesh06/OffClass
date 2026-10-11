@@ -132,7 +132,7 @@ router.post("/login", async (req, res): Promise<void> => {
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         },
       }),
-      // prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+      prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
     ]);
 
     setAuthCookies(res, accessToken, refreshToken);

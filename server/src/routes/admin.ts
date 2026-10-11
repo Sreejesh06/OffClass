@@ -2,7 +2,7 @@ import { Router, type Router as IRouter, type Request, type Response } from "exp
 import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { prisma } from "../lib/db.js";
 import { logAction } from "../lib/audit.js";
-import { transferHouseLeaderboard } from "../lib/leaderboard.js";
+import { awardPoints, transferHouseLeaderboard } from "../lib/leaderboard.js";
 
 const router: IRouter = Router();
 
@@ -121,15 +121,28 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
         const crypto = await import('crypto');
         
         for (const cert of certs) {
-          await prisma.user.update({
-            where: { id: cert.userId },
-            data: { points: { increment: 100 } },
+          // Get the user's house for correct Redis leaderboard update
+          const certUser = await prisma.user.findUnique({ 
+            where: { id: cert.userId }, 
+            select: { house: true, walletAddress: true }
           });
+          if (!certUser) continue;
+
+          // Use awardPoints() — atomically updates Postgres AND Redis sorted sets
+          await awardPoints(
+            cert.userId,
+            certUser.house,
+            100,
+            `Certificate Approved: ${cert.name}`,
+            "CERTIFICATE",
+            cert.id,
+            reviewerId
+          );
           
-          if (cert.user.walletAddress) {
+          if (certUser.walletAddress) {
             try {
               const hash = crypto.createHash('sha256').update(cert.fileKey).digest('hex');
-              const txHash = await anchorCertificateHash(hash, cert.user.walletAddress);
+              const txHash = await anchorCertificateHash(hash, certUser.walletAddress);
               if (txHash) {
                 await prisma.certificate.update({
                   where: { id: cert.id },
@@ -140,15 +153,6 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
               console.error("Failed to anchor cert:", e);
             }
           }
-
-          await prisma.pointsTransaction.create({
-            data: {
-              userId: cert.userId,
-              delta: 100,
-              reason: `Certificate Approved: ${cert.name}`,
-              createdBy: reviewerId,
-            },
-          });
         }
       }
     }
@@ -203,35 +207,36 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
     for (const a of achievements) {
       if (action === 'approve') {
         const pointsToAward = a.pointsAwarded || 50; // Default points for batch approve if not specified
-        await prisma.$transaction([
-          prisma.achievement.update({
-            where: { id: a.id },
-            data: { status: "APPROVED", reviewedBy: reviewerId, pointsAwarded: pointsToAward },
-          }),
-          prisma.user.update({
-            where: { id: a.userId },
-            data: { points: { increment: pointsToAward } },
-          }),
-          prisma.pointsTransaction.create({
-            data: {
-              userId: a.userId,
-              delta: pointsToAward,
-              reason: `Achievement Approved: ${a.title}`,
-              createdBy: reviewerId,
-              referenceType: "ACHIEVEMENT",
-              referenceId: a.id,
-            },
-          }),
-        ]);
+        
+        // Get user's house for Redis update
+        const aUser = await prisma.user.findUnique({ where: { id: a.userId }, select: { house: true } });
+        if (!aUser) continue;
+
+        await prisma.achievement.update({
+          where: { id: a.id },
+          data: { status: "APPROVED", reviewedBy: reviewerId, pointsAwarded: pointsToAward },
+        });
+
+        // Use awardPoints() — atomically updates Postgres AND Redis sorted sets
+        await awardPoints(
+          a.userId,
+          aUser.house,
+          pointsToAward,
+          `Achievement Approved: ${a.title}`,
+          "ACHIEVEMENT",
+          a.id,
+          reviewerId
+        );
+
         await logAction(reviewerId, "ACHIEVEMENT_APPROVED", "ACHIEVEMENT", a.id, { points: pointsToAward });
-        await prisma.notification.create({ data: { userId: a.userId, title: "Achievement Approved", message: `Your achievement "${a.title}" was approved! You earned ${pointsToAward} points.` } });
+        prisma.notification.create({ data: { userId: a.userId, title: "Achievement Approved", message: `Your achievement "${a.title}" was approved! You earned ${pointsToAward} points.` } }).catch(e => console.error("Notification failed:", e));
       } else {
         await prisma.achievement.update({
           where: { id: a.id },
           data: { status: "REJECTED", reviewedBy: reviewerId },
         });
         await logAction(reviewerId, "ACHIEVEMENT_REJECTED", "ACHIEVEMENT", a.id);
-        await prisma.notification.create({ data: { userId: a.userId, title: "Achievement Rejected", message: `Your achievement "${a.title}" was rejected.` } });
+        prisma.notification.create({ data: { userId: a.userId, title: "Achievement Rejected", message: `Your achievement "${a.title}" was rejected.` } }).catch(e => console.error("Notification failed:", e));
       }
     }
 
@@ -329,15 +334,25 @@ router.post("/house-transfers/:id/review", requireAuth, requireRole(["ADMIN", "T
 
 router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
   try {
+    // At-risk = students who have not logged in for 21+ days (inactivity signal)
+    const cutoffDate = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+
     const students = await prisma.user.findMany({
-      where: { role: "STUDENT" },
-      orderBy: { points: 'asc' },
-      take: 10,
+      where: { 
+        role: "STUDENT",
+        OR: [
+          { lastLoginAt: { lt: cutoffDate } },
+          { lastLoginAt: null }  // Never logged in after account creation
+        ]
+      },
+      orderBy: { lastLoginAt: "asc" }, // Longest-inactive first
+      take: 50,
       select: {
         id: true,
         name: true,
         house: true,
-        points: true
+        points: true,
+        lastLoginAt: true
       }
     });
 
@@ -346,8 +361,10 @@ router.get("/students/at-risk", requireAuth, requireRole(["ADMIN", "TEACHER"]), 
       name: s.name,
       house: s.house,
       points: s.points,
-      reason: "Low points accumulation",
-      lastActive: "Unknown" // We don't track login dates yet
+      reason: s.lastLoginAt 
+        ? `No activity for ${Math.floor((Date.now() - s.lastLoginAt.getTime()) / (1000 * 60 * 60 * 24))} days`
+        : "Never logged in",
+      lastActive: s.lastLoginAt?.toISOString() ?? null
     }));
 
     res.json({ students: formatted });
@@ -399,28 +416,27 @@ router.post("/achievements/:id/review", requireAuth, requireRole(["ADMIN", "TEAC
     });
 
     if (action === 'approve' && points && points > 0) {
-      await prisma.user.update({
-        where: { id: achievement.userId },
-        data: { points: { increment: points } },
-      });
-      await prisma.pointsTransaction.create({
-        data: {
-          userId: achievement.userId,
-          delta: points,
-          reason: `Achievement: ${achievement.title}`,
-          createdBy: reviewerId,
-          referenceType: "ACHIEVEMENT",
-          referenceId: achievement.id,
-        },
-      });
+      // Get user's house — needed for the Redis leaderboard update inside awardPoints()
+      const aUser = await prisma.user.findUnique({ where: { id: achievement.userId }, select: { house: true, walletAddress: true } });
+
+      // Use awardPoints() — atomically updates Postgres AND Redis sorted sets (fixes stale leaderboard bug)
+      await awardPoints(
+        achievement.userId,
+        aUser!.house,
+        points,
+        `Achievement: ${achievement.title}`,
+        "ACHIEVEMENT",
+        achievement.id,
+        reviewerId
+      );
       
       // Blockchain Minting
-      if (user?.walletAddress) {
+      if (aUser?.walletAddress) {
           try {
               const { mintAchievementSBT } = await import('../lib/blockchain.js');
               const categoryToId: Record<string, number> = { HACKATHON: 1, CTF: 2, COMPETITION: 3, PUBLICATION: 4, OTHER: 5 };
               const sbtId = categoryToId[achievement.category] || 5;
-              const txHash = await mintAchievementSBT(user.walletAddress, sbtId);
+              const txHash = await mintAchievementSBT(aUser.walletAddress, sbtId);
               if (txHash) {
                   await prisma.achievement.update({
                       where: { id },

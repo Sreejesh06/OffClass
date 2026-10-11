@@ -180,12 +180,19 @@ router.post("/certs/verify", requireAuth, async (req: Request, res: Response): P
   }
 });
 
-router.get("/certs/:id/view", async (req: Request, res: Response): Promise<void> => {
+router.get("/certs/:id/view", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const certId = req.params["id"] as string;
     const cert = await prisma.certificate.findUnique({ where: { id: certId } });
     if (!cert) {
       res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    // Enforce ownership: only the cert owner or an admin/teacher can view it
+    const requestorRole = req.user!.role;
+    if (cert.userId !== req.user!.userId && requestorRole !== "ADMIN" && requestorRole !== "TEACHER") {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
 

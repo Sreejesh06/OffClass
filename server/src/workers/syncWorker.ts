@@ -68,7 +68,15 @@ const processSyncJob = async (job: Job<SyncJobData>) => {
     if (newScore > oldScore) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user) {
-        await awardPoints(user.id, user.house, newScore - oldScore);
+        const delta = newScore - oldScore;
+        await awardPoints(
+          user.id,
+          user.house,
+          delta,
+          `Platform sync: ${provider} (+${delta} points)`,
+          "PLATFORM_SYNC",
+          handle   // external handle (e.g., GitHub username) as the reference
+        );
       }
     }
 
