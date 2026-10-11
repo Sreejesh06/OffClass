@@ -42,19 +42,28 @@ fi
 
 # 3. Check System Memory
 echo -n "[3/6] Checking RAM capacity... "
-TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
-if [ "$TOTAL_RAM_KB" -gt 3500000 ]; then
-    echo -e "${GREEN}OK ($((TOTAL_RAM_KB / 1024 / 1024)) GB RAM detected)${NC}"
-elif [ "$TOTAL_RAM_KB" -eq 0 ]; then
-    echo -e "${YELLOW}SKIPPED (Non-Linux system or /proc/meminfo unavailable)${NC}"
+TOTAL_RAM_GB=0
+if [ -f /proc/meminfo ]; then
+    TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo "0")
+    TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+elif command -v sysctl &> /dev/null; then
+    BYTES=$(sysctl -n hw.memsize 2>/dev/null || echo "0")
+    TOTAL_RAM_GB=$((BYTES / 1024 / 1024 / 1024))
+fi
+
+if [ "$TOTAL_RAM_GB" -ge 4 ]; then
+    echo -e "${GREEN}OK (${TOTAL_RAM_GB} GB RAM detected)${NC}"
+elif [ "$TOTAL_RAM_GB" -eq 0 ]; then
+    echo -e "${YELLOW}SKIPPED (Memory inspection unavailable)${NC}"
 else
-    echo -e "${YELLOW}WARNING: Less than 4 GB RAM ($((TOTAL_RAM_KB / 1024)) MB). Monitor memory usage.${NC}"
+    echo -e "${YELLOW}WARNING: Less than 4 GB RAM (${TOTAL_RAM_GB} GB). Monitor memory usage.${NC}"
     WARNINGS=$((WARNINGS + 1))
 fi
 
 # 4. Check Free Disk Space
 echo -n "[4/6] Checking Available Disk Space... "
-FREE_DISK_GB=$(df -BG . | awk 'NR==2 {print $4}' | tr -d 'G')
+# Universal POSIX disk check (1K blocks converted to GB)
+FREE_DISK_GB=$(df -k . 2>/dev/null | awk 'NR==2 {print int($4 / 1024 / 1024)}' || echo "0")
 if [ "$FREE_DISK_GB" -ge 10 ]; then
     echo -e "${GREEN}OK (${FREE_DISK_GB} GB available)${NC}"
 else
