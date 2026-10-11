@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Shield, User, Trophy, Gift, Flag, ShieldCheck, List, X, Compass, Moon, Sun, Star } from "@phosphor-icons/react"
+import { Shield, User, Trophy, Gift, Flag, ShieldCheck, List, X, Compass, Moon, Sun, Star, Buildings } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
@@ -29,12 +29,14 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
   // Navigation items configuration
   const publicItems = [
     { label: "Home", href: "/", icon: Shield },
+    { label: "Houses", href: "/houses", icon: Buildings },
     { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { label: "Spotlight", href: "/hall-of-fame", icon: Star }
   ];
 
   const loggedInItemsLeft = [
     { label: "Profile", href: "/profile", icon: User },
+    { label: "Houses", href: "/houses", icon: Buildings },
     { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { label: "Headquarters", href: "/opportunities", icon: Compass },
     { label: "Spotlight", href: "/hall-of-fame", icon: Star }

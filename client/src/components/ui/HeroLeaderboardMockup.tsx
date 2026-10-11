@@ -29,8 +29,8 @@ interface LeaderboardEntry {
 
 const HOUSE_CONFIG = {
   RED: {
-    label: 'Red House',
-    specialty: 'Offensive Security & Pwn',
+    label: 'Red House (Lion)',
+    specialty: 'The Offensive Force • Adversary Simulation',
     color: '#ef4444',
     border: 'border-red-500/40',
     bg: 'bg-red-500/10',
@@ -38,8 +38,8 @@ const HOUSE_CONFIG = {
     barColor: 'bg-red-500',
   },
   BLUE: {
-    label: 'Blue House',
-    specialty: 'Defensive Ops & Threat Hunt',
+    label: 'Blue House (Wolf)',
+    specialty: 'The Defensive Shield • Resilient Systems & SOC',
     color: '#3b82f6',
     border: 'border-blue-500/40',
     bg: 'bg-blue-500/10',
@@ -47,8 +47,8 @@ const HOUSE_CONFIG = {
     barColor: 'bg-blue-500',
   },
   GREEN: {
-    label: 'Green House',
-    specialty: 'DevSecOps & Reverse Eng',
+    label: 'Green House (Phoenix)',
+    specialty: 'The Innovation Engine • DevSecOps, AppSec & Research',
     color: '#10b981',
     border: 'border-emerald-500/40',
     bg: 'bg-emerald-500/10',
@@ -56,8 +56,8 @@ const HOUSE_CONFIG = {
     barColor: 'bg-emerald-500',
   },
   PURPLE: {
-    label: 'Purple House',
-    specialty: 'Cryptography & Research',
+    label: 'Purple House (Panther)',
+    specialty: 'The Strategic Mind • OSINT, GRC & Strategy',
     color: '#a855f7',
     border: 'border-purple-500/40',
     bg: 'bg-purple-500/10',

@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "client/src/App.tsx": {
-    "mtime": 1791696495.8185897,
-    "seen": 1791703786.566901,
-    "ast_hash": "18c4817a28ae1c558fc833d4799b7db0",
+    "mtime": 1791734158.0400295,
+    "seen": 1791734268.840058,
+    "ast_hash": "3995d4396a8cd6ab9f686d8cefdaceb8",
     "semantic_hash": ""
   },
   "client/src/main.tsx": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   "client/src/pages/Leaderboard.tsx": {
-    "mtime": 1791720779.795921,
-    "seen": 1791724200.9611578,
-    "ast_hash": "868c6467626221f1f9a2b8bb218e6fc1",
+    "mtime": 1791734233.9419196,
+    "seen": 1791734268.841724,
+    "ast_hash": "9c4a9de611becd978cd76f8f7ee95670",
     "semantic_hash": ""
   },
   "client/src/pages/Login.tsx": {
@@ -480,9 +480,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1789242476.1763475,
-    "seen": 1789322501.855459,
-    "ast_hash": "4b12d71b89f435411183edf4eb7d7cfc",
+    "mtime": 1791733699.3526747,
+    "seen": 1791734268.844745,
+    "ast_hash": "1057c3eef459402a51b2543a8e9d20d4",
     "semantic_hash": ""
   },
   "client/README.md": {
@@ -624,9 +624,9 @@
     "semantic_hash": ""
   },
   "client/src/components/ModernLanding.tsx": {
-    "mtime": 1791720779.7282689,
-    "seen": 1791724200.9602492,
-    "ast_hash": "f980125ee2ded3431396eb102f8c63e3",
+    "mtime": 1791734051.8400607,
+    "seen": 1791734268.840584,
+    "ast_hash": "4050df9d3f70b0db9b7124b22bb9cbb3",
     "semantic_hash": ""
   },
   "client/src/components/OpportunityCard.tsx": {
@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "client/src/components/ui/notch-navbar.tsx": {
-    "mtime": 1791720779.7886753,
-    "seen": 1791724200.960872,
-    "ast_hash": "a4769d39f8b9907b5ed811e970b84d48",
+    "mtime": 1791734197.2166843,
+    "seen": 1791734268.841323,
+    "ast_hash": "b71b54eb3c52ce11f73e8759f8e00a1c",
     "semantic_hash": ""
   },
   "client/src/components/ui/select.tsx": {
@@ -1740,9 +1740,33 @@
     "semantic_hash": ""
   },
   "client/src/components/ui/HeroLeaderboardMockup.tsx": {
-    "mtime": 1791720779.7807484,
-    "seen": 1791724200.9605389,
-    "ast_hash": "729128dc1ec561f6653f73999e23d42e",
+    "mtime": 1791734069.5841105,
+    "seen": 1791734268.840965,
+    "ast_hash": "8cabbd90af2e4ac5d723817248180fb9",
+    "semantic_hash": ""
+  },
+  "client/src/components/HousesShowcase.tsx": {
+    "mtime": 1791733873.9685702,
+    "seen": 1791734268.8404522,
+    "ast_hash": "f8ba92cdad2047d1125837bd36246cf1",
+    "semantic_hash": ""
+  },
+  "client/src/pages/Houses.tsx": {
+    "mtime": 1791734142.690968,
+    "seen": 1791734268.841723,
+    "ast_hash": "bd8c2172d8d30827a3edeb0f308e0a07",
+    "semantic_hash": ""
+  },
+  "cryptid_intro.gif": {
+    "mtime": 1791733544.0194771,
+    "seen": 1791734268.845487,
+    "ast_hash": "bd0348001b3a7ee9867ebd1bba9ae56f",
+    "semantic_hash": ""
+  },
+  "cryptid_intro.mp4": {
+    "mtime": 1791732428.6993282,
+    "seen": 1791734268.845488,
+    "ast_hash": "c1d498ff93e8e58e8218cd5ea3e8a77b",
     "semantic_hash": ""
   }
 }

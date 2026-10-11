@@ -20,6 +20,7 @@ const ProfilePortfolio = React.lazy(() => import('./pages/ProfilePortfolio').the
 const HallOfFame = React.lazy(() => import('./pages/HallOfFame').then(m => ({ default: m.HallOfFame })));
 const SpotlightCompose = React.lazy(() => import('./pages/SpotlightCompose').then(m => ({ default: m.SpotlightCompose })));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
+const Houses = React.lazy(() => import('./pages/Houses').then(m => ({ default: m.Houses })));
 const Redeem = React.lazy(() => import('./pages/Redeem').then(m => ({ default: m.Redeem })));
 const Complaints = React.lazy(() => import('./pages/Complaints').then(m => ({ default: m.Complaints })));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -67,6 +68,7 @@ function App() {
                 {/* Public routes — no login needed */}
                 <Route path="/profile/:userId" element={<Layout><ProfilePortfolio /></Layout>} />
                 <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
+                <Route path="/houses" element={<Layout><Houses /></Layout>} />
                 
                 <Route element={<ProtectedLayout />}>
                   <Route path="/profile" element={<ProfilePortfolio />} />

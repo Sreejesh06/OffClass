@@ -26,6 +26,7 @@ import LogoLoop, { type LogoItem } from './ui/LogoLoop';
 import { ContributorsSection } from './ContributorsSection';
 import { Footer } from './Footer';
 import { HeroLeaderboardMockup } from './ui/HeroLeaderboardMockup';
+import { HousesShowcase } from './HousesShowcase';
 import { SiGithub, SiLeetcode, SiTryhackme, SiHackthebox, SiCodeforces, SiLinux } from 'react-icons/si';
 
 const platformLogos: LogoItem[] = [
@@ -131,6 +132,9 @@ export const ModernLanding: React.FC = () => {
             </motion.div>
           </div>
         </section>
+
+        {/* 4 Cybersecurity Houses Showcase */}
+        <HousesShowcase />
 
       {/* Feature Section (Split) */}
       <section className="py-24 bg-card text-card-foreground px-6">

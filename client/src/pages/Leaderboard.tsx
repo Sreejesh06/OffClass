@@ -39,6 +39,63 @@ const houseColors: Record<string, string> = {
   none: "text-gray-600 bg-gray-100",
 };
 
+const HOUSE_DESCRIPTIONS: Record<string, {
+  name: string;
+  mascot: string;
+  subtitle: string;
+  motto: string;
+  banner: string;
+  philosophy: string;
+  border: string;
+  bgBadge: string;
+  textBadge: string;
+}> = {
+  red: {
+    name: 'Red House',
+    mascot: 'Lion',
+    subtitle: 'The Offensive Force',
+    motto: 'Find. Break. Improve.',
+    banner: 'Offense today. A safer tomorrow.',
+    philosophy: 'Adversary simulation, red teaming, exploit development, and vulnerability research.',
+    border: 'border-red-500/40',
+    bgBadge: 'bg-red-500/10 dark:bg-red-500/20',
+    textBadge: 'text-red-600 dark:text-red-400',
+  },
+  blue: {
+    name: 'Blue House',
+    mascot: 'Wolf',
+    subtitle: 'The Defensive Shield',
+    motto: 'Detect. Defend. Stay Ahead.',
+    banner: 'Strong systems. Safer tomorrows.',
+    philosophy: 'Resilient defense, SOC monitoring, incident response, digital forensics, and threat hunting.',
+    border: 'border-blue-500/40',
+    bgBadge: 'bg-blue-500/10 dark:bg-blue-500/20',
+    textBadge: 'text-blue-600 dark:text-blue-400',
+  },
+  green: {
+    name: 'Green House',
+    mascot: 'Phoenix',
+    subtitle: 'The Innovation Engine',
+    motto: 'Build. Research. Create.',
+    banner: 'Ideas today. Impact tomorrow.',
+    philosophy: 'DevSecOps, AppSec, Cryptography, AI security, open-source tooling, and security engineering.',
+    border: 'border-emerald-500/40',
+    bgBadge: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+    textBadge: 'text-emerald-600 dark:text-emerald-400',
+  },
+  purple: {
+    name: 'Purple House',
+    mascot: 'Panther',
+    subtitle: 'The Strategic Mind',
+    motto: 'Analyse. Solve. Lead.',
+    banner: 'Think beyond. Secure for all.',
+    philosophy: 'Cyber intelligence (OSINT), threat modeling, GRC & cybersecurity policy, and strategic leadership.',
+    border: 'border-purple-500/40',
+    bgBadge: 'bg-purple-500/10 dark:bg-purple-500/20',
+    textBadge: 'text-purple-600 dark:text-purple-400',
+  },
+};
+
 // ─── Components ──────────────────────────────────────────────────────────────
 
 const PodiumCard = ({ entry, position, maxPoints }: { entry: LeaderboardEntry | null; position: 1 | 2 | 3, maxPoints: number }) => {
@@ -186,6 +243,34 @@ export function Leaderboard() {
             );
           })}
         </div>
+
+        {/* House Info Card when a House Tab is active */}
+        {activeTab !== 'overall' && HOUSE_DESCRIPTIONS[activeTab] && (
+          <div className={`mt-6 w-full max-w-2xl bg-card rounded-2xl p-6 border-2 ${HOUSE_DESCRIPTIONS[activeTab].border} shadow-sm text-left flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-300`}>
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded-md ${HOUSE_DESCRIPTIONS[activeTab].bgBadge} ${HOUSE_DESCRIPTIONS[activeTab].textBadge}`}>
+                  Mascot: {HOUSE_DESCRIPTIONS[activeTab].mascot}
+                </span>
+                <span className="text-xs font-mono text-muted-foreground font-semibold">
+                  {HOUSE_DESCRIPTIONS[activeTab].subtitle}
+                </span>
+              </div>
+              <h3 className="text-xl font-bold font-heading text-foreground">
+                "{HOUSE_DESCRIPTIONS[activeTab].motto}"
+              </h3>
+              <p className="text-xs text-muted-foreground font-medium mt-1 leading-relaxed max-w-lg">
+                {HOUSE_DESCRIPTIONS[activeTab].philosophy}
+              </p>
+            </div>
+            <Link
+              to="/houses"
+              className="text-xs font-mono font-bold px-3 py-1.5 rounded-lg border border-border hover:bg-muted/60 transition-colors whitespace-nowrap text-foreground shrink-0"
+            >
+              View Full Track →
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="max-w-6xl mx-auto px-4 mt-6 flex flex-col gap-12">
