@@ -6,8 +6,6 @@ import { SiGithub } from 'react-icons/si';
 import {
   GitCommit,
   ExternalLink,
-  MoreHorizontal,
-  Settings,
   Flame,
   Code2,
   GitPullRequest,
@@ -19,14 +17,10 @@ import {
   RefreshCw,
   GitFork,
   BookOpen,
+  Plus,
+  Minus,
+  Trophy,
 } from 'lucide-react';
-
-interface ContributorWeek {
-  label: string;
-  commits: number;
-  additions: number;
-  deletions: number;
-}
 
 interface ContributorPayload {
   rank: number;
@@ -37,12 +31,10 @@ interface ContributorPayload {
   commits: number;
   additions: number;
   deletions: number;
-  weeklyData: ContributorWeek[];
 }
 
 interface ContributorsResponse {
   contributors: ContributorPayload[];
-  aggregateWeekly: { label: string; commits: number }[];
   repoUrl: string;
   updatedAt: string;
   cached?: boolean;
@@ -58,13 +50,6 @@ const FALLBACK_CONTRIBUTORS: ContributorPayload[] = [
     commits: 30,
     additions: 145899,
     deletions: 26814,
-    weeklyData: [
-      { label: 'Sep 14', commits: 16, additions: 18200, deletions: 2400 },
-      { label: 'Sep 21', commits: 2, additions: 1200, deletions: 180 },
-      { label: 'Sep 28', commits: 0, additions: 0, deletions: 0 },
-      { label: 'Oct 5', commits: 0, additions: 0, deletions: 0 },
-      { label: 'Oct 12', commits: 12, additions: 126499, deletions: 24234 },
-    ],
   },
   {
     rank: 2,
@@ -75,31 +60,15 @@ const FALLBACK_CONTRIBUTORS: ContributorPayload[] = [
     commits: 21,
     additions: 17957,
     deletions: 4556,
-    weeklyData: [
-      { label: 'Sep 14', commits: 0, additions: 0, deletions: 0 },
-      { label: 'Sep 21', commits: 0, additions: 0, deletions: 0 },
-      { label: 'Sep 28', commits: 2, additions: 162, deletions: 38 },
-      { label: 'Oct 7', commits: 19, additions: 17795, deletions: 4518 },
-      { label: 'Oct 5', commits: 0, additions: 0, deletions: 0 },
-    ],
   },
 ];
 
-const FALLBACK_AGGREGATE = [
-  { label: 'Sep 14', commits: 16 },
-  { label: 'Sep 21', commits: 2 },
-  { label: 'Sep 28', commits: 2 },
-  { label: 'Oct 5', commits: 19 },
-  { label: 'Oct 12', commits: 12 },
-];
-
 export const ContributorsSection: React.FC = () => {
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedClone, setCopiedClone] = useState(false);
 
-  // Dynamically pull contributors data from /api/contributors
-  const { data, isLoading, isFetching, refetch } = useQuery<ContributorsResponse>({
+  // Dynamically pull contributors telemetry from /api/contributors
+  const { data, isFetching, refetch } = useQuery<ContributorsResponse>({
     queryKey: ['contributors-telemetry'],
     queryFn: async () => {
       try {
@@ -109,19 +78,22 @@ export const ContributorsSection: React.FC = () => {
         console.warn('Using baseline telemetry fallback', err);
         return {
           contributors: FALLBACK_CONTRIBUTORS,
-          aggregateWeekly: FALLBACK_AGGREGATE,
           repoUrl: 'https://github.com/Sreejesh06/OffClass',
           updatedAt: new Date().toISOString(),
         };
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
   const contributors = data?.contributors && data.contributors.length > 0 ? data.contributors : FALLBACK_CONTRIBUTORS;
-  const aggregateWeekly = data?.aggregateWeekly && data.aggregateWeekly.length > 0 ? data.aggregateWeekly : FALLBACK_AGGREGATE;
   const repoUrl = data?.repoUrl || 'https://github.com/Sreejesh06/OffClass';
+
+  // Calculate project aggregate metrics
+  const totalCommits = contributors.reduce((acc, c) => acc + c.commits, 0);
+  const totalAdditions = contributors.reduce((acc, c) => acc + c.additions, 0);
+  const totalDeletions = contributors.reduce((acc, c) => acc + c.deletions, 0);
 
   const handleCopyClone = () => {
     navigator.clipboard.writeText(`git clone ${repoUrl}.git`);
@@ -142,10 +114,10 @@ export const ContributorsSection: React.FC = () => {
         </h2>
 
         <p className="mt-4 text-lg text-muted-foreground font-medium max-w-2xl leading-relaxed">
-          Dynamic GitHub contribution telemetry. Every line of code, patch, and architecture decision tracked automatically on our open-source repo.
+          Real-time contribution telemetry directly from GitHub. Recognizing the developers who engineered the department's platform.
         </p>
 
-        {/* Start Contributing CTA Button */}
+        {/* Start Contributing CTA Row */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={() => setIsModalOpen(true)}
@@ -169,7 +141,7 @@ export const ContributorsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Contributors Dashboard Container (GitHub Analytics Style) */}
+      {/* Main Contributors Dashboard Container */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -182,260 +154,176 @@ export const ContributorsSection: React.FC = () => {
           <div>
             <div className="flex items-center gap-3">
               <SiGithub className="text-3xl text-white" />
-              <h3 className="text-2xl font-heading font-bold text-white tracking-tight">Contributors</h3>
+              <h3 className="text-2xl font-heading font-bold text-white tracking-tight">Repository Contributors</h3>
               <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1f6feb]/20 border border-[#1f6feb]/40 text-[#58a6ff] text-xs font-mono font-medium">
                 <span className="w-2 h-2 rounded-full bg-[#3fb950] animate-pulse" />
                 Live Telemetry
               </span>
             </div>
             <p className="text-xs md:text-sm text-gray-400 font-mono mt-1">
-              Contributions per week to main, excluding merge commits • Auto-updated via GitHub API
+              Pull requests merged into main • Automatically synced via GitHub API
             </p>
           </div>
 
+          {/* Quick Aggregate Stats Pill */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono font-medium text-gray-300">
-              Period: <strong className="text-white">Last 3 months ▾</strong>
-            </span>
-            <span className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono font-medium text-gray-300">
-              Contributions: <strong className="text-white">Commits ▾</strong>
-            </span>
+            <div className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono text-gray-300 flex items-center gap-2">
+              <GitCommit className="w-3.5 h-3.5 text-[#58a6ff]" />
+              <span><strong className="text-white">{totalCommits}</strong> Total Commits</span>
+            </div>
+
+            <div className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono text-gray-300 flex items-center gap-2">
+              <Flame className="w-3.5 h-3.5 text-crypto-yellow" />
+              <span><strong className="text-white">{(totalAdditions + totalDeletions).toLocaleString()}</strong> Lines Changed</span>
+            </div>
+
             <button
               onClick={() => refetch()}
               title="Refresh telemetry"
-              className="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-300 transition-colors"
+              className="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-300 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#58a6ff]' : ''}`} />
             </button>
-            <a
-              href={repoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-bold transition-colors shadow-sm ml-auto md:ml-0"
-            >
-              Repository <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
 
-        {/* Aggregate Timeline: Commits Over Time */}
-        <div className="mt-8 p-6 rounded-2xl bg-[#161b22] border border-[#30363d]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <GitCommit className="w-4 h-4 text-[#58a6ff]" />
-                <h4 className="text-base font-bold text-white">Commits over time</h4>
-              </div>
-              <p className="text-xs text-gray-400 font-mono mt-0.5">
-                Weekly activity from repository history
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400">
-              <MoreHorizontal className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-              <Settings className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-            </div>
-          </div>
-
-          {/* Aggregate Bar Graph */}
-          <div className="relative pt-6 pb-2">
-            {/* Horizontal Gridlines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-4">
-              <div className="border-b border-[#30363d]/50 w-full flex justify-end pr-1 text-[10px] text-gray-500 font-mono">15</div>
-              <div className="border-b border-[#30363d]/50 w-full flex justify-end pr-1 text-[10px] text-gray-500 font-mono">10</div>
-              <div className="border-b border-[#30363d]/50 w-full flex justify-end pr-1 text-[10px] text-gray-500 font-mono">5</div>
-              <div className="border-b border-[#30363d] w-full flex justify-end pr-1 text-[10px] text-gray-500 font-mono">0</div>
-            </div>
-
-            {/* Bars container */}
-            <div className="relative h-44 flex items-end justify-around gap-2 px-6 z-10">
-              {aggregateWeekly.map((item, idx) => {
-                const maxCommits = Math.max(...aggregateWeekly.map(x => x.commits), 20);
-                const heightPercent = Math.min(100, Math.max(8, (item.commits / maxCommits) * 100));
-                return (
-                  <div
-                    key={idx}
-                    className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
-                    onMouseEnter={() => setActiveTooltip(`agg-${idx}`)}
-                    onMouseLeave={() => setActiveTooltip(null)}
-                  >
-                    {/* Tooltip on hover */}
-                    {activeTooltip === `agg-${idx}` && (
-                      <div className="absolute -top-9 bg-black border border-[#30363d] px-2.5 py-1 rounded-md text-[11px] font-mono text-white whitespace-nowrap shadow-xl z-30">
-                        {item.commits} commits on {item.label}
-                      </div>
-                    )}
-
-                    {/* Commit count number on top of bar */}
-                    <span className="text-[11px] font-mono font-bold text-gray-300 mb-1 group-hover:text-white">
-                      {item.commits}
-                    </span>
-
-                    {/* Bar */}
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${heightPercent}%` }}
-                      transition={{ duration: 0.8, delay: idx * 0.08, ease: 'easeOut' }}
-                      className="w-full max-w-[80px] bg-[#1f6feb] group-hover:bg-[#388bfd] rounded-t-sm transition-colors relative"
-                    />
-
-                    {/* X-axis label */}
-                    <span className="text-[11px] font-mono text-gray-400 mt-2 truncate">
-                      {item.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Mini Timeline Scrubber Slider */}
-            <div className="mt-6 pt-3 border-t border-[#30363d]/60 flex items-center justify-between text-[11px] font-mono text-gray-400 px-4">
-              <span>Aug 2026</span>
-              <span className="text-gray-300">Sep 2026</span>
-              <span className="text-[#58a6ff] font-bold">Oct 2026</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Contributor Cards Grid */}
+        {/* Contributor Cards Grid — Focused Cleanly on Contributions */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {contributors.map((c) => (
-            <motion.div
-              key={c.username}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.2 }}
-              className="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff]/70 transition-all shadow-md flex flex-col justify-between"
-            >
-              {/* Contributor Header */}
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <img
-                        src={c.avatarUrl}
-                        alt={c.username}
-                        className="w-14 h-14 rounded-full border-2 border-[#30363d] object-cover bg-[#0d1117]"
-                        onError={(e) => {
-                          // Fallback to github avatar if url fails
-                          (e.target as HTMLImageElement).src = `https://github.com/${c.username}.png`;
-                        }}
-                      />
-                      <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-[#1f6feb] text-white text-[10px] font-mono font-bold shadow-sm">
-                        #{c.rank}
-                      </span>
-                    </div>
+          {contributors.map((c) => {
+            const totalLines = c.additions + c.deletions;
+            const rankBadgeColor =
+              c.rank === 1
+                ? 'bg-amber-400/20 text-amber-300 border-amber-400/50'
+                : 'bg-slate-300/20 text-slate-200 border-slate-300/40';
 
-                    <div>
-                      <a
-                        href={c.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lg font-bold text-white hover:text-[#58a6ff] transition-colors flex items-center gap-1.5"
-                      >
-                        {c.username}
-                        <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
-                      </a>
-                      <p className="text-xs text-gray-400 font-medium">{c.role}</p>
-                    </div>
-                  </div>
+            return (
+              <motion.div
+                key={c.username}
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="p-6 md:p-8 rounded-2xl bg-[#161b22] border-2 border-[#30363d] hover:border-[#58a6ff]/70 transition-all shadow-lg flex flex-col justify-between relative overflow-hidden"
+              >
+                {/* Background Glow */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#1f6feb]/10 rounded-full blur-2xl pointer-events-none" />
 
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <span className="px-2 py-0.5 rounded-full bg-[#21262d] border border-[#30363d] text-xs font-mono font-bold text-white">
-                      #{c.rank}
-                    </span>
-                    <MoreHorizontal className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-                    <Settings className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-                  </div>
-                </div>
-
-                {/* Commit Summary Line with Lines Added / Removed */}
-                <div className="mt-4 flex flex-wrap items-center gap-3 font-mono text-sm pt-3 border-t border-[#30363d]/60">
-                  <span className="text-white font-bold flex items-center gap-1">
-                    <GitCommit className="w-3.5 h-3.5 text-[#58a6ff]" /> {c.commits} commits
-                  </span>
-                  <span className="text-[#3fb950] font-semibold bg-[#238636]/10 px-2 py-0.5 rounded border border-[#238636]/30">
-                    +{c.additions.toLocaleString()}
-                  </span>
-                  <span className="text-[#f85149] font-semibold bg-[#da3633]/10 px-2 py-0.5 rounded border border-[#da3633]/30">
-                    -{c.deletions.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Individual Weekly Bar Histogram */}
-              <div className="mt-6 pt-4 border-t border-[#30363d]/40">
-                <div className="relative h-28 flex items-end justify-around gap-2 px-2">
-                  {/* Gridlines */}
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6">
-                    <div className="border-b border-[#30363d]/40 w-full" />
-                    <div className="border-b border-[#30363d]/40 w-full" />
-                    <div className="border-b border-[#30363d]" w-full />
-                  </div>
-
-                  {c.weeklyData.map((w, wIdx) => {
-                    const maxWeekly = Math.max(...c.weeklyData.map(x => x.commits), 15);
-                    const hPercent = w.commits > 0 ? Math.max(12, (w.commits / maxWeekly) * 100) : 0;
-                    return (
-                      <div
-                        key={wIdx}
-                        className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative z-10"
-                      >
-                        <span className="text-[10px] font-mono text-gray-400 mb-1 group-hover:text-white font-semibold">
-                          {w.commits}
-                        </span>
-
-                        <div className="w-full max-w-[42px] h-full flex items-end">
-                          {w.commits > 0 ? (
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${hPercent}%` }}
-                              transition={{ duration: 0.6, delay: wIdx * 0.08 }}
-                              className="w-full bg-[#1f6feb] group-hover:bg-[#388bfd] rounded-t-sm"
-                            />
-                          ) : (
-                            <div className="w-full h-[2px] bg-[#30363d]" />
-                          )}
-                        </div>
-
-                        <span className="text-[10px] font-mono text-gray-400 mt-2 truncate">
-                          {w.label}
+                <div>
+                  {/* Contributor Profile Header */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar with Rank Badge */}
+                      <div className="relative">
+                        <img
+                          src={c.avatarUrl}
+                          alt={c.username}
+                          className="w-16 h-16 rounded-2xl border-2 border-[#30363d] object-cover bg-[#0d1117] shadow-md"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://github.com/${c.username}.png`;
+                          }}
+                        />
+                        <span
+                          className={`absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full text-xs font-mono font-bold border shadow-sm flex items-center gap-0.5 ${rankBadgeColor}`}
+                        >
+                          <Trophy className="w-3 h-3" /> #{c.rank}
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Card Footer Badge */}
-              <div className="mt-4 pt-3 border-t border-[#30363d]/60 flex items-center justify-between text-xs font-mono text-gray-400">
-                <span className="flex items-center gap-1 text-gray-300">
-                  <Flame className="w-3.5 h-3.5 text-crypto-yellow" />
-                  {(c.additions + c.deletions).toLocaleString()} total lines changed
-                </span>
-                <a
-                  href={c.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#58a6ff] hover:underline flex items-center gap-1 font-semibold"
-                >
-                  View Profile →
-                </a>
-              </div>
-            </motion.div>
-          ))}
+                      {/* Names & Role */}
+                      <div>
+                        <a
+                          href={c.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xl font-heading font-extrabold text-white hover:text-[#58a6ff] transition-colors flex items-center gap-2"
+                        >
+                          {c.username}
+                          <ExternalLink className="w-4 h-4 text-gray-400" />
+                        </a>
+                        <p className="text-xs text-gray-400 font-medium mt-0.5">{c.role}</p>
+                      </div>
+                    </div>
+
+                    <a
+                      href={c.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
+                    >
+                      <SiGithub className="w-3.5 h-3.5" /> Profile
+                    </a>
+                  </div>
+
+                  {/* High-Impact Contribution Stats Grid */}
+                  <div className="mt-6 grid grid-cols-3 gap-3">
+                    {/* Commits */}
+                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] flex flex-col">
+                      <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                        <GitCommit className="w-3 h-3 text-[#58a6ff]" /> Commits
+                      </span>
+                      <span className="text-2xl font-mono font-bold text-white tracking-tight">
+                        {c.commits}
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-500 mt-0.5">verified commits</span>
+                    </div>
+
+                    {/* Additions */}
+                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#238636]/40 flex flex-col">
+                      <span className="text-[11px] font-mono text-[#3fb950] uppercase tracking-wider flex items-center gap-1 mb-1">
+                        <Plus className="w-3 h-3 text-[#3fb950]" /> Added
+                      </span>
+                      <span className="text-2xl font-mono font-bold text-[#3fb950] tracking-tight">
+                        +{c.additions.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-500/70 mt-0.5">lines of code</span>
+                    </div>
+
+                    {/* Deletions */}
+                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#da3633]/40 flex flex-col">
+                      <span className="text-[11px] font-mono text-[#f85149] uppercase tracking-wider flex items-center gap-1 mb-1">
+                        <Minus className="w-3 h-3 text-[#f85149]" /> Removed
+                      </span>
+                      <span className="text-2xl font-mono font-bold text-[#f85149] tracking-tight">
+                        -{c.deletions.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] font-mono text-rose-500/70 mt-0.5">lines refined</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer: Total Code Volume & Impact */}
+                <div className="mt-6 pt-4 border-t border-[#30363d] flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Flame className="w-4 h-4 text-crypto-yellow" />
+                    <span>
+                      <strong className="text-white">{totalLines.toLocaleString()}</strong> total lines contributed
+                    </span>
+                  </div>
+
+                  <a
+                    href={`${repoUrl}/commits?author=${c.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#58a6ff] hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    View Commits →
+                  </a>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Real-time Notice banner below cards */}
+        {/* Real-time notice banner below cards */}
         <div className="mt-8 p-4 rounded-xl bg-[#161b22]/70 border border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-gray-400">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-crypto-yellow shrink-0" />
             <span>
-              <strong>Automated Telemetry:</strong> When your PR is merged into <code>main</code>, GitHub automatically registers your commits and lines of code here.
+              <strong>Real-Time GitHub Telemetry:</strong> When your PR merges into <code>main</code>, GitHub automatically registers your commits and lines of contribution here.
             </span>
           </div>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-crypto-yellow hover:underline font-bold shrink-0 flex items-center gap-1"
+            className="text-crypto-yellow hover:underline font-bold shrink-0 flex items-center gap-1 cursor-pointer"
           >
             How it works →
           </button>
