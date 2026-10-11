@@ -80,6 +80,9 @@ if [ -f ".env" ]; then
     elif grep -q "secure_postgres_admin_password_here" .env 2>/dev/null; then
         echo -e "${RED}FAILED! POSTGRES_PASSWORD is still set to default placeholder in .env!${NC}"
         ERRORS=$((ERRORS + 1))
+    elif grep -q "secure_app_user_password_here" .env 2>/dev/null; then
+        echo -e "${RED}FAILED! APP_DB_PASSWORD is still set to default placeholder in .env!${NC}"
+        ERRORS=$((ERRORS + 1))
     else
         echo -e "${GREEN}OK (.env exists and critical defaults replaced)${NC}"
     fi
