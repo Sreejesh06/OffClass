@@ -6,10 +6,12 @@
 *Skill is earned. Effort is visible. No spreadsheets, no arbitrary grading.*
 
 <p align="center">
-  <video src="cryptid_intro.mp4" controls width="100%" poster="cryptid_preview.png">
-    <source src="cryptid_intro.mp4" type="video/mp4">
-    <a href="cryptid_intro.mp4">Watch the 16-second introduction video</a>
-  </video>
+  <a href="cryptid_intro.mp4">
+    <img src="cryptid_intro.gif" alt="Cryptid Motion Preview" width="100%" />
+  </a>
+</p>
+<p align="center">
+  <a href="cryptid_intro.mp4">Watch the full 1080p 60fps video with sound (16s)</a>
 </p>
 
 [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -86,16 +88,16 @@ Cryptid is built with a decoupled, high-throughput service topology designed to 
 
 ```mermaid
 flowchart TD
-    Users["Students and Faculty<br/>(Campus LAN / Web)"] -->|Ports 80 & 443| Caddy["Caddy Reverse Proxy<br/>(Automatic HTTPS & Static Files)"]
+    Users["Students and Faculty<br/>Campus LAN / Web"] -->|Ports 80 and 443| Caddy["Caddy Reverse Proxy<br/>Automatic HTTPS and Static Files"]
     
-    Caddy -->|Static UI / SPA Routing| Client["Vite SPA Frontend<br/>(React 19 & Tailwind CSS)"]
-    Caddy -->|API Traffic (/api/*)| API["Backend Server<br/>(Node.js Express + BullMQ)"]
+    Caddy -->|Static UI and SPA Routing| Client["Vite SPA Frontend<br/>React 19 and Tailwind CSS"]
+    Caddy -->|API Requests| API["Backend Server<br/>Node.js Express and BullMQ"]
     
     API -->|Connection Pooling| PgBouncer["PgBouncer"]
     PgBouncer --> DB[("PostgreSQL 16<br/>Off-Chain Primary Database")]
     
-    API -->|Job Queues & Cache| Redis[("Redis 7<br/>BullMQ Broker & Session Store")]
-    API -->|Document Uploads| MinIO[("MinIO S3<br/>Certificates & Proof Files")]
+    API -->|Job Queues and Cache| Redis[("Redis 7<br/>BullMQ Broker and Session Store")]
+    API -->|Document Uploads| MinIO[("MinIO S3<br/>Certificates and Proof Files")]
     
     API -.->|Async Non-Blocking Hashes| Polygon["Polygon Amoy Testnet<br/>Lightweight Notary Contract"]
 ```
