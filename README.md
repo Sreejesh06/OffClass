@@ -71,14 +71,94 @@ A zero-knowledge reporting channel for grading disputes, house unfairness, or ha
 
 ## The 4 Houses
 
-Every cadet is placed into a specialization house corresponding to their core technical focus:
+Different skills. One community. A stronger tomorrow.
 
-| House | Track | Core Disciplines | Signature Tone |
-| :--- | :--- | :--- | :--- |
-| **Red House** | Offensive Operations | Web exploitation, reverse engineering, binary exploitation, red teaming | Neon Scarlet (`#ef4444`) |
-| **Blue House** | Defensive Operations | Digital forensics, incident response, SIEM engineering, SOC operations | Electric Blue (`#3b82f6`) |
-| **Green House** | Infrastructure & SecOps | Cloud security (AWS/GCP), Kubernetes hardening, CI/CD DevSecOps | Emerald (`#10b981`) |
-| **Purple House** | Threat Intelligence | OSINT, malware analysis, dual-hat adversary simulation, research | Cyber Purple (`#a855f7`) |
+Every student is placed into a specialization house corresponding to their core technical domain, mascot, and operational focus.
+
+| House | Identity | Mascot | Motto | Core Philosophy |
+| :--- | :--- | :--- | :--- | :--- |
+| **Red House** | The Offensive Force | Lion | "Find. Break. Improve." | We think like adversaries to make systems stronger. |
+| **Blue House** | The Defensive Shield | Wolf | "Detect. Defend. Stay Ahead." | We build resilient systems and defend what matters. |
+| **Green House** | The Innovation Engine | Phoenix | "Build. Research. Create." | We turn ideas into solutions for real-world impact. |
+| **Purple House** | The Strategic Mind | Panther | "Analyse. Solve. Lead." | We connect people, processes and possibilities. |
+
+### Red House: The Offensive Force
+- **Motto:** "Find. Break. Improve."
+- **Banner:** Offense today. A safer tomorrow.
+- **Mascot:** Lion
+- **Philosophy:** We think like adversaries to make systems stronger.
+- **Key Skillsets:**
+  - Cyber Fundamentals
+  - Network Reconnaissance
+  - Web & API Security
+  - Vulnerability Assessment
+  - Penetration Testing
+  - Exploit Development
+  - Red Team Operations
+  - Active Directory Security
+  - CTF & Competitive Hacking
+  - Security Research
+
+### Blue House: The Defensive Shield
+- **Motto:** "Detect. Defend. Stay Ahead."
+- **Banner:** Strong systems. Safer tomorrows.
+- **Mascot:** Wolf
+- **Philosophy:** We build resilient systems and defend what matters.
+- **Key Skillsets:**
+  - SOC Fundamentals
+  - SIEM & Log Analysis
+  - Threat Hunting
+  - Incident Response
+  - Digital Forensics (Intro)
+  - EDR / XDR
+  - Network Defence
+  - Malware Analysis (Basic)
+  - Cloud Security Monitoring
+  - Security Operations
+  - Risk & Resilience
+
+### Green House: The Innovation Engine
+- **Motto:** "Build. Research. Create."
+- **Banner:** Ideas today. Impact tomorrow.
+- **Mascot:** Phoenix
+- **Philosophy:** We turn ideas into solutions for real-world impact.
+- **Key Skillsets:**
+  - Secure Coding & DevSecOps
+  - Application Security
+  - Cloud & Container Security
+  - AI Security
+  - IoT / Embedded Security
+  - Cryptography
+  - Research & Development
+  - Emerging Technologies
+  - Prototyping & Product Build
+  - Open Source Contribution
+  - Innovation & Entrepreneurship
+
+### Purple House: The Strategic Mind
+- **Motto:** "Analyse. Solve. Lead."
+- **Banner:** Think beyond. Secure for all.
+- **Mascot:** Panther
+- **Philosophy:** We connect people, processes and possibilities.
+- **Key Skillsets:**
+  - Cyber Intelligence (OSINT)
+  - Threat Intelligence
+  - GRC & Policy
+  - Risk Analysis
+  - Privacy & Compliance
+  - Cyber Law & Ethics
+  - Business Continuity
+  - Leadership & Communication
+  - Project Management
+  - Industry Collaboration
+  - Strategy & Transformation
+
+### Department Core Pillars
+- **Skills for Life:** Developing technical fundamentals and applied engineering competence.
+- **Competitions for Growth:** Testing capabilities under pressure in CTFs, hackathons, and war games.
+- **Ideas for Impact:** Translating applied research and tools into tangible department impact.
+- **Collaboration for Change:** Bridging offensive, defensive, infrastructure, and intelligence teams.
+- **Leadership for Tomorrow:** Cultivating strategic minds capable of securing modern digital infrastructure.
 
 ---
 
