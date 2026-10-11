@@ -2,12 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Shield, ArrowRight, ExternalLink, Terminal } from 'lucide-react';
+import { SpaceParticles } from './ui/SpaceParticles';
 
 export const Footer: React.FC = () => {
   return (
-    <div className="w-full relative overflow-hidden bg-crypto-bg pt-12">
+    <div id="site-footer" className="w-full relative overflow-hidden bg-crypto-bg pt-12">
       {/* ─────────────────────────────────────────────────────────────
-          TOP BANNER: Deep Obsidian CTA Card (High Contrast in Both Themes)
+          TOP BANNER: 3D Cosmic Space CTA Card with Deep Gradient & Particles
          ───────────────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 mb-16">
         <motion.div
@@ -17,11 +18,14 @@ export const Footer: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="relative rounded-3xl overflow-hidden border-2 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] text-white px-6 py-20 md:py-24 text-center"
           style={{
-            background: 'linear-gradient(180deg, #131722 0%, #090b10 45%, #000000 100%)',
+            background: 'radial-gradient(ellipse 95% 70% at 50% 20%, #16142c 0%, #0c0d18 45%, #020306 100%)',
           }}
         >
-          {/* Soft top-edge cyber glow (kept strictly at top edge so it never washes out text) */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-gradient-to-b from-cyan-500/10 via-purple-500/5 to-transparent blur-2xl pointer-events-none" />
+          {/* 3D Space Particle Starfield (drifting through 3D depth) */}
+          <SpaceParticles particleCount={170} speed={1.2} />
+
+          {/* Soft cosmic top aura */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-28 bg-gradient-to-b from-purple-500/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
 
           {/* Subtle Cyber Grid */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff04_1px,transparent_1px),linear-gradient(to_bottom,#ffffff04_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
