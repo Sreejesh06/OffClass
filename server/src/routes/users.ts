@@ -4,6 +4,7 @@ import { requireAuth } from "../middlewares/requireAuth.js";
 import { z } from "zod";
 import { generatePresignedPut } from "../lib/minio.js";
 import crypto from "crypto";
+import { notifyAdminsAndTeachers } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -388,19 +389,27 @@ router.post("/me/house-transfer", requireAuth, async (req: Request, res: Respons
   }
 });
 
-/**
- * POST /api/users/me/achievements
- * Submit a new achievement request for admin approval
- */
+const AchievementSubmitSchema = z.object({
+  title: z.string().min(2).max(200),
+  category: z.enum(["HACKATHON", "CTF", "COMPETITION", "PUBLICATION", "OTHER"]),
+  position: z.string().min(1).max(100),
+  date: z.string().refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date" }),
+  semester: z.string().max(50).optional().nullable(),
+  prize: z.string().max(200).optional().nullable(),
+  description: z.string().max(2000).optional().nullable(),
+  opportunityId: z.string().uuid().optional().nullable(),
+  images: z.array(z.string().url()).max(5).optional().default([]),
+});
+
 router.post("/me/achievements", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { title, category, position, date, semester, prize, description, opportunityId, images } = req.body;
-
-    if (!title || !category || !position || !date) {
-      res.status(400).json({ error: "Title, category, position, and date are required" });
+    const parsed = AchievementSubmitSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0]?.message ?? "Invalid input" });
       return;
     }
+    const { title, category, position, date, semester, prize, description, opportunityId, images } = parsed.data;
 
     const achievement = await prisma.achievement.create({
       data: {

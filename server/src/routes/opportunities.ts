@@ -4,23 +4,32 @@ import { prisma } from "../lib/db.js";
 import { logAction } from "../lib/audit.js";
 import { CreateOpportunitySchema, UpdateOpportunitySchema, ToggleBookmarkSchema } from "shared";
 import { House, Role } from "@prisma/client";
+import { z } from "zod";
+
+const OpportunityTypeSchema = z.enum(["CTF", "HACKATHON", "WORKSHOP", "INTERNSHIP", "CERTIFICATION", "OTHER"]).optional();
+const HouseFilterSchema = z.enum(["RED", "BLUE", "GREEN", "PURPLE", "ALL"]).optional();
 
 const router = Router();
 
 // GET /api/opportunities - List opportunities
 router.get("/", requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const userRole = req.user!.role;
-    const { type, house } = req.query;
+    const typeResult = OpportunityTypeSchema.safeParse(req.query.type || undefined);
+    const houseResult = HouseFilterSchema.safeParse(req.query.house || undefined);
+
+    if (!typeResult.success || !houseResult.success) {
+      res.status(400).json({ error: "Invalid filter parameters" });
+      return;
+    }
 
     const whereClause: any = { isActive: true };
 
-    if (house && house !== "ALL") {
-      whereClause.targetHouses = { has: house as string };
+    if (houseResult.data && houseResult.data !== "ALL") {
+      whereClause.targetHouses = { has: houseResult.data };
     }
 
-    if (type) {
-      whereClause.type = type as string;
+    if (typeResult.data) {
+      whereClause.type = typeResult.data;
     }
 
     const opportunities = await prisma.opportunity.findMany({
