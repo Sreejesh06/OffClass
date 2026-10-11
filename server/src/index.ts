@@ -15,6 +15,7 @@ import badgesRoutes from "./routes/badges.js";
 import ledgerRoutes from "./routes/ledger.js";
 import usersRoutes from "./routes/users.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
+import contributorsRoutes from "./routes/contributors.js";
 import "./workers/syncWorker.js"; // Boot the background worker
 import { prisma } from "./lib/db.js";
 
@@ -59,6 +60,7 @@ app.use("/api/spotlights", spotlightRoutes);
 app.use("/api/ledger", ledgerRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/opportunities", opportunitiesRoutes);
+app.use("/api/contributors", contributorsRoutes);
 
 app.get("/health", async (_req, res) => {
   try {

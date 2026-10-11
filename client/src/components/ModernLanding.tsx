@@ -7,6 +7,7 @@ import { SwapyFeatures } from './SwapyFeatures';
 import ScrollVelocity from './ui/ScrollVelocity';
 import FoldText from './ui/FoldText';
 import LogoLoop, { type LogoItem } from './ui/LogoLoop';
+import { ContributorsSection } from './ContributorsSection';
 import { SiGithub, SiLeetcode, SiTryhackme, SiHackthebox, SiCodeforces, SiLinux } from 'react-icons/si';
 
 const platformLogos: LogoItem[] = [
@@ -244,6 +245,9 @@ export const ModernLanding: React.FC = () => {
 
       {/* Swapy Draggable Features Grid */}
       <SwapyFeatures />
+
+      {/* GitHub Core Contributors Showcase */}
+      <ContributorsSection />
 
       {/* Footer CTA */}
       <footer className="bg-muted/50 py-20 border-t-2 border-border">
