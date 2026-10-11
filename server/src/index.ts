@@ -16,6 +16,7 @@ import ledgerRoutes from "./routes/ledger.js";
 import usersRoutes from "./routes/users.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
 import "./workers/syncWorker.js"; // Boot the background worker
+import { prisma } from "./lib/db.js";
 
 const app = express();
 export { app };
@@ -46,8 +47,7 @@ const authLimiter = rateLimit({
 });
 
 // Mount routes
-// Rate limiting disabled for testing
-app.use("/api/auth", /*authLimiter,*/ authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/complaints", complaintsRoutes);
 app.use("/api/perks", perksRoutes);
@@ -60,8 +60,13 @@ app.use("/api/ledger", ledgerRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/opportunities", opportunitiesRoutes);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res.status(503).json({ status: "error", db: "unreachable" });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
@@ -76,3 +81,11 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`Server running on port ${PORT}`);
   });
 }
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});

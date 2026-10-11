@@ -1,6 +1,6 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
 async function getTransporter() {
   if (transporter) return transporter;
@@ -38,7 +38,7 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
   try {
     const mailer = await getTransporter();
     const info = await mailer.sendMail({
-      from: '"Cryptid Platform" <noreply@cryptid.local>',
+      from: process.env.SMTP_FROM || '"Cryptid Platform" <noreply@sece.ac.in>',
       to,
       subject,
       html,
