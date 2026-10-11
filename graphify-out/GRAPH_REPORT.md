@@ -1,17 +1,17 @@
 # Graph Report - Cryptid  (2026-10-11)
 
 ## Corpus Check
-- 268 files · ~705,772 words
+- 269 files · ~706,350 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 91 file(s) not represented in the graph (top: .ttf 17, .eot 15, .woff 15)
 
 ## Summary
-- 1366 nodes · 2357 edges · 96 communities (66 shown, 21 thin omitted)
+- 1366 nodes · 2361 edges · 99 communities (70 shown, 20 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 27 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `13c2b72d`
+- Built from commit: `dfebf99d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -29,7 +29,7 @@
 - dependencies
 - devDependencies
 - e2e/package.json
-- TypedDeferredTopicFilter
+- IERC1155Receiver
 - client/tsconfig.json
 - useAuth
 - Cryptid — Project Context
@@ -46,13 +46,13 @@
 - components.json
 - dependencies
 - integrations.ts
-- ModernLanding.tsx
+- react-router-dom
 - SwapyFeatures.tsx
-- react
+- App.tsx
 - seedRubric.ts
 - sticky-note-polaroid-frame.tsx
 - user.ts
-- api.ts
+- react
 - typechain-types/index.ts
 - test-heatmap.cjs
 - scripts
@@ -66,35 +66,38 @@
 - test-heatmap.js
 - tsup
 - prisma
-- TypedContractEvent
+- ERC1155.ts
 - factories/@openzeppelin/contracts/token/ERC1155/index.ts
-- Strings
+- TypedListener
 - AuthContext.tsx
 - blockchain/package.json
 - IERC1155MetadataURI.ts
 - common.ts
 - IERC1155.ts
-- IERC721Errors
+- IERC20Errors
 - db.ts
 - perks.ts
 - TypedContractMethod
 - 3. Deployment Steps
-- TypedListener
+- Ownable
 - users.ts
-- IERC1155Errors
+- TypedDeferredTopicFilter
 - CryptidRegistry.ts
 - devDependencies
 - CryptidRegistry__factory.ts
 - AccountLinker.tsx
 - contributors.ts
 - Ownable__factory.ts
-- swapy-draggable-card.tsx
+- SafeCast__factory.ts
 - Cryptid — Final Codebase Audit (V4)
 - compilerOptions
 - mailer.ts
+- Strings__factory.ts
 - FoldText.tsx
 - LogoLoop.tsx
 - ScrollVelocity.tsx
+- factories/@openzeppelin/contracts/index.ts
+- factories/index.ts
 - HardhatEthersHelpers
 - scripts
 - Cryptid Smart Contracts
@@ -105,7 +108,7 @@
 - deploy-check.sh
 
 ## God Nodes (most connected - your core abstractions)
-1. `react` - 55 edges
+1. `react` - 56 edges
 2. `TypedDeferredTopicFilter` - 53 edges
 3. `TypedListener` - 53 edges
 4. `TypedContractMethod` - 31 edges
@@ -119,19 +122,19 @@
 ## Surprising Connections (you probably didn't know these)
 - `InterestedStudent` --references--> `House`  [EXTRACTED]
   client/src/components/InterestedStudentsModal.tsx → shared/src/schemas/user.ts
-- `BadgeWallet()` --calls--> `useAuth()`  [EXTRACTED]
-  client/src/components/BadgeWallet.tsx → client/src/contexts/AuthContext.tsx
 - `Props` --references--> `OpportunityType`  [EXTRACTED]
   client/src/components/OpportunityCard.tsx → shared/src/schemas/opportunity.ts
 - `Props` --references--> `House`  [EXTRACTED]
   client/src/components/OpportunityCard.tsx → shared/src/schemas/user.ts
-- `AdminDashboard()` --calls--> `useAuth()`  [EXTRACTED]
-  client/src/pages/AdminDashboard.tsx → client/src/contexts/AuthContext.tsx
+- `Login()` --calls--> `useAuth()`  [EXTRACTED]
+  client/src/pages/Login.tsx → client/src/contexts/AuthContext.tsx
+- `ProfilePortfolio()` --calls--> `useAuth()`  [EXTRACTED]
+  client/src/pages/ProfilePortfolio.tsx → client/src/contexts/AuthContext.tsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (96 total, 21 thin omitted)
+## Communities (99 total, 20 thin omitted)
 
 ### Community 0 - "compilerOptions"
 Cohesion: 0.09
@@ -185,13 +188,13 @@ Nodes (18): devDependencies, dotenv, pino-pretty, prisma, supertest, tsup, tsx, 
 Cohesion: 0.07
 Nodes (25): dependencies, server, devDependencies, bcryptjs, dotenv, @playwright/test, @prisma/client, @types/bcryptjs (+17 more)
 
-### Community 13 - "TypedDeferredTopicFilter"
-Cohesion: 0.14
-Nodes (4): TypedDeferredTopicFilter, TypedEventLog, ERC165, IERC165
+### Community 13 - "IERC1155Receiver"
+Cohesion: 0.13
+Nodes (4): _abi, IERC1155Receiver__factory, IERC1155Receiver, IERC1155ReceiverInterface
 
 ### Community 15 - "useAuth"
-Cohesion: 0.13
-Nodes (25): OpportunityBoard, OpportunityCompose, ComposeOpportunityCard(), HOUSES, OPPORTUNITY_TYPES, HOUSE_COLORS, InterestedStudent, InterestedStudentsModal() (+17 more)
+Cohesion: 0.10
+Nodes (28): OpportunityBoard, OpportunityCompose, BadgeWallet(), ComposeOpportunityCard(), HOUSES, OPPORTUNITY_TYPES, HOUSE_COLORS, InterestedStudent (+20 more)
 
 ### Community 16 - "Cryptid — Project Context"
 Cohesion: 0.15
@@ -214,8 +217,8 @@ Cohesion: 0.07
 Nodes (44): ManagePerkModal(), ManagePerkModalProps, Alert(), AlertDescription(), AlertTitle(), alertVariants, Badge(), badgeVariants (+36 more)
 
 ### Community 28 - "ProfilePortfolio.tsx"
-Cohesion: 0.08
-Nodes (26): ProfilePortfolio, AVATAR_SEEDS, AvatarModal(), AvatarModalProps, CertificateUpload(), UploadStatus, CertificateUploadModal(), CertificateUploadModalProps (+18 more)
+Cohesion: 0.09
+Nodes (20): ProfilePortfolio, AvatarModal(), CertificateUploadModal(), ALL_HOUSES, HOUSE_DETAILS, HouseTransferModal(), HouseTransferModalProps, HouseType (+12 more)
 
 ### Community 29 - "components.json"
 Cohesion: 0.09
@@ -229,13 +232,17 @@ Nodes (22): dependencies, axios, @base-ui/react, class-variance-authority, cn, e
 Cohesion: 0.11
 Nodes (20): @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, file-type, anchorCertificateHash(), blockchainEnabled(), computeAchievementHash(), cryptidRegistry, mintAchievementSBT() (+12 more)
 
-### Community 32 - "ModernLanding.tsx"
+### Community 32 - "react-router-dom"
 Cohesion: 0.12
-Nodes (13): Home, ContributorPayload, ContributorsResponse, ContributorsSection(), ContributorWeek, FALLBACK_AGGREGATE, FALLBACK_CONTRIBUTORS, ModernLanding() (+5 more)
+Nodes (13): Home, ContributorPayload, ContributorsResponse, ContributorsSection(), FALLBACK_CONTRIBUTORS, Footer(), ModernLanding(), platformLogos (+5 more)
 
-### Community 34 - "react"
-Cohesion: 0.09
-Nodes (21): App(), Complaints, ForgotPassword, HallOfFame, Login, queryClient, Redeem, ResetPassword (+13 more)
+### Community 33 - "SwapyFeatures.tsx"
+Cohesion: 0.10
+Nodes (14): initialItems, Item, SwapyFeatures(), AnimationType, cn(), Config, DragHandle(), dragOpacityClassMap (+6 more)
+
+### Community 34 - "App.tsx"
+Cohesion: 0.08
+Nodes (18): AdminDashboard, App(), Complaints, ForgotPassword, HallOfFame, Login, queryClient, Redeem (+10 more)
 
 ### Community 36 - "sticky-note-polaroid-frame.tsx"
 Cohesion: 0.29
@@ -245,13 +252,13 @@ Nodes (3): StickyNotePolaroidFrame, StickyNotePolaroidFrameProps, toCssSize()
 Cohesion: 0.11
 Nodes (17): CreateOpportunityPayload, CreateOpportunitySchema, ToggleBookmarkPayload, ToggleBookmarkSchema, UpdateOpportunityPayload, UpdateOpportunitySchema, HouseEnum, LoginPayload (+9 more)
 
-### Community 38 - "api.ts"
-Cohesion: 0.13
-Nodes (12): AdminDashboard, AchievementCategory, AchievementModal(), AchievementModalProps, DisciplineRecord, RubricItem, BadgeWallet(), UserBadge (+4 more)
+### Community 38 - "react"
+Cohesion: 0.15
+Nodes (15): AchievementCategory, AchievementModal(), AchievementModalProps, DisciplineRecord, RubricItem, AVATAR_SEEDS, AvatarModalProps, UserBadge (+7 more)
 
 ### Community 39 - "typechain-types/index.ts"
-Cohesion: 0.13
-Nodes (7): _abi, ERC165__factory, _abi, IERC165__factory, factories, ERC165Interface, IERC165Interface
+Cohesion: 0.09
+Nodes (8): _abi, ERC165__factory, _abi, IERC165__factory, factories, ERC165Interface, IERC165, IERC165Interface
 
 ### Community 40 - "test-heatmap.cjs"
 Cohesion: 0.25
@@ -265,13 +272,17 @@ Nodes (5): scripts, build, dev, start, test
 Cohesion: 0.33
 Nodes (8): express, otplib, qrcode, clearAuthCookies(), generateAccessToken(), generateRefreshToken(), hashToken(), setAuthCookies()
 
-### Community 52 - "TypedContractEvent"
-Cohesion: 0.08
-Nodes (13): TypedContractEvent, ApprovalForAllEvent, ERC1155, Event, Filter, InputTuple, Log, LogDescription (+5 more)
+### Community 52 - "ERC1155.ts"
+Cohesion: 0.17
+Nodes (11): ApprovalForAllEvent, Event, Filter, InputTuple, Log, LogDescription, OutputObject, OutputTuple (+3 more)
 
 ### Community 53 - "factories/@openzeppelin/contracts/token/ERC1155/index.ts"
-Cohesion: 0.06
-Nodes (12): _abi, ERC1155__factory, _abi, IERC1155MetadataURI__factory, _abi, IERC1155__factory, IERC1155Receiver__factory, extensions (+4 more)
+Cohesion: 0.07
+Nodes (10): _abi, ERC1155__factory, _abi, IERC1155MetadataURI__factory, _abi, IERC1155__factory, extensions, ERC1155Interface (+2 more)
+
+### Community 54 - "TypedListener"
+Cohesion: 0.08
+Nodes (5): TypedListener, ERC165, SafeCast, Strings, StringsInterface
 
 ### Community 55 - "AuthContext.tsx"
 Cohesion: 0.14
@@ -282,7 +293,7 @@ Cohesion: 0.07
 Nodes (24): config, author, description, devDependencies, chai, dotenv, hardhat, @nomicfoundation/hardhat-toolbox (+16 more)
 
 ### Community 57 - "IERC1155MetadataURI.ts"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (12): ApprovalForAllEvent, Event, Filter, IERC1155MetadataURI, InputTuple, Log, LogDescription, OutputObject (+4 more)
 
 ### Community 58 - "common.ts"
@@ -293,9 +304,9 @@ Nodes (22): BaseOverrides, ContractMethodArgs, DefaultReturnType, GetARGsTypeFro
 Cohesion: 0.17
 Nodes (11): ApprovalForAllEvent, Event, Filter, InputTuple, Log, LogDescription, OutputObject, OutputTuple (+3 more)
 
-### Community 60 - "IERC721Errors"
+### Community 60 - "IERC20Errors"
 Cohesion: 0.16
-Nodes (4): _abi, IERC721Errors__factory, IERC721Errors, IERC721ErrorsInterface
+Nodes (4): _abi, IERC20Errors__factory, IERC20Errors, IERC20ErrorsInterface
 
 ### Community 61 - "db.ts"
 Cohesion: 0.19
@@ -306,36 +317,32 @@ Cohesion: 0.22
 Nodes (14): main(), prisma, awardPoints(), getHouseKey(), getOverallKey(), getTopUsers(), getUserRank(), transferHouseLeaderboard() (+6 more)
 
 ### Community 63 - "TypedContractMethod"
-Cohesion: 0.08
-Nodes (4): TypedContractMethod, _abi, IERC1155, IERC1155Receiver
+Cohesion: 0.06
+Nodes (5): TypedContractEvent, TypedContractMethod, CryptidRegistry, ERC1155, IERC1155
 
 ### Community 64 - "3. Deployment Steps"
 Cohesion: 0.11
 Nodes (17): 1. System Architecture, 2. Server Node Prerequisites, 3. Deployment Steps, 4. Operational Maintenance, 5. Automated Midnight Database Backups, 6. Troubleshooting Common Issues, Applying Future Updates, Cryptid — Production Deployment Runbook (+9 more)
 
-### Community 65 - "TypedListener"
-Cohesion: 0.12
-Nodes (3): TypedListener, Ownable, SafeCast
-
 ### Community 66 - "users.ts"
 Cohesion: 0.15
 Nodes (12): notifyAdminsAndTeachers(), generateChallenge(), verifyChallenge(), router, SubmitSchema, UpdateStatusSchema, AchievementSubmitSchema, AvatarSchema (+4 more)
 
-### Community 67 - "IERC1155Errors"
-Cohesion: 0.08
-Nodes (8): _abi, IERC1155Errors__factory, _abi, IERC20Errors__factory, IERC1155Errors, IERC1155ErrorsInterface, IERC20Errors, IERC20ErrorsInterface
+### Community 67 - "TypedDeferredTopicFilter"
+Cohesion: 0.09
+Nodes (10): TypedDeferredTopicFilter, TypedEventLog, _abi, IERC1155Errors__factory, _abi, IERC721Errors__factory, IERC1155Errors, IERC1155ErrorsInterface (+2 more)
 
 ### Community 68 - "CryptidRegistry.ts"
-Cohesion: 0.09
-Nodes (14): ApprovalForAllEvent, CryptidRegistry, Event, Filter, HashAnchoredEvent, InputTuple, Log, LogDescription (+6 more)
+Cohesion: 0.13
+Nodes (13): ApprovalForAllEvent, Event, Filter, HashAnchoredEvent, InputTuple, Log, LogDescription, OutputObject (+5 more)
 
 ### Community 69 - "devDependencies"
 Cohesion: 0.14
 Nodes (14): devDependencies, autoprefixer, @axe-core/react, oxlint, @playwright/test, postcss, tailwindcss, @tailwindcss/vite (+6 more)
 
 ### Community 70 - "CryptidRegistry__factory.ts"
-Cohesion: 0.05
-Nodes (26): NonPayableOverrides, CryptidRegistryInterface, _abi, CryptidRegistry__factory, CryptidRegistryConstructorParams, isSuperArgs(), contracts, openzeppelin (+18 more)
+Cohesion: 0.19
+Nodes (5): CryptidRegistryInterface, _abi, CryptidRegistry__factory, CryptidRegistryConstructorParams, isSuperArgs()
 
 ### Community 71 - "AccountLinker.tsx"
 Cohesion: 0.31
@@ -349,9 +356,9 @@ Nodes (6): ContributorPayload, ContributorsResponse, ContributorWeek, FALLBACK_A
 Cohesion: 0.22
 Nodes (3): _abi, Ownable__factory, OwnableInterface
 
-### Community 74 - "swapy-draggable-card.tsx"
-Cohesion: 0.21
-Nodes (11): AnimationType, cn(), Config, DragHandle(), dragOpacityClassMap, SwapMode, SwapyItem(), SwapyLayout() (+3 more)
+### Community 74 - "SafeCast__factory.ts"
+Cohesion: 0.26
+Nodes (6): NonPayableOverrides, _abi, isSuperArgs(), SafeCast__factory, SafeCastConstructorParams, SafeCastInterface
 
 ### Community 75 - "Cryptid — Final Codebase Audit (V4)"
 Cohesion: 0.22
@@ -365,17 +372,29 @@ Nodes (8): compilerOptions, esModuleInterop, module, outDir, strict, target, fil
 Cohesion: 0.67
 Nodes (3): nodemailer, getTransporter(), sendEmail()
 
+### Community 78 - "Strings__factory.ts"
+Cohesion: 0.22
+Nodes (6): introspection, math, _abi, isSuperArgs(), Strings__factory, StringsConstructorParams
+
 ### Community 79 - "FoldText.tsx"
 Cohesion: 0.32
 Nodes (7): clamp(), FoldText(), FoldTextProps, HINGE_CONFIG, HingeType, renderWhitespace(), gsap
 
 ### Community 80 - "LogoLoop.tsx"
-Cohesion: 0.39
-Nodes (7): ANIMATION_CONFIG, LogoLoop, LogoLoopProps, toCssLength(), useAnimationLoop(), useImageLoader(), useResizeObserver()
+Cohesion: 0.33
+Nodes (8): ANIMATION_CONFIG, LogoItem, LogoLoop, LogoLoopProps, toCssLength(), useAnimationLoop(), useImageLoader(), useResizeObserver()
 
 ### Community 81 - "ScrollVelocity.tsx"
 Cohesion: 0.29
 Nodes (5): ScrollVelocity(), VelocityText(), ScrollVelocityProps, useElementWidth(), VelocityTextProps
+
+### Community 82 - "factories/@openzeppelin/contracts/index.ts"
+Cohesion: 0.22
+Nodes (6): access, interfaces, token, utils, draftIerc6093Sol, erc1155
+
+### Community 83 - "factories/index.ts"
+Cohesion: 0.33
+Nodes (3): contracts, openzeppelin, contracts
 
 ### Community 85 - "scripts"
 Cohesion: 0.33
@@ -398,21 +417,21 @@ Cohesion: 0.50
 Nodes (3): @tailwindcss/vite, vite, @vitejs/plugin-react
 
 ## Knowledge Gaps
-- **595 isolated node(s):** `config`, `name`, `version`, `description`, `main` (+590 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 761 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **593 isolated node(s):** `config`, `name`, `version`, `description`, `main` (+588 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 759 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `ModernLanding.tsx`, `SwapyFeatures.tsx`, `sticky-note-polaroid-frame.tsx`, `client/package.json`, `api.ts`, `AccountLinker.tsx`, `ActivityHeatmap.tsx`, `swapy-draggable-card.tsx`, `useAuth`, `FoldText.tsx`, `LogoLoop.tsx`, `ScrollVelocity.tsx`, `AuthContext.tsx`, `Complaints.tsx`, `ProfilePortfolio.tsx`?**
+- **Why does `react` connect `react` to `react-router-dom`, `SwapyFeatures.tsx`, `App.tsx`, `sticky-note-polaroid-frame.tsx`, `client/package.json`, `AccountLinker.tsx`, `ActivityHeatmap.tsx`, `useAuth`, `FoldText.tsx`, `LogoLoop.tsx`, `ScrollVelocity.tsx`, `AuthContext.tsx`, `Complaints.tsx`, `ProfilePortfolio.tsx`?**
   _High betweenness centrality (0.062) - this node is a cross-community bridge._
-- **Why does `@tanstack/react-query` connect `api.ts` to `ModernLanding.tsx`, `react`, `client/package.json`, `AccountLinker.tsx`, `useAuth`, `AuthContext.tsx`, `Complaints.tsx`, `ProfilePortfolio.tsx`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Why does `express` connect `routes/auth.ts` to `server/package.json`, `users.ts`, `server/src/index.ts`, `contributors.ts`, `db.ts`, `perks.ts`, `integrations.ts`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `@tanstack/react-query` connect `react` to `react-router-dom`, `App.tsx`, `client/package.json`, `AccountLinker.tsx`, `useAuth`, `AuthContext.tsx`, `Complaints.tsx`, `ProfilePortfolio.tsx`?**
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **What connects `config`, `name`, `version` to the rest of the system?**
-  _595 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _593 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `compilerOptions` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `server/package.json` be split into smaller, more focused modules?**

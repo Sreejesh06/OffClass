@@ -624,9 +624,9 @@
     "semantic_hash": ""
   },
   "client/src/components/ModernLanding.tsx": {
-    "mtime": 1791704346.6919954,
-    "seen": 1791704598.206478,
-    "ast_hash": "a3ae71a00b059400f164e24241859286",
+    "mtime": 1791707889.2629006,
+    "seen": 1791708093.6883368,
+    "ast_hash": "2fd1c9d5665dcaba875fb79bb2a5b243",
     "semantic_hash": ""
   },
   "client/src/components/OpportunityCard.tsx": {
@@ -1716,15 +1716,21 @@
     "semantic_hash": ""
   },
   "client/src/components/ContributorsSection.tsx": {
-    "mtime": 1791704561.143151,
-    "seen": 1791704598.206319,
-    "ast_hash": "b498f36609e56e9ddfc628b6ab533364",
+    "mtime": 1791707859.7130485,
+    "seen": 1791708093.688168,
+    "ast_hash": "e941aabbda93233e035e3406ae9a964e",
     "semantic_hash": ""
   },
   "server/src/routes/contributors.ts": {
-    "mtime": 1791704480.23201,
-    "seen": 1791704598.2097018,
-    "ast_hash": "fb6c781d9fde45f053aeafc58756585b",
+    "mtime": 1791704720.8139815,
+    "seen": 1791708093.691773,
+    "ast_hash": "680848315fa3cd0e87e8061658c15706",
+    "semantic_hash": ""
+  },
+  "client/src/components/Footer.tsx": {
+    "mtime": 1791707830.7617626,
+    "seen": 1791708093.688169,
+    "ast_hash": "7022f2fd6ac7907b1b490d8708b8e74e",
     "semantic_hash": ""
   }
 }
