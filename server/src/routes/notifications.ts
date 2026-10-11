@@ -33,9 +33,9 @@ router.put("/read", requireAuth, async (req: Request, res: Response) => {
 // Delete one
 router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
-    await prisma.notification.delete({
+    await prisma.notification.deleteMany({
       where: { 
-        id: req.params.id,
+        id: req.params.id as string,
         userId: (req as any).user.id // ensure ownership
       }
     });

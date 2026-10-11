@@ -252,8 +252,9 @@ router.patch("/certs/reorder", requireAuth, async (req: Request, res: Response):
 
 router.get("/verify/:achievementId", async (req: Request, res: Response): Promise<void> => {
     try {
+        const achievementId = req.params.achievementId as string;
         const achievement = await prisma.achievement.findUnique({
-            where: { id: req.params.achievementId },
+            where: { id: achievementId },
             include: { user: { select: { name: true, house: true } } }
         });
         
@@ -278,7 +279,7 @@ router.get("/verify/:achievementId", async (req: Request, res: Response): Promis
                 date: achievement.date
             },
             expectedHash,
-            txHash: achievement.txHash
+            txHash: achievement.blockchainTxHash
         });
     } catch (error) {
         res.status(500).json({ error: "Verification lookup failed" });

@@ -25,8 +25,9 @@ router.post("/signup", async (req, res): Promise<void> => {
     // Check email domain in a transaction to prevent TOCTOU
     const user = await prisma.$transaction(async (tx) => {
       // Must be a college email
-      if (!payload.email.endsWith("@sece.ac.in")) {
-        throw new Error("Only @sece.ac.in emails are allowed");
+      const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN || "@sece.ac.in";
+      if (!payload.email.endsWith(allowedDomain)) {
+        throw new Error(`Only ${allowedDomain} emails are allowed`);
       }
 
       const existingUser = await tx.user.findUnique({
@@ -95,7 +96,11 @@ router.post("/login", async (req, res): Promise<void> => {
       return;
     }
 
-// Email verification check bypassed because schema doesn't have it locally
+    const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+    if (requireEmailVerification && !user.emailVerified) {
+      res.status(403).json({ error: "Please verify your email address before logging in." });
+      return;
+    }
 
     const isValid = await bcrypt.compare(payload.password, user.passwordHash);
     if (!isValid) {

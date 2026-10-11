@@ -75,7 +75,7 @@ router.post("/", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req, res
 
 router.delete("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req, res) => {
   try {
-    await prisma.spotlight.delete({ where: { id: req.params.id } });
+    await prisma.spotlight.delete({ where: { id: req.params.id as string } });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete spotlight" });
