@@ -8,6 +8,7 @@ import ScrollVelocity from './ui/ScrollVelocity';
 import FoldText from './ui/FoldText';
 import LogoLoop, { type LogoItem } from './ui/LogoLoop';
 import { ContributorsSection } from './ContributorsSection';
+import { Footer } from './Footer';
 import { SiGithub, SiLeetcode, SiTryhackme, SiHackthebox, SiCodeforces, SiLinux } from 'react-icons/si';
 
 const platformLogos: LogoItem[] = [
@@ -249,15 +250,8 @@ export const ModernLanding: React.FC = () => {
       {/* GitHub Core Contributors Showcase */}
       <ContributorsSection />
 
-      {/* Footer CTA */}
-      <footer className="bg-muted/50 py-20 border-t-2 border-border">
-        <div className="max-w-4xl mx-auto text-center px-6">
-          <h2 className="text-3xl font-heading font-extrabold text-foreground mb-8">Ready to upgrade your department?</h2>
-          <Link to="/login" className="px-8 py-4 bg-crypto-purple text-white rounded-full font-bold hover:bg-purple-600 transition-colors shadow-lg border-2 border-black">
-            Get Started Now
-          </Link>
-        </div>
-      </footer>
+      {/* Modern Island Footer & CTA (Graphy Style) */}
+      <Footer />
       </main>
     </div>
   );

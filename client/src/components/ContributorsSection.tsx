@@ -102,7 +102,7 @@ export const ContributorsSection: React.FC = () => {
   };
 
   return (
-    <section className="py-24 px-6 max-w-7xl mx-auto w-full relative">
+    <section id="contributors" className="py-24 px-6 max-w-7xl mx-auto w-full relative scroll-mt-24">
       {/* Eyebrow & Headline */}
       <div className="flex flex-col items-center text-center mb-12">
         <span className="inline-flex items-center gap-2 mb-4 px-5 py-2 bg-crypto-cyan text-black font-mono text-sm md:text-base font-bold rounded-full border-2 border-black shadow-[3px_3px_0_0_rgba(0,0,0,1)] transform -rotate-1">
