@@ -371,14 +371,14 @@ export function ProfilePortfolio() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-foreground font-display">Identity & Focus</h3>
                 {isOwner && (
-                  <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
+                  <button onClick={() => setShowProfileEditor(true)} className="text-muted-foreground hover:text-foreground dark:hover:text-white p-1.5 rounded-lg hover:bg-muted/70 transition-colors" title="Edit Profile">
                     <PencilSimple size={18} />
                   </button>
                 )}
               </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-muted-foreground">
-                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-gray-400">
+                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
                     <CalendarBlank size={18} />
                   </div>
                   <span className="font-medium text-sm">Joined {new Date(profile.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
@@ -386,7 +386,7 @@ export function ProfilePortfolio() {
 
                 {profile.workDomain && (
                   <div className="flex items-center gap-4 text-muted-foreground">
-                    <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-gray-400">
+                    <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
                       <Briefcase size={18} />
                     </div>
                     <span className="font-medium text-sm">{profile.workDomain}</span>
@@ -396,8 +396,8 @@ export function ProfilePortfolio() {
               
               {/* Bio directly in Identity block to save space */}
               {(profile.bio || isOwner) && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className={`text-sm leading-relaxed ${profile.bio ? 'text-muted-foreground' : 'text-gray-400 italic'}`}>
+                <div className="mt-6 pt-6 border-t border-border">
+                  <p className={`text-sm leading-relaxed ${profile.bio ? 'text-muted-foreground' : 'text-muted-foreground/70 italic'}`}>
                     {profile.bio || (isOwner ? 'No bio yet. Click the pencil icon above to add a summary for your public profile.' : 'No bio provided.')}
                   </p>
                 </div>
@@ -406,11 +406,11 @@ export function ProfilePortfolio() {
 
             {/* Skills Card (Dynamic) */}
             {(profile.skills.length > 0 || isOwner) && (
-              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-border">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-foreground font-display">Technical Skills</h3>
                   {isOwner && (
-                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
+                    <button onClick={() => setShowProfileEditor(true)} className="text-muted-foreground hover:text-foreground dark:hover:text-white p-1.5 rounded-lg hover:bg-muted/70 transition-colors" title="Edit Skills">
                       <PencilSimple size={18} />
                     </button>
                   )}
@@ -424,7 +424,7 @@ export function ProfilePortfolio() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">No skills added yet.</p>
+                  <p className="text-sm text-muted-foreground italic">No skills added yet.</p>
                 )}
               </div>
             )}
@@ -436,11 +436,11 @@ export function ProfilePortfolio() {
             
             {/* Work Experience (Dynamic) */}
             {(profile.workExperiences.length > 0 || isOwner) && (
-              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-border">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-foreground font-display">Work Experience</h3>
                   {isOwner && (
-                    <button onClick={() => setShowProfileEditor(true)} className="text-gray-400 hover:text-muted-foreground transition-colors p-1">
+                    <button onClick={() => setShowProfileEditor(true)} className="text-muted-foreground hover:text-foreground dark:hover:text-white p-1.5 rounded-lg hover:bg-muted/70 transition-colors" title="Edit Experience">
                       <PencilSimple size={18} />
                     </button>
                   )}
@@ -473,10 +473,10 @@ export function ProfilePortfolio() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Point History / Public Activity */}
-              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-border flex flex-col h-full max-h-[450px]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center flex-shrink-0">
                       <Medal size={18} />
                     </div>
                     <h3 className="text-lg font-bold text-foreground font-display">Activity & Achievements</h3>
@@ -484,36 +484,36 @@ export function ProfilePortfolio() {
                   {isOwner && activityTab === 'ACHIEVEMENTS' && (
                     <button 
                       onClick={() => setShowAchievementModal(true)}
-                      className="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-md transition-colors"
+                      className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/50 px-3 py-1.5 rounded-md transition-colors"
                     >
                       Add
                     </button>
                   )}
                 </div>
 
-                <div className="flex bg-muted/50 p-1 rounded-xl mb-4 flex-shrink-0">
-                  <button onClick={() => setActivityTab('ACHIEVEMENTS')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACHIEVEMENTS' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-muted-foreground'}`}>Achievements</button>
-                  <button onClick={() => setActivityTab('ACTIVITY')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACTIVITY' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-muted-foreground'}`}>Activity Log</button>
+                <div className="flex bg-muted/50 p-1 rounded-xl mb-4 flex-shrink-0 border border-border/50">
+                  <button onClick={() => setActivityTab('ACHIEVEMENTS')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACHIEVEMENTS' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'}`}>Achievements</button>
+                  <button onClick={() => setActivityTab('ACTIVITY')} className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors ${activityTab === 'ACTIVITY' ? 'bg-card text-card-foreground shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'}`}>Activity Log</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide space-y-3">
                   {activityTab === 'ACHIEVEMENTS' ? (
                     profile.achievements && profile.achievements.length > 0 ? (
                       profile.achievements.map((ach) => (
-                        <div key={ach.id} className="flex flex-col p-3 rounded-lg border border-gray-100 bg-muted/50/50 hover:bg-muted/50 transition-colors">
+                        <div key={ach.id} className="flex flex-col p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors">
                           <div className="flex justify-between items-start mb-1">
                             <span className="text-sm font-bold text-foreground">{ach.title}</span>
                             <span className="text-xs font-mono text-muted-foreground bg-card text-card-foreground px-2 py-0.5 rounded border border-border">{ach.category}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs text-muted-foreground mt-1.5">
-                            <span className="font-medium text-orange-600">{ach.position} {ach.prize && `• ${ach.prize}`}</span>
+                            <span className="font-medium text-orange-600 dark:text-orange-400">{ach.position} {ach.prize && `• ${ach.prize}`}</span>
                             <div className="flex items-center gap-2">
                                 {ach.blockchainTxHash && (
                                     <a 
                                         href={`https://amoy.polygonscan.com/tx/${ach.blockchainTxHash}`} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full hover:bg-purple-100 transition-colors"
+                                        className="flex items-center gap-1 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
                                         title="Verified on Polygon Amoy Blockchain"
                                     >
                                         <SealCheck weight="fill" size={12} />
@@ -526,7 +526,7 @@ export function ProfilePortfolio() {
                         </div>
                       ))
                     ) : (
-                      <div className="py-6 text-center text-gray-400 text-sm">No official achievements found.</div>
+                      <div className="py-6 text-center text-muted-foreground text-sm">No official achievements found.</div>
                     )
                   ) : (
                     <TransactionHistory transactions={profile.recentTransactions as any} filterType="ACTIVITY" />
@@ -535,10 +535,10 @@ export function ProfilePortfolio() {
               </div>
 
               {/* Linked Accounts */}
-              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50 flex flex-col h-full max-h-[450px]">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-border flex flex-col h-full max-h-[450px]">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                       <Briefcase size={18} />
                     </div>
                     <h3 className="text-lg font-bold text-foreground font-display">Integrations</h3>
@@ -546,7 +546,7 @@ export function ProfilePortfolio() {
                   {isOwner && (
                     <button 
                       onClick={() => setShowIntegrationsModal(true)}
-                      className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md transition-colors"
+                      className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-1.5 rounded-md transition-colors"
                     >
                       Manage
                     </button>
@@ -555,17 +555,17 @@ export function ProfilePortfolio() {
                 <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-hide">
                   <div className="flex flex-col gap-3">
                     {profile.profileLinks.length === 0 ? (
-                      <div className="text-gray-400 text-sm text-center py-4">No public integrations.</div>
+                      <div className="text-muted-foreground text-sm text-center py-4">No public integrations.</div>
                     ) : (
                       profile.profileLinks.map(link => (
                         <a key={link.provider} href={PROVIDER_URLS[link.provider]?.(link.externalHandle) || '#'} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-muted/50 hover:bg-muted transition-colors"
+                          className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/40 hover:bg-muted/80 hover:border-foreground/30 transition-all group"
                         >
                           <span className="flex items-center gap-2 font-medium" style={{ color: hColor }}>
                             {PROVIDER_ICONS[link.provider]}
-                            <span className="text-foreground text-sm">{link.provider}</span>
+                            <span className="text-foreground text-sm group-hover:text-foreground">{link.provider}</span>
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground font-mono transition-colors">
                             {link.externalHandle} <ArrowSquareOut size={12} />
                           </span>
                         </a>
@@ -602,13 +602,13 @@ export function ProfilePortfolio() {
 
             {/* Certifications (Dynamic) */}
             {(profile.certificates.length > 0 || isOwner) && (
-              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-gray-100/50">
+              <div className="bg-card text-card-foreground rounded-[2rem] p-8 shadow-sm border border-border">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-foreground font-display">Certifications</h3>
                   {isOwner && (
                     <button 
                       onClick={() => setShowCertificateModal(true)} 
-                      className="flex items-center gap-1 text-xs font-bold bg-card text-card-foreground border border-border shadow-sm px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-center gap-1 text-xs font-bold bg-card text-card-foreground border border-border shadow-sm px-3 py-1.5 rounded-lg hover:bg-muted/70 hover:border-foreground/30 hover:text-foreground transition-all"
                     >
                       <Plus size={14} weight="bold" /> Add
                     </button>
@@ -618,11 +618,11 @@ export function ProfilePortfolio() {
                 {profile.certificates.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {profile.certificates.map(cert => (
-                      <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-muted/50 hover:bg-muted transition-colors group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
+                      <div key={cert.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/40 hover:bg-muted/80 hover:border-foreground/20 transition-all group cursor-pointer" onClick={() => handleViewCertificate(cert.id)}>
                         <div className="flex items-center gap-3 overflow-hidden">
                           <Certificate size={24} fill="currentColor" className="text-amber-500 flex-shrink-0" />
                           <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-bold text-foreground/90 truncate">{cert.name}</span>
+                            <span className="text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors truncate">{cert.name}</span>
                             <div className="flex items-center gap-2 mt-0.5">
                               {cert.blockchainTxHash && (
                                 <a 
@@ -630,7 +630,7 @@ export function ProfilePortfolio() {
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-100 px-1.5 rounded-full hover:bg-purple-200 transition-colors"
+                                  className="flex items-center gap-1 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
                                   title="Verified on Polygon Amoy Blockchain"
                                 >
                                   <SealCheck weight="fill" size={12} />
@@ -650,7 +650,7 @@ export function ProfilePortfolio() {
                               deleteCertMutation.mutate(cert.id);
                             }} 
                             disabled={deleteCertMutation.isPending}
-                            className="p-2 text-gray-400 hover:text-rose-500 bg-card text-card-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-border shadow-sm disabled:opacity-50"
+                            className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 bg-card text-card-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-all border border-border shadow-sm disabled:opacity-50"
                             title="Delete Certificate"
                           >
                             <Trash size={16} />
@@ -660,7 +660,7 @@ export function ProfilePortfolio() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">No certifications uploaded yet.</p>
+                  <p className="text-sm text-muted-foreground italic">No certifications uploaded yet.</p>
                 )}
               </div>
             )}

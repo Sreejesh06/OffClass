@@ -118,7 +118,7 @@ export function AchievementModal({ onClose, onSuccess, initialTitle, opportunity
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-muted-foreground hover:bg-muted/50 rounded-full transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted/80 rounded-full transition-colors"
           >
             <X size={20} />
           </button>

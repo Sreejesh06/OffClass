@@ -123,7 +123,7 @@ export function Login() {
         {/* Right: Login Form */}
         <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative bg-card text-card-foreground">
           <div className="max-w-sm w-full mx-auto">
-            <Link to="/" className="inline-flex items-center text-sm font-bold text-muted-foreground hover:text-black transition-colors mb-8 group">
+            <Link to="/" className="inline-flex items-center text-sm font-bold text-muted-foreground hover:text-foreground transition-colors mb-8 group">
               <svg className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Back to Home
             </Link>
@@ -144,7 +144,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="student@sece.ac.in"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-black bg-muted/50 text-foreground'
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}
                 />
               </div>
@@ -152,7 +152,7 @@ export function Login() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
-                  <Link to="/forgot-password" className="text-xs font-bold text-crypto-purple hover:text-purple-700 transition-colors">Forgot?</Link>
+                  <Link to="/forgot-password" className="text-xs font-bold text-crypto-purple hover:text-purple-600 dark:hover:text-purple-300 transition-colors">Forgot?</Link>
                 </div>
                 <div className="relative">
                   <input 
@@ -185,14 +185,14 @@ export function Login() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-70 flex items-center justify-center border-2 border-black"
+                className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-md dark:shadow-matte-sm disabled:opacity-70 flex items-center justify-center border-2 border-zinc-900 dark:border-zinc-200 cursor-pointer"
               >
                 {isLoading ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>
             
             <div className="mt-8 text-center text-sm font-medium text-muted-foreground">
-              Don't have an account? <Link to="/signup" className="text-black font-bold hover:underline underline-offset-4">Sign Up</Link>
+              Don't have an account? <Link to="/signup" className="text-foreground font-bold hover:underline underline-offset-4">Sign Up</Link>
             </div>
           </div>
         </div>

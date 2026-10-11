@@ -20,7 +20,7 @@ export function IntegrationsModal({ onClose }: IntegrationsModalProps) {
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-foreground hover:bg-muted rounded-full transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted/80 rounded-full transition-colors"
           >
             <X size={18} weight="bold" />
           </button>

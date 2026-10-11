@@ -185,7 +185,7 @@ export function HallOfFame() {
                     )}
                   </div>
                   
-                  <h2 className="text-xl font-black text-foreground mb-2 line-clamp-2 shrink-0" title={spotlight.title}>
+                  <h2 className="text-xl font-black text-foreground mb-2 line-clamp-2 shrink-0 group-hover:text-crypto-purple transition-colors" title={spotlight.title}>
                     {spotlight.title}
                   </h2>
                   

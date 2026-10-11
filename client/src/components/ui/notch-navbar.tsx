@@ -12,10 +12,10 @@ const NavLink = ({ href, icon: Icon, label, isActive }: { href: string; icon: an
     to={href} 
     className={cn(
       "group flex items-center gap-1.5 text-sm font-medium transition-colors whitespace-nowrap",
-      isActive ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+      isActive ? "text-foreground font-semibold" : "text-foreground/70 hover:text-foreground dark:hover:text-white"
     )}
   >
-    <Icon className={cn("w-5 h-5", isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100")} weight={isActive ? "fill" : "regular"} />
+    <Icon className={cn("w-5 h-5 transition-opacity", isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100")} weight={isActive ? "fill" : "regular"} />
     <span>{label}</span>
   </Link>
 )
@@ -121,7 +121,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                 <div className="flex gap-4 pl-4 border-l border-foreground/10 shrink-0 items-center">
                   <button 
                     onClick={toggleDarkMode} 
-                    className="p-1.5 text-foreground/70 hover:text-foreground hover:bg-foreground/5 rounded-full transition-colors"
+                    className="p-1.5 text-foreground/70 hover:text-foreground dark:hover:text-white hover:bg-foreground/10 rounded-full transition-colors"
                     aria-label="Toggle dark mode"
                   >
                     {isDarkMode ? <Sun weight="fill" className="w-5 h-5" /> : <Moon weight="fill" className="w-5 h-5" />}
@@ -134,7 +134,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                   ) : (
                     <button 
                       onClick={() => logout()}
-                      className="text-sm font-bold text-foreground/70 hover:text-foreground transition-colors whitespace-nowrap font-sans"
+                      className="text-sm font-bold text-foreground/70 hover:text-foreground dark:hover:text-white transition-colors whitespace-nowrap font-sans"
                     >
                       Sign Out
                     </button>
@@ -146,7 +146,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
               <div className="md:hidden flex items-center gap-2 mb-1">
                  <button 
                     onClick={toggleDarkMode} 
-                    className="p-1 text-foreground/70 hover:text-foreground hover:bg-foreground/5 rounded-full transition-colors mr-1"
+                    className="p-1 text-foreground/70 hover:text-foreground dark:hover:text-white hover:bg-foreground/10 rounded-full transition-colors mr-1"
                  >
                     {isDarkMode ? <Sun weight="fill" className="w-4 h-4" /> : <Moon weight="fill" className="w-4 h-4" />}
                  </button>
@@ -158,7 +158,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                  ) : (
                    <button 
                       onClick={() => logout()}
-                      className="px-3 py-1 text-xs font-bold border border-foreground/20 rounded-2xl text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors whitespace-nowrap"
+                      className="px-3 py-1 text-xs font-bold border border-foreground/20 rounded-2xl text-foreground/70 hover:text-foreground dark:hover:text-white hover:bg-foreground/10 transition-colors whitespace-nowrap"
                    >
                      Sign Out
                    </button>
