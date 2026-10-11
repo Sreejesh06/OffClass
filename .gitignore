@@ -7,6 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ⚠️ CRITICAL: Never commit secrets to git
+.env
+.env.local
+.env.production
+.env.*.local
+
 node_modules
 dist
 dist-ssr
@@ -26,3 +32,4 @@ client/test-results/
 
 # Graphify timestamped backups
 graphify-out/20*
+graphify-out/cache/
