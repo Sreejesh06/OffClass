@@ -1,13 +1,18 @@
 import React, { useState } from "react";
-import { CheckCircle, XCircle, Warning, DownloadSimple, Shield, MagnifyingGlass, UserCircle, Export, ChartLineUp, Storefront, FileText } from "@phosphor-icons/react";
+import { CheckCircle, XCircle, Warning, DownloadSimple, Shield, MagnifyingGlass, UserCircle, Export, ChartLineUp, Storefront, FileText, ShieldWarning, SlidersHorizontal, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { AdminDisciplineTab } from "../components/AdminDisciplineTab";
+import { AdminRubricTab } from "../components/AdminRubricTab";
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'fulfillment' | 'approvals' | 'moderation' | 'risk' | 'export'>('fulfillment');
+  const [activeTab, setActiveTab] = useState<'fulfillment' | 'approvals' | 'discipline' | 'moderation' | 'risk' | 'rubric' | 'export'>('fulfillment');
+  const [termResetName, setTermResetName] = useState("");
+  const [isResettingTerm, setIsResettingTerm] = useState(false);
+  const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
   const [expandedComplaint, setExpandedComplaint] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
 
@@ -98,9 +103,11 @@ export function AdminDashboard() {
   const tabs = [
     { id: 'fulfillment', label: 'Fulfillment', icon: <Storefront size={18} weight={activeTab === 'fulfillment' ? 'fill' : 'regular'} /> },
     { id: 'approvals', label: 'Point Approvals', icon: <CheckCircle size={18} weight={activeTab === 'approvals' ? 'fill' : 'regular'} /> },
+    { id: 'discipline', label: 'Discipline', icon: <ShieldWarning size={18} weight={activeTab === 'discipline' ? 'fill' : 'regular'} /> },
     { id: 'moderation', label: 'Complaints', icon: <FileText size={18} weight={activeTab === 'moderation' ? 'fill' : 'regular'} /> },
     { id: 'risk', label: 'At-Risk Watch', icon: <Warning size={18} weight={activeTab === 'risk' ? 'fill' : 'regular'} /> },
-    { id: 'export', label: 'Export Data', icon: <Export size={18} weight={activeTab === 'export' ? 'fill' : 'regular'} /> },
+    { id: 'rubric', label: 'Rubric', icon: <SlidersHorizontal size={18} weight={activeTab === 'rubric' ? 'fill' : 'regular'} /> },
+    { id: 'export', label: 'Records & Reset', icon: <Export size={18} weight={activeTab === 'export' ? 'fill' : 'regular'} /> },
   ] as const;
 
   return (
@@ -377,26 +384,95 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {/* EXPORT */}
+        {/* DISCIPLINE TAB */}
+        {activeTab === 'discipline' && (
+          <div className="p-4 md:p-6">
+            <AdminDisciplineTab />
+          </div>
+        )}
+
+        {/* RUBRIC TAB */}
+        {activeTab === 'rubric' && (
+          <div className="p-4 md:p-6">
+            <AdminRubricTab />
+          </div>
+        )}
+
+        {/* EXPORT & TERM RESET */}
         {activeTab === 'export' && (
-          <div className="p-12 md:p-20 flex flex-col items-center justify-center text-center gap-6">
-            <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500">
-              <DownloadSimple size={48} weight="duotone" />
+          <div className="p-8 md:p-12 flex flex-col gap-10">
+            {/* Export Section */}
+            <div className="flex flex-col items-center justify-center text-center gap-6 border-b border-border pb-10">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500">
+                <DownloadSimple size={40} weight="duotone" />
+              </div>
+              
+              <div className="max-w-md">
+                <h2 className="text-2xl font-black text-foreground mb-2">Department Records</h2>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Export full point standings, redemptions, and activity logs for official college accreditation or department review.
+                </p>
+              </div>
+              
+              <button 
+                onClick={() => handleExport('csv')}
+                className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-8 py-3.5 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95 cursor-pointer"
+              >
+                <DownloadSimple size={20} weight="bold" /> Download Full CSV Report
+              </button>
             </div>
-            
-            <div className="max-w-md">
-              <h2 className="text-2xl font-black text-foreground mb-2">Department Records</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Export full point standings, redemptions, and activity logs for official college accreditation or department review.
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => handleExport('csv')}
-              className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-8 py-4 rounded-xl text-sm font-black shadow-lg transition-all active:scale-95"
-            >
-              <DownloadSimple size={20} weight="bold" /> Download Full CSV Report
-            </button>
+
+            {/* Term Reset Section (Admin Only) */}
+            {user?.role === 'ADMIN' && (
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 rounded-2xl bg-red-500/5 border border-red-500/20">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                    <ArrowCounterClockwise size={24} weight="bold" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-foreground m-0">End of Term / Semester Reset</h3>
+                    <p className="text-muted-foreground text-xs md:text-sm mt-1 mb-0 max-w-xl">
+                      Snapshots student ranks to historical records, sets all student points back to 0, and refreshes the live leaderboards for the new semester cohort.
+                    </p>
+                    {resetSuccessMsg && (
+                      <p className="text-emerald-500 text-xs font-bold mt-2 m-0">{resetSuccessMsg}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <input
+                    type="text"
+                    placeholder="e.g. Spring 2026"
+                    value={termResetName}
+                    onChange={(e) => setTermResetName(e.target.value)}
+                    className="px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-red-500"
+                  />
+                  <button
+                    disabled={isResettingTerm || !termResetName.trim()}
+                    onClick={async () => {
+                      if (!termResetName.trim()) return;
+                      const confirmed = window.confirm(`Are you SURE you want to reset all points for "${termResetName.trim()}"? This will snapshot ranks and reset all student points to 0.`);
+                      if (!confirmed) return;
+                      try {
+                        setIsResettingTerm(true);
+                        const res = await api.post("/admin/term/reset", { termName: termResetName.trim() });
+                        setResetSuccessMsg(`Term reset completed for ${res.data.affectedStudents} students under "${res.data.termName}".`);
+                        queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+                        setTermResetName("");
+                      } catch (err: any) {
+                        alert(err.response?.data?.error || "Failed to reset term.");
+                      } finally {
+                        setIsResettingTerm(false);
+                      }
+                    }}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold tracking-wider uppercase transition-colors shrink-0 cursor-pointer"
+                  >
+                    {isResettingTerm ? "Resetting..." : "Reset Term"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

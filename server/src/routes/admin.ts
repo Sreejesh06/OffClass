@@ -2,7 +2,9 @@ import { Router, type Router as IRouter, type Request, type Response } from "exp
 import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { prisma } from "../lib/db.js";
 import { logAction } from "../lib/audit.js";
-import { awardPoints, transferHouseLeaderboard } from "../lib/leaderboard.js";
+import { awardPoints, transferHouseLeaderboard, getOverallKey, getHouseKey } from "../lib/leaderboard.js";
+import { redis } from "../lib/redis.js";
+import { recalculateHouseScores } from "../lib/scoring.js";
 
 const router: IRouter = Router();
 
@@ -240,6 +242,10 @@ router.post("/approve", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (r
       }
     }
 
+    if (action === "approve") {
+      setImmediate(() => recalculateHouseScores().catch((err) => console.error("Recalculate house scores error:", err)));
+    }
+
     res.json({ message: "Processed approvals successfully" });
   } catch (e) {
     res.status(500).json({ error: "Failed to process approvals" });
@@ -323,6 +329,10 @@ router.post("/house-transfers/:id/review", requireAuth, requireRole(["ADMIN", "T
         to: transferReq.targetHouse,
         notes,
       });
+    }
+
+    if (action === "approve") {
+      setImmediate(() => recalculateHouseScores().catch((err) => console.error("Recalculate error:", err)));
     }
 
     res.json({ message: `House transfer request ${action}d successfully` });
@@ -495,7 +505,7 @@ router.patch("/redemptions/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]),
 
     const redemption = await prisma.redemption.findUnique({
       where: { id: req.params.id as string },
-      include: { perkItem: true }
+      include: { perkItem: true, user: { select: { house: true } } }
     });
 
     if (!redemption || redemption.status !== "PENDING") {
@@ -509,35 +519,250 @@ router.patch("/redemptions/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]),
         data: { status: "FULFILLED", fulfilledAt: new Date() }
       });
       await logAction(req.user!.userId, "REDEMPTION_FULFILLED", "REDEMPTION", redemption.id);
-      await prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Fulfilled", message: `Your redemption for "${redemption.perkItem.name}" has been fulfilled!` } });
+      prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Fulfilled", message: `Your redemption for "${redemption.perkItem.name}" has been fulfilled!` } }).catch(() => {});
     } else {
       // Reject and refund
-      await prisma.$transaction([
-        prisma.redemption.update({
-          where: { id: redemption.id },
-          data: { status: "REJECTED" }
-        }),
-        prisma.user.update({
-          where: { id: redemption.userId },
-          data: { points: { increment: (redemption as any).perkItem.cost } }
-        }),
-        prisma.pointsTransaction.create({
-          data: {
-            userId: redemption.userId,
-            delta: (redemption as any).perkItem.cost,
-            reason: `Refund: ${(redemption as any).perkItem.name} rejected`,
-            createdBy: req.user!.userId,
-            referenceType: "REDEMPTION",
-            referenceId: redemption.id
-          }
-        })
-      ]);
+      await prisma.redemption.update({
+        where: { id: redemption.id },
+        data: { status: "REJECTED" }
+      });
+      await awardPoints(
+        redemption.userId,
+        (redemption.user as any).house,
+        (redemption as any).perkItem.cost,
+        `Refund: ${(redemption as any).perkItem.name} rejected`,
+        "REDEMPTION",
+        redemption.id,
+        req.user!.userId
+      );
       await logAction(req.user!.userId, "REDEMPTION_REJECTED", "REDEMPTION", redemption.id);
-      await prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Rejected", message: `Your redemption for "${redemption.perkItem.name}" was rejected. Your points have been refunded.` } });
+      prisma.notification.create({ data: { userId: redemption.userId, title: "Redemption Rejected", message: `Your redemption for "${redemption.perkItem.name}" was rejected. Your points have been refunded.` } }).catch(() => {});
     }
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: "Failed to process redemption" });
+  }
+});
+
+// GET /api/admin/users/search?q=... — Fast student lookup for discipline & admin actions
+router.get("/users/search", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (q.length < 2) {
+      res.json({ users: [] });
+      return;
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        role: "STUDENT",
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } }
+        ]
+      },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        house: true,
+        points: true
+      }
+    });
+
+    res.json({ users });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to search students" });
+  }
+});
+
+// GET /api/admin/discipline — View discipline penalty records
+router.get("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = typeof req.query.userId === "string" ? req.query.userId : undefined;
+    const records = await prisma.disciplineRecord.findMany({
+      where: userId ? { userId } : undefined,
+      include: {
+        user: { select: { name: true, house: true, email: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    });
+
+    res.json({ records });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch discipline records" });
+  }
+});
+
+// POST /api/admin/discipline — Log student infraction and dock points
+router.post("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, violation, pointsDeducted, evidence, termName } = req.body;
+    if (!userId || !violation || typeof pointsDeducted !== "number" || pointsDeducted <= 0) {
+      res.status(400).json({ error: "Invalid discipline payload: userId, violation, and positive pointsDeducted required." });
+      return;
+    }
+
+    const student = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, house: true }
+    });
+
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const reviewerId = req.user!.userId;
+    const penaltyPoints = Math.abs(pointsDeducted);
+
+    const record = await prisma.disciplineRecord.create({
+      data: {
+        userId,
+        violation: violation.trim(),
+        pointsDeducted: penaltyPoints,
+        evidence: evidence ? evidence.trim() : null,
+        reportedBy: reviewerId,
+        termName: termName || null
+      }
+    });
+
+    // Deduct points from Postgres AND Redis sorted sets atomically
+    await awardPoints(
+      student.id,
+      student.house,
+      -penaltyPoints,
+      `Discipline: ${violation.trim()}`,
+      "DISCIPLINE",
+      record.id,
+      reviewerId
+    );
+
+    await logAction(reviewerId, "DISCIPLINE_RECORDED", "USER", student.id, {
+      recordId: record.id,
+      pointsDeducted: penaltyPoints,
+      violation
+    });
+
+    // Notify student (fire-and-forget)
+    prisma.notification.create({
+      data: {
+        userId: student.id,
+        title: "Disciplinary Penalty",
+        message: `${penaltyPoints} points deducted: ${violation.trim()}`
+      }
+    }).catch(e => console.error("Discipline notification error:", e));
+
+    // Recalculate house scores asynchronously
+    setImmediate(() => recalculateHouseScores(termName || "Current").catch(console.error));
+
+    res.json({ success: true, record });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to record discipline" });
+  }
+});
+
+// POST /api/admin/term/reset — Snapshot previous rankings, reset points to 0, clear Redis
+router.post("/term/reset", requireAuth, requireRole(["ADMIN"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const termName = typeof req.body.termName === "string" && req.body.termName.trim()
+      ? req.body.termName.trim()
+      : `Term ${new Date().toISOString().slice(0, 10)}`;
+
+    const adminId = req.user!.userId;
+
+    // 1. Fetch all students ordered by points desc
+    const students = await prisma.user.findMany({
+      where: { role: "STUDENT" },
+      select: { id: true, house: true, points: true },
+      orderBy: { points: "desc" }
+    });
+
+    // 2. Snapshot current ranks per house and overall
+    const houseRankCounters: Record<string, number> = { RED: 1, BLUE: 1, GREEN: 1, PURPLE: 1 };
+    const snapshots = students.map((s, idx) => ({
+      termName,
+      userId: s.id,
+      house: s.house,
+      points: s.points,
+      rankOverall: idx + 1,
+      rankInHouse: houseRankCounters[s.house] ? houseRankCounters[s.house]++ : 1,
+      snapshotDate: new Date(),
+    }));
+
+    if (snapshots.length > 0) {
+      await prisma.leaderboardSnapshot.createMany({
+        data: snapshots
+      });
+    }
+
+    // 3. Reset all student points in Postgres
+    await prisma.user.updateMany({
+      where: { role: "STUDENT" },
+      data: { points: 0 }
+    });
+
+    // 4. Clear Redis leaderboard sorted sets
+    const pipeline = redis.pipeline();
+    pipeline.del(getOverallKey());
+    pipeline.del(getHouseKey("RED"));
+    pipeline.del(getHouseKey("BLUE"));
+    pipeline.del(getHouseKey("GREEN"));
+    pipeline.del(getHouseKey("PURPLE"));
+    await pipeline.exec();
+
+    // 5. Audit log forensic trail
+    await logAction(adminId, "TERM_RESET", "SYSTEM", termName, {
+      affectedStudents: students.length
+    });
+
+    // 6. Recalculate house scores for new term
+    setImmediate(() => recalculateHouseScores(termName).catch(console.error));
+
+    res.json({
+      success: true,
+      termName,
+      affectedStudents: students.length
+    });
+  } catch (e) {
+    console.error("Term reset error:", e);
+    res.status(500).json({ error: "Failed to reset term" });
+  }
+});
+
+// GET /api/admin/rubric — Get points rubric items
+router.get("/rubric", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const rubric = await prisma.pointsRubric.findMany({
+      orderBy: [{ category: "asc" }, { activityKey: "asc" }]
+    });
+    res.json({ rubric });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch points rubric" });
+  }
+});
+
+// PATCH /api/admin/rubric/:id — Update points rubric item
+router.patch("/rubric/:id", requireAuth, requireRole(["ADMIN"]), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { points, capPerTerm, isActive } = req.body;
+
+    const updated = await prisma.pointsRubric.update({
+      where: { id },
+      data: {
+        points: typeof points === "number" ? points : undefined,
+        capPerTerm: capPerTerm === null || typeof capPerTerm === "number" ? capPerTerm : undefined,
+        isActive: typeof isActive === "boolean" ? isActive : undefined
+      }
+    });
+
+    await logAction(req.user!.userId, "RUBRIC_UPDATED", "RUBRIC", id, { points, capPerTerm, isActive });
+    res.json({ rubric: updated });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to update points rubric" });
   }
 });
 

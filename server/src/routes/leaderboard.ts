@@ -11,9 +11,11 @@ const router: IRouter = Router();
 // Zod schema for house validation
 const HouseParamSchema = z.enum(["RED", "BLUE", "GREEN", "PURPLE"]);
 
-router.get("/overall", async (_req: Request, res: Response): Promise<void> => {
+router.get("/overall", async (req: Request, res: Response): Promise<void> => {
   try {
-    const top = await getTopUsers();
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string, 10) || 0);
+    const top = await getTopUsers(undefined, limit, offset);
     res.json({ leaderboard: top });
   } catch {
     res.status(500).json({ error: "Failed to fetch overall leaderboard" });
@@ -28,7 +30,9 @@ router.get("/house/:house", async (req: Request, res: Response): Promise<void> =
       return;
     }
     const house = HouseParamSchema.parse(rawHouse.toUpperCase());
-    const top = await getTopUsers(house as House);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset as string, 10) || 0);
+    const top = await getTopUsers(house as House, limit, offset);
     res.json({ house, leaderboard: top });
   } catch {
     res.status(400).json({ error: "Invalid house" });

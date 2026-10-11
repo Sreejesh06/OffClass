@@ -53,12 +53,14 @@ export const awardPoints = async (
  */
 export const getTopUsers = async (
   house?: House,
-  limit: number = 1000
+  limit: number = 50,
+  offset: number = 0
 ): Promise<Array<{ id: string; name: string; house: House; avatar: string | null; points: number; rank: number; previousRank: number }>> => {
   const key = house ? getHouseKey(house) : getOverallKey();
   
-  const end = limit === -1 ? -1 : limit - 1;
-  const results = await redis.zrevrange(key, 0, end, "WITHSCORES");
+  const start = Math.max(0, offset);
+  const end = limit === -1 ? -1 : start + limit - 1;
+  const results = await redis.zrevrange(key, start, end, "WITHSCORES");
   
   if (results.length === 0) return [];
 
@@ -70,7 +72,7 @@ export const getTopUsers = async (
     rawUsers.push({
       userId,
       points: parseInt(results[i + 1]!, 10),
-      rank: Math.floor(i / 2) + 1, // Convert 0-indexed to 1-indexed human rank
+      rank: start + Math.floor(i / 2) + 1, // Convert 0-indexed to 1-indexed human rank with offset
     });
   }
 
