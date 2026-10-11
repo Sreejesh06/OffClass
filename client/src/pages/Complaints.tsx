@@ -230,14 +230,14 @@ export function Complaints() {
                           className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                             isSelected 
                               ? `border-orange-500 bg-orange-500/5 shadow-md scale-[1.02]` 
-                              : `border-border hover:border-border/80 hover:bg-muted/50`
+                              : `border-border hover:border-foreground/40 hover:bg-muted/70 group`
                           }`}
                         >
                           <div className={`p-2 rounded-lg ${opt.bg} ${opt.color}`}>
                             <Icon size={24} />
                           </div>
                           <div>
-                            <div className={`font-bold ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}>{opt.title}</div>
+                            <div className={`font-bold transition-colors ${isSelected ? 'text-foreground' : 'text-foreground/80 group-hover:text-foreground'}`}>{opt.title}</div>
                             <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{opt.desc}</div>
                           </div>
                         </button>

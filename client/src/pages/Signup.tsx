@@ -148,22 +148,22 @@ export function Signup() {
         </div>
 
         {/* Right: Signup Form */}
-        <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative bg-white">
+        <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative bg-card text-card-foreground">
           <div className="max-w-sm w-full mx-auto">
-            <Link to="/" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-black transition-colors mb-8 group">
+            <Link to="/" className="inline-flex items-center text-sm font-bold text-muted-foreground hover:text-foreground transition-colors mb-8 group">
               <svg className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Back to Home
             </Link>
             
             <div className="mb-10 text-center md:text-left">
-              <h1 className="font-heading font-extrabold text-3xl text-gray-900 mb-2">Create Account</h1>
-              <p className="text-gray-600 font-medium text-sm">Join the Cryptid platform with your college email.</p>
+              <h1 className="font-heading font-extrabold text-3xl text-foreground mb-2">Create Account</h1>
+              <p className="text-muted-foreground font-medium text-sm">Join the Cryptid platform with your college email.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               
               <div className="space-y-1">
-                <label htmlFor="name" className="block text-sm font-bold text-gray-900">Full Name</label>
+                <label htmlFor="name" className="block text-sm font-bold text-foreground">Full Name</label>
                 <input 
                   id="name"
                   type="text" 
@@ -171,13 +171,13 @@ export function Signup() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="email" className="block text-sm font-bold text-gray-900">College Email</label>
+                <label htmlFor="email" className="block text-sm font-bold text-foreground">College Email</label>
                 <input 
                   id="email"
                   type="email" 
@@ -185,13 +185,13 @@ export function Signup() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="student@sece.ac.in"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="password" className="block text-sm font-bold text-gray-900">Password</label>
+                <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
                 <input 
                   id="password"
                   type="password" 
@@ -199,13 +199,13 @@ export function Signup() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-900">Confirm Password</label>
+                <label htmlFor="confirmPassword" className="block text-sm font-bold text-foreground">Confirm Password</label>
                 <input 
                   id="confirmPassword"
                   type="password" 
@@ -213,7 +213,7 @@ export function Signup() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
-                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:border-black bg-gray-50 text-gray-900'
+                    error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}
                 />
               </div>
@@ -228,14 +228,14 @@ export function Signup() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full py-4 mt-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-70 flex items-center justify-center border-2 border-black"
+                className="w-full py-4 mt-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-md dark:shadow-matte-sm disabled:opacity-70 flex items-center justify-center border-2 border-zinc-900 dark:border-zinc-200 cursor-pointer"
               >
                 {isLoading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </form>
             
-            <div className="mt-6 text-center text-sm font-medium text-gray-600">
-              Already have an account? <Link to="/login" className="text-black font-bold hover:underline underline-offset-4">Sign In</Link>
+            <div className="mt-6 text-center text-sm font-medium text-muted-foreground">
+              Already have an account? <Link to="/login" className="text-foreground font-bold hover:underline underline-offset-4">Sign In</Link>
             </div>
           </div>
         </div>

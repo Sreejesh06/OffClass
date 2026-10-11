@@ -165,14 +165,14 @@ export function Leaderboard() {
         <div className="mt-4 flex flex-wrap justify-center bg-card text-card-foreground/80 backdrop-blur-xl p-2 rounded-2xl shadow-sm border border-border/60 w-fit max-w-full overflow-x-auto gap-1">
           {(['overall', 'red', 'blue', 'green', 'purple'] as const).map(tab => {
             const isSelected = activeTab === tab;
-            let tabColorClass = 'text-muted-foreground hover:text-muted-foreground hover:bg-muted';
+            let tabColorClass = 'text-muted-foreground hover:text-foreground hover:bg-muted/80';
             
             if (isSelected) {
               if (tab === 'red') tabColorClass = 'bg-red-500 text-white shadow-md border-red-600/20';
               else if (tab === 'blue') tabColorClass = 'bg-blue-500 text-white shadow-md border-blue-600/20';
               else if (tab === 'green') tabColorClass = 'bg-green-500 text-white shadow-md border-green-600/20';
               else if (tab === 'purple') tabColorClass = 'bg-purple-500 text-white shadow-md border-purple-600/20';
-              else tabColorClass = 'bg-gray-900 text-white shadow-md border-gray-800/20';
+              else tabColorClass = 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 shadow-md border-border';
             }
 
             return (
@@ -289,7 +289,7 @@ export function Leaderboard() {
                       <img src={getAvatar(entry.id, entry.avatar)} alt={entry.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 flex-1">
-                      <Link to={`/profile/${entry.id}`} className="font-bold text-foreground hover:text-orange-600 transition-colors text-base">
+                      <Link to={`/profile/${entry.id}`} className="font-bold text-foreground hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-base">
                         {entry.name}
                       </Link>
                       <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${color} w-fit`}>
@@ -298,7 +298,7 @@ export function Leaderboard() {
                     </div>
                   </div>
 
-                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-muted-foreground/30 transition-colors"></div>
 
                   <div className="w-24 flex justify-center hidden md:flex">
                     <div className="flex flex-col items-center">
@@ -314,10 +314,10 @@ export function Leaderboard() {
                     </div>
                   </div>
 
-                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-gray-200 transition-colors"></div>
+                  <div className="hidden md:block w-px h-10 bg-muted transform rotate-12 mx-4 group-hover:bg-muted-foreground/30 transition-colors"></div>
 
                   <div className="w-32 flex justify-start md:justify-end items-center mt-3 md:mt-0 pr-4">
-                    <div className="flex items-center gap-1.5 bg-gray-900 text-white px-3 py-1.5 rounded-lg shadow-inner">
+                    <div className="flex items-center gap-1.5 bg-[#181a22] text-white px-3 py-1.5 rounded-lg border border-white/10 shadow-xs">
                       <Star size={12} weight="fill" className="text-yellow-400" />
                       <span className="font-bold font-mono text-sm">{entry.points}</span>
                     </div>
@@ -325,8 +325,8 @@ export function Leaderboard() {
 
                   <div className="w-16 flex justify-end absolute right-4 top-4 md:static">
                     <Link 
-                      to={`/profile/${entry.id}`}
-                      className="w-8 h-8 rounded-full bg-muted/50 border border-border text-gray-400 flex items-center justify-center hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all"
+                       to={`/profile/${entry.id}`}
+                      className="w-8 h-8 rounded-full bg-muted/50 border border-border text-muted-foreground flex items-center justify-center hover:bg-foreground hover:text-background hover:border-foreground transition-all"
                     >
                       <ArrowUpRight size={16} weight="bold" />
                     </Link>
@@ -343,7 +343,7 @@ export function Leaderboard() {
             <button 
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted hover:text-foreground dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <CaretLeft weight="bold" /> Prev
             </button>
@@ -355,7 +355,7 @@ export function Leaderboard() {
             <button 
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground bg-muted/50 border border-border hover:bg-muted hover:text-foreground dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Next <CaretRight weight="bold" />
             </button>

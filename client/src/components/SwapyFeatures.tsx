@@ -120,7 +120,7 @@ export function HouseMembersCard() {
    ───────────────────────────────────────────────────────────────────────────── */
 export function TerminalSnippetCard() {
   return (
-    <div className="bg-zinc-950 text-zinc-100 rounded-2xl h-full p-4 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,1)] border-2 border-black cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative overflow-hidden font-mono text-xs select-none">
+    <div className="bg-gradient-to-b from-[#181a22] to-[#111217] text-zinc-100 rounded-2xl h-full p-4 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,0.85)] dark:shadow-matte-md border-2 border-black/80 dark:border-white/10 cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative overflow-hidden font-mono text-xs select-none">
       {/* Terminal Title Bar */}
       <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
         <div className="flex items-center gap-1.5">
@@ -313,29 +313,29 @@ export function AgencyCard() {
           <Gift className="w-3.5 h-3.5 text-black" />
           <span>Perks Marketplace</span>
         </div>
-        <span className="text-[10px] font-mono font-bold bg-black text-white px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-mono font-bold bg-[#14161c] text-white border border-white/10 px-2 py-0.5 rounded-full">
           Faculty Approved
         </span>
       </div>
 
       {/* Rewards Showcase List */}
       <div className="space-y-1.5 my-1">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 border border-black text-xs font-mono">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 dark:bg-card border border-border text-xs font-mono">
           <span className="font-bold flex items-center gap-1.5 truncate">
             <span>🎓</span> On-Duty (OD) Pass
           </span>
           <span className="font-extrabold text-crypto-purple shrink-0">500 pts</span>
         </div>
-        <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 border border-black text-xs font-mono">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 dark:bg-card border border-border text-xs font-mono">
           <span className="font-bold flex items-center gap-1.5 truncate">
             <span>🚩</span> DEF CON CTF Slot
           </span>
-          <span className="font-extrabold text-emerald-700 shrink-0">1,200 pts</span>
+          <span className="font-extrabold text-emerald-700 dark:text-emerald-400 shrink-0">1,200 pts</span>
         </div>
       </div>
 
       {/* Micro Status Footnote */}
-      <div className="flex items-center justify-between text-[10px] font-mono text-black/80 font-bold border-t border-black/10 pt-1">
+      <div className="flex items-center justify-between text-[10px] font-mono text-black/80 dark:text-foreground/80 font-bold border-t border-border/40 pt-1">
         <span>Transparent Ledger</span>
         <span>Zero Arbitrary Points &rarr;</span>
       </div>
@@ -348,7 +348,7 @@ export function AgencyCard() {
    ───────────────────────────────────────────────────────────────────────────── */
 export function UserTrustCard() {
   return (
-    <div className="bg-zinc-900 text-white rounded-2xl h-full p-5 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,1)] border-2 border-black cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative overflow-hidden select-none">
+    <div className="bg-gradient-to-b from-[#181a22] to-[#121319] text-white rounded-2xl h-full p-5 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,0.85)] dark:shadow-matte-md border-2 border-black/80 dark:border-white/10 cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative overflow-hidden select-none">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-zinc-300">
@@ -366,7 +366,7 @@ export function UserTrustCard() {
           <p className="text-xs font-mono text-zinc-400">Secure Tracking Token</p>
           <span className="text-xs font-mono text-crypto-cyan font-bold">#GRV-9428-X</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-black/60 border border-zinc-800 text-[11px] font-mono text-zinc-300 leading-tight">
+        <div className="p-2.5 rounded-xl bg-[#12141a]/90 border border-white/10 text-[11px] font-mono text-zinc-300 leading-tight">
           &ldquo;Disputed unfair point grading in CTF round 2.&rdquo;
         </div>
       </div>
@@ -385,7 +385,7 @@ export function UserTrustCard() {
    ───────────────────────────────────────────────────────────────────────────── */
 export function CardBalanceCard() {
   return (
-    <div className="bg-card text-card-foreground rounded-2xl h-full p-5 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,1)] border-2 border-black cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative select-none">
+    <div className="bg-card text-card-foreground rounded-2xl h-full p-5 flex flex-col justify-between shadow-[4px_4px_0_0_rgba(0,0,0,0.85)] dark:shadow-matte-md border-2 border-border dark:border-white/10 cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform relative select-none">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-mono font-bold text-muted-foreground uppercase tracking-wide">
@@ -410,7 +410,7 @@ export function CardBalanceCard() {
 
       {/* Quick Action Badges */}
       <div className="flex items-center gap-2 pt-1">
-        <div className="flex-1 py-1.5 px-2 bg-black text-white text-center rounded-lg font-mono text-[11px] font-bold border border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+        <div className="flex-1 py-1.5 px-2 bg-[#161820] text-white text-center rounded-lg font-mono text-[11px] font-bold border border-black dark:border-white/15 shadow-[2px_2px_0_0_rgba(0,0,0,0.85)] dark:shadow-md">
           Redeem Perks
         </div>
         <div className="flex-1 py-1.5 px-2 bg-muted text-foreground text-center rounded-lg font-mono text-[11px] font-bold border border-border">

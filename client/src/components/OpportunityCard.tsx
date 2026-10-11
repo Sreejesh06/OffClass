@@ -176,7 +176,7 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
                   }
                 }}
                 disabled={deleteMutation.isPending}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
                 title="Delete Post"
               >
                 <Trash2 size={18} />
@@ -186,7 +186,7 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
             <button
               onClick={handleBookmarkClick}
               disabled={bookmarkMutation.isPending}
-              className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-50"
+              className="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors disabled:opacity-50"
               title={isBookmarked ? "Remove Bookmark" : "Save Opportunity"}
             >
               <Bookmark fill={isBookmarked ? "currentColor" : "none"} size={20} className={cn(isBookmarked && "text-blue-500")} />
@@ -234,13 +234,13 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
               <img src={opportunity.image} className="w-full h-full object-cover transition-transform group-hover/link:scale-105 duration-500" alt="Cover" />
             </div>
           ) : (
-            <div className="bg-muted h-20 w-full flex items-center justify-center border-b border-border text-gray-400 group-hover/link:text-muted-foreground transition-colors">
+            <div className="bg-muted h-20 w-full flex items-center justify-center border-b border-border text-muted-foreground group-hover/link:text-foreground dark:group-hover/link:text-white transition-colors">
               <ExternalLink size={24} />
             </div>
           )}
           <div className="p-3 flex flex-col gap-1">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide truncate">{domain}</span>
-            <span className="text-sm font-semibold text-foreground truncate">Visit external opportunity page</span>
+            <span className="text-sm font-semibold text-foreground truncate group-hover/link:text-foreground">Visit external opportunity page</span>
           </div>
         </a>
 
@@ -251,7 +251,7 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
               onClick={() => setShowInterested(true)}
               className="flex items-center gap-1.5 text-muted-foreground hover:text-blue-500 transition-colors text-sm font-medium group/action"
             >
-              <div className="p-1.5 rounded-full group-hover/action:bg-blue-50 transition-colors">
+              <div className="p-1.5 rounded-full group-hover/action:bg-blue-500/10 transition-colors">
                 <Users size={18} />
               </div>
               <span>{opportunity._count.bookmarks}</span>
@@ -262,19 +262,19 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
                 onClick={handleFindTeamClick}
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium group/action transition-colors",
-                  isLookingForTeammate ? "text-blue-600" : "text-muted-foreground hover:text-blue-500"
+                  isLookingForTeammate ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-blue-500 dark:hover:text-blue-400"
                 )}
                 title="Find Teammates"
               >
                 <div className={cn(
                   "p-1.5 rounded-full transition-colors",
-                  isLookingForTeammate ? "bg-blue-100" : "group-hover/action:bg-blue-50"
+                  isLookingForTeammate ? "bg-blue-500/20" : "group-hover/action:bg-blue-500/10"
                 )}>
                   <UserPlus size={18} />
                 </div>
                 <span className={cn(
                   "whitespace-nowrap",
-                  isLookingForTeammate ? "text-blue-600 font-bold" : "text-muted-foreground"
+                  isLookingForTeammate ? "text-blue-600 dark:text-blue-400 font-bold" : "text-muted-foreground"
                 )}>
                   {isLookingForTeammate ? "Looking for team" : "Find Team"}
                 </span>
@@ -286,7 +286,7 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
                 "flex items-center gap-1.5 text-sm font-medium",
                 isUrgent ? "text-red-500" : "text-muted-foreground"
               )}>
-                <div className={cn("p-1.5 rounded-full", isUrgent && "bg-red-50")}>
+                <div className={cn("p-1.5 rounded-full", isUrgent && "bg-red-500/15")}>
                   <Calendar size={18} />
                 </div>
                 <span className="whitespace-nowrap">{daysUntilDeadline! < 0 ? "Closed" : `${daysUntilDeadline}d left`}</span>
@@ -295,13 +295,13 @@ export function OpportunityCard({ opportunity, isBookmarked, isLookingForTeammat
 
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-green-500 transition-colors text-sm font-medium group/action"
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-green-500 dark:hover:text-green-400 transition-colors text-sm font-medium group/action"
               title="Copy Link"
             >
-              <div className="p-1.5 rounded-full group-hover/action:bg-green-50 transition-colors">
+              <div className="p-1.5 rounded-full group-hover/action:bg-green-500/10 transition-colors">
                 {hasCopied ? <Check size={18} className="text-green-500" /> : <Share2 size={18} />}
               </div>
-              <span className={cn("transition-colors whitespace-nowrap", hasCopied && "text-green-500")}>
+              <span className={cn("transition-colors whitespace-nowrap", hasCopied && "text-green-500 dark:text-green-400")}>
                 {hasCopied ? "Copied!" : "Share"}
               </span>
             </button>
