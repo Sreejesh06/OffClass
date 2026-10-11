@@ -237,7 +237,7 @@ export function OpportunityCompose() {
                   onClick={() => setImage(null)} 
                   className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-black backdrop-blur-sm transition-colors"
                 >
-                  <X size={16} weight="bold" />
+                  <X size={16} strokeWidth={3} />
                 </button>
               </div>
             ) : (

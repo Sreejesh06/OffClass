@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
+import { cn } from "cn";
 
 export function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -22,9 +23,9 @@ export function ResetPassword() {
             <CardDescription>No reset token provided in the URL.</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button asChild className="w-full">
-              <Link to="/forgot-password">Request a new link</Link>
-            </Button>
+            <Link to="/forgot-password" className={cn(buttonVariants({ variant: "default" }), "w-full")}>
+              Request a new link
+            </Link>
           </CardFooter>
         </Card>
       </div>

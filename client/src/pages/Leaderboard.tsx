@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CaretLeft, CaretRight, CaretUp, CaretDown, Minus, Trophy, Star, Lightning, ArrowUpRight, TrendUp, MagnifyingGlass } from "@phosphor-icons/react";
@@ -23,18 +23,20 @@ const getAvatar = (fallbackSeed: string, avatarSeed?: string | null) => {
   return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
 };
 
-const houseGradients = {
+const houseGradients: Record<string, string> = {
   RED: "from-red-50 to-red-100/50",
   BLUE: "from-blue-50 to-blue-100/50",
   GREEN: "from-green-50 to-green-100/50",
   PURPLE: "from-purple-50 to-purple-100/50",
+  none: "from-gray-50 to-gray-100/50",
 };
 
-const houseColors = {
+const houseColors: Record<string, string> = {
   RED: "text-red-600 bg-red-100",
   BLUE: "text-blue-600 bg-blue-100",
   GREEN: "text-green-600 bg-green-100",
   PURPLE: "text-purple-600 bg-purple-100",
+  none: "text-gray-600 bg-gray-100",
 };
 
 // ─── Components ──────────────────────────────────────────────────────────────

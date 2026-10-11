@@ -102,7 +102,7 @@ export function AvatarModal({ currentAvatar, onClose }: AvatarModalProps) {
               <div className="mt-4 flex flex-col items-center">
                 <p className="text-xs text-muted-foreground mb-2">Uploaded Picture:</p>
                 <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-orange-500 shadow-md">
-                   <img src={selected} alt="Custom avatar" className="w-full h-full object-cover" />
+                   <img src={selected || undefined} alt="Custom avatar" className="w-full h-full object-cover" />
                    <div className="absolute top-1 right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white">
                     <Check size={12} weight="bold" />
                   </div>

@@ -19,6 +19,7 @@ interface Props {
     deadline: string | null;
     createdAt: string;
     _count: { bookmarks: number };
+    postedById?: string;
     postedBy?: {
       name: string;
       avatar: string | null;

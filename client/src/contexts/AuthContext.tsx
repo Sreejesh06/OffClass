@@ -12,6 +12,7 @@ interface User {
   house: House;
   role: Role;
   points: number;
+  avatar?: string | null;
 }
 
 interface AuthContextType {
