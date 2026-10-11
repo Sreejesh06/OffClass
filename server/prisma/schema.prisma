@@ -223,6 +223,7 @@ model PerkItem {
   description       String?
   cost              Int
   quantityRemaining Int?
+  claimLimit        Int?         // Max times a single user can claim this item (null = unlimited)
   redemptions       Redemption[]
   isActive          Boolean      @default(true)
 }
@@ -234,11 +235,13 @@ model Redemption {
   perkItemId     String
   perkItem       PerkItem         @relation(fields: [perkItemId], references: [id])
   idempotencyKey String
+  ticketCode     String           @unique @default(cuid()) // Unique scannable proof-of-claim code
   createdAt      DateTime         @default(now())
   status         RedemptionStatus @default(PENDING)
   fulfilledAt    DateTime?
 
   @@unique([userId, idempotencyKey])
+  @@index([userId, perkItemId])   // Fast count check for claimLimit enforcement
 }
 
 model Badge {

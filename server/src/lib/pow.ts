@@ -1,8 +1,11 @@
 import { redis } from "./redis.js";
 import crypto from "crypto";
 
-// PoW difficulty: The hash must start with 5 zeros in hex
-const DIFFICULTY = "00000";
+// PoW difficulty in production: sha256 hash must start with 5 zeros.
+// In test/dev: reduced to 1 zero for fast test runs.
+// IMPORTANT: Use POW_TEST_MODE=true to lower difficulty, NOT MOCK_MINIO.
+// This prevents accidentally reducing security if MOCK_MINIO is set during a prod migration.
+const isTestMode = process.env.NODE_ENV === 'test' || process.env.POW_TEST_MODE === 'true';
 
 export const generateChallenge = async (): Promise<string> => {
   const seed = crypto.randomBytes(16).toString("hex");
@@ -18,7 +21,7 @@ export const verifyChallenge = async (seed: string, nonce: string): Promise<bool
 
   // 2. Verify the cryptographic hash
   const hash = crypto.createHash("sha256").update(seed + nonce).digest("hex");
-  const requiredZeros = (process.env.NODE_ENV === 'test' || process.env.MOCK_MINIO === 'true') ? "0" : "00000";
+  const requiredZeros = isTestMode ? "0" : "00000";
   if (!hash.startsWith(requiredZeros)) return false;
 
   // 3. Mark the seed as used by deleting it (single-use guarantee)
