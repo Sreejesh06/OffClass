@@ -132,7 +132,7 @@ export const ContributorsSection: React.FC = () => {
             href={repoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-4 bg-card text-foreground font-bold text-base rounded-full border-2 border-border hover:border-black transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-6 py-4 bg-card text-foreground hover:bg-muted/60 font-bold text-base rounded-full border-2 border-border hover:border-foreground/50 dark:hover:border-white/30 transition-all shadow-sm"
           >
             <SiGithub className="w-5 h-5" />
             View Repository
@@ -147,10 +147,10 @@ export const ContributorsSection: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="w-full rounded-3xl border-4 border-black bg-[#0d1117] text-gray-200 p-6 md:p-10 shadow-[8px_8px_0_0_rgba(0,0,0,1)] relative overflow-hidden"
+        className="w-full rounded-3xl border-2 md:border-4 border-black/80 dark:border-white/10 bg-gradient-to-b from-[#161820] to-[#101216] text-gray-200 p-6 md:p-10 shadow-[8px_8px_0_0_rgba(0,0,0,0.85)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] relative overflow-hidden backdrop-blur-md"
       >
         {/* Top Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-[#30363d]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-white/10">
           <div>
             <div className="flex items-center gap-3">
               <SiGithub className="text-3xl text-white" />
@@ -167,12 +167,12 @@ export const ContributorsSection: React.FC = () => {
 
           {/* Quick Aggregate Stats Pill */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono text-gray-300 flex items-center gap-2">
+            <div className="px-3.5 py-1.5 rounded-lg bg-[#181a22] border border-white/10 text-xs font-mono text-gray-300 flex items-center gap-2">
               <GitCommit className="w-3.5 h-3.5 text-[#58a6ff]" />
               <span><strong className="text-white">{totalCommits}</strong> Total Commits</span>
             </div>
 
-            <div className="px-3.5 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-xs font-mono text-gray-300 flex items-center gap-2">
+            <div className="px-3.5 py-1.5 rounded-lg bg-[#181a22] border border-white/10 text-xs font-mono text-gray-300 flex items-center gap-2">
               <Flame className="w-3.5 h-3.5 text-crypto-yellow" />
               <span><strong className="text-white">{(totalAdditions + totalDeletions).toLocaleString()}</strong> Lines Changed</span>
             </div>
@@ -180,7 +180,7 @@ export const ContributorsSection: React.FC = () => {
             <button
               onClick={() => refetch()}
               title="Refresh telemetry"
-              className="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-300 transition-colors cursor-pointer"
+              className="p-2 rounded-lg bg-[#181a22] hover:bg-[#222530] border border-white/10 text-gray-300 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#58a6ff]' : ''}`} />
             </button>
@@ -201,7 +201,7 @@ export const ContributorsSection: React.FC = () => {
                 key={c.username}
                 whileHover={{ y: -4 }}
                 transition={{ duration: 0.2 }}
-                className="p-6 md:p-8 rounded-2xl bg-[#161b22] border-2 border-[#30363d] hover:border-[#58a6ff]/70 transition-all shadow-lg flex flex-col justify-between relative overflow-hidden"
+                className="p-6 md:p-8 rounded-2xl bg-[#161822]/90 border border-white/10 hover:border-white/20 transition-all shadow-lg flex flex-col justify-between relative overflow-hidden"
               >
                 {/* Background Glow */}
                 <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#1f6feb]/10 rounded-full blur-2xl pointer-events-none" />
@@ -215,7 +215,7 @@ export const ContributorsSection: React.FC = () => {
                         <img
                           src={c.avatarUrl}
                           alt={c.username}
-                          className="w-16 h-16 rounded-2xl border-2 border-[#30363d] object-cover bg-[#0d1117] shadow-md"
+                          className="w-16 h-16 rounded-2xl border-2 border-white/10 object-cover bg-[#13151b] shadow-md"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = `https://github.com/${c.username}.png`;
                           }}
@@ -246,7 +246,7 @@ export const ContributorsSection: React.FC = () => {
                       href={c.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-lg bg-[#181a22] hover:bg-[#222530] border border-white/10 text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
                     >
                       <SiGithub className="w-3.5 h-3.5" /> Profile
                     </a>
@@ -255,9 +255,9 @@ export const ContributorsSection: React.FC = () => {
                   {/* High-Impact Contribution Stats Grid */}
                   <div className="mt-6 grid grid-cols-3 gap-3">
                     {/* Commits */}
-                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] flex flex-col">
+                    <div className="p-3.5 rounded-xl bg-[#121319] border border-white/10 flex flex-col">
                       <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1">
-                        <GitCommit className="w-3 h-3 text-[#58a6ff]" /> Commits
+                        <GitCommit className="w-3.5 h-3.5 text-[#58a6ff]" /> Commits
                       </span>
                       <span className="text-2xl font-mono font-bold text-white tracking-tight">
                         {c.commits}
@@ -266,7 +266,7 @@ export const ContributorsSection: React.FC = () => {
                     </div>
 
                     {/* Additions */}
-                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#238636]/40 flex flex-col">
+                    <div className="p-3.5 rounded-xl bg-[#121319] border border-[#238636]/40 flex flex-col">
                       <span className="text-[11px] font-mono text-[#3fb950] uppercase tracking-wider flex items-center gap-1 mb-1">
                         <Plus className="w-3 h-3 text-[#3fb950]" /> Added
                       </span>
@@ -277,7 +277,7 @@ export const ContributorsSection: React.FC = () => {
                     </div>
 
                     {/* Deletions */}
-                    <div className="p-3.5 rounded-xl bg-[#0d1117] border border-[#da3633]/40 flex flex-col">
+                    <div className="p-3.5 rounded-xl bg-[#121319] border border-[#da3633]/40 flex flex-col">
                       <span className="text-[11px] font-mono text-[#f85149] uppercase tracking-wider flex items-center gap-1 mb-1">
                         <Minus className="w-3 h-3 text-[#f85149]" /> Removed
                       </span>
@@ -290,7 +290,7 @@ export const ContributorsSection: React.FC = () => {
                 </div>
 
                 {/* Card Footer: Total Code Volume & Impact */}
-                <div className="mt-6 pt-4 border-t border-[#30363d] flex items-center justify-between text-xs font-mono">
+                <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center gap-2 text-gray-300">
                     <Flame className="w-4 h-4 text-crypto-yellow" />
                     <span>
@@ -333,24 +333,24 @@ export const ContributorsSection: React.FC = () => {
       {/* "Start Contributing" Interactive Onboarding Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0c0d12]/80 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-card text-card-foreground border-4 border-black rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-[10px_10px_0_0_rgba(0,0,0,1)] relative overflow-hidden"
+              className="bg-card text-card-foreground border-2 border-black/80 dark:border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-[10px_10px_0_0_rgba(0,0,0,0.85)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] relative overflow-hidden"
             >
               {/* Close Button */}
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="absolute top-5 right-5 p-2 rounded-full border-2 border-black bg-muted hover:bg-gray-200 transition-colors cursor-pointer"
+                className="absolute top-5 right-5 p-2 rounded-full border border-border bg-muted hover:bg-muted/80 text-foreground transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5 text-black" />
+                <X className="w-5 h-5" />
               </button>
 
               {/* Modal Eyebrow & Title */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="px-3 py-1 bg-crypto-yellow text-black font-mono text-xs font-bold rounded-full border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                <span className="px-3 py-1 bg-crypto-yellow text-foreground font-mono text-xs font-bold rounded-full border border-black/60 dark:border-white/15 shadow-xs">
                   #OpenSource
                 </span>
                 <span className="text-xs text-muted-foreground font-mono font-medium">
@@ -370,7 +370,7 @@ export const ContributorsSection: React.FC = () => {
               <div className="space-y-4 mb-6">
                 {/* Step 1 */}
                 <div className="flex gap-4 p-3.5 rounded-2xl border-2 border-border bg-muted/40 items-start">
-                  <div className="w-8 h-8 rounded-full bg-black text-white font-mono font-bold flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-black dark:bg-[#181a22] text-white font-mono font-bold flex items-center justify-center shrink-0 border border-white/10">
                     1
                   </div>
                   <div className="flex-1">
@@ -380,7 +380,7 @@ export const ContributorsSection: React.FC = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Fork <code>OffClass</code> to your GitHub account and clone it to your local machine.
                     </p>
-                    <div className="mt-2 flex items-center justify-between gap-2 bg-black text-white px-3 py-1.5 rounded-lg text-xs font-mono">
+                    <div className="mt-2 flex items-center justify-between gap-2 bg-[#121319] text-white px-3 py-1.5 rounded-lg text-xs font-mono border border-white/10">
                       <code className="truncate">{`git clone ${repoUrl}.git`}</code>
                       <button
                         onClick={handleCopyClone}
@@ -395,7 +395,7 @@ export const ContributorsSection: React.FC = () => {
 
                 {/* Step 2 */}
                 <div className="flex gap-4 p-3.5 rounded-2xl border-2 border-border bg-muted/40 items-start">
-                  <div className="w-8 h-8 rounded-full bg-black text-white font-mono font-bold flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-black dark:bg-[#181a22] text-white font-mono font-bold flex items-center justify-center shrink-0 border border-white/10">
                     2
                   </div>
                   <div className="flex-1">
@@ -410,7 +410,7 @@ export const ContributorsSection: React.FC = () => {
 
                 {/* Step 3 */}
                 <div className="flex gap-4 p-3.5 rounded-2xl border-2 border-border bg-muted/40 items-start">
-                  <div className="w-8 h-8 rounded-full bg-black text-white font-mono font-bold flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-black dark:bg-[#181a22] text-white font-mono font-bold flex items-center justify-center shrink-0 border border-white/10">
                     3
                   </div>
                   <div className="flex-1">
@@ -445,7 +445,7 @@ export const ContributorsSection: React.FC = () => {
                   href={`${repoUrl}/issues`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-3 px-5 bg-black text-white font-bold rounded-xl text-center text-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="flex-1 py-3 px-5 bg-[#181a22] text-white font-bold rounded-xl text-center text-sm hover:bg-[#222530] transition-colors flex items-center justify-center gap-2 shadow-sm border border-white/10"
                 >
                   <SiGithub className="w-4 h-4" /> Browse Open Issues
                 </a>
@@ -453,7 +453,7 @@ export const ContributorsSection: React.FC = () => {
                   href={`${repoUrl}/pulls`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-3 px-5 bg-card text-foreground border-2 border-border font-bold rounded-xl text-center text-sm hover:border-black transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-5 bg-card text-foreground border-2 border-border font-bold rounded-xl text-center text-sm hover:border-crypto-purple transition-colors flex items-center justify-center gap-2"
                 >
                   <GitPullRequest className="w-4 h-4 text-crypto-purple" /> View Pull Requests
                 </a>

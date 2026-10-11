@@ -273,8 +273,8 @@ export function OpportunityBoard() {
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border",
                         typeFilter === type.id 
-                          ? "bg-gray-900 border-gray-900 text-white shadow-sm" 
-                          : "bg-card text-card-foreground border-border text-muted-foreground hover:bg-muted/50"
+                          ? "bg-foreground border-foreground text-background shadow-sm" 
+                          : "bg-card text-card-foreground border-border text-muted-foreground hover:bg-muted/70 hover:text-foreground dark:hover:text-white"
                       )}
                     >
                       {type.label}
