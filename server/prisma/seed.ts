@@ -4,9 +4,27 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database with rich mock data...");
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "true") {
+    console.error("FATAL: Database seeding is disabled in production to protect data integrity and avoid default credentials.");
+    console.error("Set ALLOW_PROD_SEED=true with SEED_ADMIN_PASSWORD explicitly if you intend to bootstrap.");
+    process.exit(1);
+  }
 
-  // 1. Wipe existing data
+  console.log("Seeding database with initial data...");
+
+  // In production, require an explicit secure password if bootstrap is allowed
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || (
+    process.env.NODE_ENV === "production"
+      ? null
+      : "CryptidDev@2026!"
+  );
+
+  if (!adminPassword) {
+    console.error("FATAL: In production, SEED_ADMIN_PASSWORD environment variable must be specified.");
+    process.exit(1);
+  }
+
+  // 1. Wipe existing data (development only)
   await prisma.opportunityBookmark.deleteMany();
   await prisma.opportunity.deleteMany();
   await prisma.houseTransferRequest.deleteMany();
@@ -24,7 +42,7 @@ async function main() {
   await prisma.leaderboardSnapshot.deleteMany();
   await prisma.user.deleteMany();
 
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
 
   // 2. Create Core Users
   const admin = await prisma.user.create({

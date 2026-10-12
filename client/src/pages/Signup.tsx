@@ -95,7 +95,27 @@ export function Signup() {
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError("Password must contain at least one uppercase letter.");
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError("Password must contain at least one lowercase letter.");
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError("Password must contain at least one number.");
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setError("Password must contain at least one special character.");
       return;
     }
 
@@ -191,7 +211,10 @@ export function Signup() {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm font-bold text-foreground">Password</label>
+                  <span className="text-[11px] text-muted-foreground font-medium">8+ chars, upper, lower, number, symbol</span>
+                </div>
                 <input 
                   id="password"
                   type="password" 

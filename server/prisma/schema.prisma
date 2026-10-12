@@ -45,6 +45,8 @@ model User {
 
   emailVerified DateTime?
   lastLoginAt   DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
   disciplineRecords DisciplineRecord[]
 
   createdAt DateTime @default(now())

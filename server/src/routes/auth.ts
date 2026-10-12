@@ -12,13 +12,25 @@ import {
   setAuthCookies, 
   clearAuthCookies 
 } from "../lib/auth.js";
-import { SignupPayloadSchema, LoginPayloadSchema } from "shared";
+import { SignupPayloadSchema, LoginPayloadSchema, PasswordSchema } from "shared";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { sendEmail } from "../lib/mailer.js";
+import { logAction } from "../lib/audit.js";
+import { z } from "zod";
+import rateLimit from "express-rate-limit";
 
 const router: IRouter = Router();
 
-router.post("/signup", async (req, res): Promise<void> => {
+// Strict limiter specifically targeting brute-force sensitive endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: "Too many attempts from this IP, please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/signup", authLimiter, async (req, res): Promise<void> => {
   try {
     const payload = SignupPayloadSchema.parse(req.body);
     
@@ -55,10 +67,11 @@ router.post("/signup", async (req, res): Promise<void> => {
       });
 
       const token = crypto.randomBytes(32).toString("hex");
+      const hashedToken = hashToken(token);
       await tx.verificationToken.create({
         data: {
           email: newUser.email,
-          token,
+          token: hashedToken,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
         }
       });
@@ -75,15 +88,16 @@ router.post("/signup", async (req, res): Promise<void> => {
 
     res.status(201).json({ message: "User created. Please check your email to verify your account.", userId: user.user.id });
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      res.status(400).json({ error: error.errors });
+    if (error.name === "ZodError" || error.issues) {
+      const msg = error.issues?.[0]?.message || error.errors?.[0]?.message || "Invalid input";
+      res.status(400).json({ error: msg });
       return;
     }
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message || "Registration failed" });
   }
 });
 
-router.post("/login", async (req, res): Promise<void> => {
+router.post("/login", authLimiter, async (req, res): Promise<void> => {
   try {
     const payload = LoginPayloadSchema.parse(req.body);
     
@@ -96,6 +110,15 @@ router.post("/login", async (req, res): Promise<void> => {
       return;
     }
 
+    // Check if account is temporarily locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMinutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / (60 * 1000));
+      res.status(423).json({
+        error: `Account temporarily locked due to consecutive failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? "s" : ""}.`
+      });
+      return;
+    }
+
     const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === "true";
     if (requireEmailVerification && !user.emailVerified) {
       res.status(403).json({ error: "Please verify your email address before logging in." });
@@ -104,7 +127,40 @@ router.post("/login", async (req, res): Promise<void> => {
 
     const isValid = await bcrypt.compare(payload.password, user.passwordHash);
     if (!isValid) {
-      res.status(401).json({ error: "Invalid credentials" });
+      const newAttempts = user.failedLoginAttempts + 1;
+      let lockedUntil: Date | null = null;
+      if (newAttempts >= 5) {
+        lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lockout
+        await logAction(user.id, "ACCOUNT_LOCKED", "USER", user.id, {
+          attempts: newAttempts,
+          lockoutDurationMinutes: 15,
+        });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: newAttempts,
+          ...(lockedUntil ? { lockedUntil } : {}),
+        },
+      });
+
+      await logAction(user.id, "LOGIN_FAILED", "USER", user.id, {
+        reason: "INVALID_CREDENTIALS",
+        failedAttempts: newAttempts,
+      });
+
+      if (lockedUntil) {
+        res.status(423).json({
+          error: "Account locked for 15 minutes due to 5 consecutive failed login attempts."
+        });
+        return;
+      }
+
+      const attemptsLeft = 5 - newAttempts;
+      res.status(401).json({
+        error: `Invalid credentials. ${attemptsLeft} attempt${attemptsLeft > 1 ? "s" : ""} remaining before temporary lockout.`
+      });
       return;
     }
 
@@ -132,17 +188,28 @@ router.post("/login", async (req, res): Promise<void> => {
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         },
       }),
-      prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        }
+      })
     ]);
+
+    await logAction(user.id, "LOGIN_SUCCESS", "USER", user.id);
 
     setAuthCookies(res, accessToken, refreshToken);
     res.json({ message: "Logged in successfully" });
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      res.status(400).json({ error: error.errors });
+    if (error.name === "ZodError" || error.issues) {
+      const msg = error.issues?.[0]?.message || error.errors?.[0]?.message || "Invalid input";
+      res.status(400).json({ error: msg });
       return;
     }
-    console.error(error); res.status(500).json({ error: "Internal server error: " + (error.message || String(error)) });
+    console.error("Login unexpected error:", error);
+    res.status(500).json({ error: "Internal server error. Please try again later." });
   }
 });
 
@@ -244,7 +311,7 @@ router.get("/me", requireAuth, async (req: Request, res: Response): Promise<void
   }
 });
 
-router.post("/login/totp", async (req: Request, res: Response): Promise<void> => {
+router.post("/login/totp", authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { tempToken, code } = req.body;
     
@@ -357,7 +424,7 @@ router.post("/2fa/verify-setup", requireAuth, async (req: Request, res: Response
   }
 });
 
-router.post("/resend-verification", async (req: Request, res: Response): Promise<void> => {
+router.post("/resend-verification", authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -380,10 +447,11 @@ router.post("/resend-verification", async (req: Request, res: Response): Promise
     await prisma.verificationToken.deleteMany({ where: { email } });
 
     const token = crypto.randomBytes(32).toString("hex");
+    const hashedToken = hashToken(token);
     await prisma.verificationToken.create({
       data: {
         email,
-        token,
+        token: hashedToken,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       }
     });
@@ -410,7 +478,7 @@ router.post("/verify-email", async (req: Request, res: Response): Promise<void> 
     }
 
     const verificationToken = await prisma.verificationToken.findUnique({
-      where: { token },
+      where: { token: hashToken(token) },
     });
 
     if (!verificationToken) {
@@ -439,7 +507,7 @@ router.post("/verify-email", async (req: Request, res: Response): Promise<void> 
   }
 });
 
-router.post("/forgot-password", async (req: Request, res: Response): Promise<void> => {
+router.post("/forgot-password", authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -455,6 +523,7 @@ router.post("/forgot-password", async (req: Request, res: Response): Promise<voi
     }
 
     const token = crypto.randomBytes(32).toString("hex");
+    const hashedToken = hashToken(token);
     
     // Clear any existing reset tokens for this user
     await prisma.passwordResetToken.deleteMany({ where: { email } });
@@ -462,7 +531,7 @@ router.post("/forgot-password", async (req: Request, res: Response): Promise<voi
     await prisma.passwordResetToken.create({
       data: {
         email,
-        token,
+        token: hashedToken,
         expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour
       }
     });
@@ -480,16 +549,17 @@ router.post("/forgot-password", async (req: Request, res: Response): Promise<voi
   }
 });
 
-router.post("/reset-password", async (req: Request, res: Response): Promise<void> => {
+const ResetPasswordPayloadSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: PasswordSchema,
+});
+
+router.post("/reset-password", authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token, password } = req.body;
-    if (!token || !password) {
-      res.status(400).json({ error: "Token and new password are required" });
-      return;
-    }
+    const { token, password } = ResetPasswordPayloadSchema.parse(req.body);
 
     const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: hashToken(token) },
     });
 
     if (!resetToken) {
@@ -526,7 +596,12 @@ router.post("/reset-password", async (req: Request, res: Response): Promise<void
     ]);
 
     res.json({ message: "Password reset successfully" });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === "ZodError" || error.issues) {
+      const msg = error.issues?.[0]?.message || error.errors?.[0]?.message || "Invalid input";
+      res.status(400).json({ error: msg });
+      return;
+    }
     res.status(500).json({ error: "Internal server error" });
   }
 });
