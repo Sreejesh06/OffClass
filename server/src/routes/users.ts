@@ -151,8 +151,8 @@ router.patch("/me/bio", requireAuth, async (req: Request, res: Response): Promis
 
     res.json({ message: "Bio updated" });
   } catch (e: any) {
-    if (e.name === "ZodError") {
-      res.status(400).json({ error: e.errors[0]?.message });
+    if (e.name === "ZodError" || e.issues) {
+      res.status(400).json({ error: e.issues?.[0]?.message || e.errors?.[0]?.message || "Invalid input" });
       return;
     }
     res.status(500).json({ error: "Failed to update bio" });
@@ -209,8 +209,8 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
         // Upsert incoming experiences
         for (const exp of data.workExperiences) {
           if (exp.id) {
-            await tx.workExperience.update({
-              where: { id: exp.id },
+            await tx.workExperience.updateMany({
+              where: { id: exp.id, userId },
               data: {
                 company: exp.company,
                 role: exp.role,
@@ -237,8 +237,8 @@ router.patch("/me/profile", requireAuth, async (req: Request, res: Response): Pr
 
     res.json({ message: "Profile updated successfully" });
   } catch (e: any) {
-    if (e.name === "ZodError") {
-      res.status(400).json({ error: e.errors[0]?.message });
+    if (e.name === "ZodError" || e.issues) {
+      res.status(400).json({ error: e.issues?.[0]?.message || e.errors?.[0]?.message || "Invalid input" });
       return;
     }
     console.error(e);
@@ -282,8 +282,8 @@ router.patch("/me/avatar", requireAuth, async (req: Request, res: Response): Pro
 
     res.json({ message: "Avatar updated" });
   } catch (e: any) {
-    if (e.name === "ZodError") {
-      res.status(400).json({ error: e.errors[0]?.message });
+    if (e.name === "ZodError" || e.issues) {
+      res.status(400).json({ error: e.issues?.[0]?.message || e.errors?.[0]?.message || "Invalid input" });
       return;
     }
     res.status(500).json({ error: "Failed to update avatar" });
@@ -380,8 +380,8 @@ router.post("/me/house-transfer", requireAuth, async (req: Request, res: Respons
       request,
     });
   } catch (e: any) {
-    if (e.name === "ZodError") {
-      res.status(400).json({ error: e.errors[0]?.message || "Invalid input" });
+    if (e.name === "ZodError" || e.issues) {
+      res.status(400).json({ error: e.issues?.[0]?.message || e.errors?.[0]?.message || "Invalid input" });
       return;
     }
     console.error(e);
@@ -406,7 +406,7 @@ router.post("/me/achievements", requireAuth, async (req: Request, res: Response)
     const userId = req.user!.userId;
     const parsed = AchievementSubmitSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.errors[0]?.message ?? "Invalid input" });
+      res.status(400).json({ error: parsed.error.issues?.[0]?.message ?? "Invalid input" });
       return;
     }
     const { title, category, position, date, semester, prize, description, opportunityId, images } = parsed.data;

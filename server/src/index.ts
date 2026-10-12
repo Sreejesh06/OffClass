@@ -22,6 +22,9 @@ import { prisma } from "./lib/db.js";
 const app = express();
 export { app };
 
+// Trust reverse proxy (Caddy) for correct client IP detection in rate limiting
+app.set("trust proxy", 1);
+
 // Security Headers (explicitly deny framing)
 app.use(helmet({ frameguard: { action: "deny" } }));
 
@@ -39,16 +42,17 @@ app.use(cookieParser());
 
 import rateLimit from "express-rate-limit";
 
-const authLimiter = rateLimit({
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per windowMs
-  message: { error: "Too many requests from this IP, please try again after 15 minutes" },
+  max: 300, // Generous limit for normal student browsing
   standardHeaders: true,
   legacyHeaders: false,
 });
 
+app.use("/api", apiLimiter);
+
 // Mount routes
-app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/complaints", complaintsRoutes);
 app.use("/api/perks", perksRoutes);
@@ -69,6 +73,25 @@ app.get("/health", async (_req, res) => {
   } catch (err) {
     res.status(503).json({ status: "error", db: "unreachable" });
   }
+});
+
+// 404 Handler
+app.use((_req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+// Centralized Global Error Handler (prevents stack trace disclosure)
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  req.log?.error ? req.log.error(err) : console.error("Unhandled request error:", err);
+
+  if (res.headersSent) {
+    return;
+  }
+
+  const statusCode = typeof err.statusCode === "number" ? err.statusCode : 500;
+  res.status(statusCode).json({
+    error: statusCode === 500 ? "Internal server error" : (err.message || "An unexpected error occurred")
+  });
 });
 
 const PORT = process.env.PORT || 3000;

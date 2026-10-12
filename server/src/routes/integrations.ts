@@ -1,6 +1,6 @@
 import { Router, type Router as IRouter, type Request, type Response } from "express";
 import { requireAuth } from "../middlewares/requireAuth.js";
-import { generatePresignedPut, generatePresignedGet, deleteFile, fetchFileHeaderBytes } from "../lib/minio.js";
+import { generatePresignedPut, generatePresignedGet, deleteFile, fetchFileHeaderBytes, fetchObjectMetadata } from "../lib/minio.js";
 import { getQueue } from "../lib/queue.js";
 import { prisma } from "../lib/db.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -8,14 +8,33 @@ import type { Provider } from "@prisma/client";
 import { z } from "zod";
 import crypto from "crypto";
 import { computeAchievementHash } from "../lib/blockchain.js";
+import { awardPoints } from "../lib/leaderboard.js";
 
 const router: IRouter = Router();
 
 const ProviderSchema = z.enum(["GITHUB", "CODEFORCES", "LEETCODE", "GFG", "HTB", "THM"]);
 
+const ProviderRegex: Record<string, { regex: RegExp; description: string }> = {
+  GITHUB: { regex: /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/, description: "Valid GitHub username required" },
+  CODEFORCES: { regex: /^[a-zA-Z0-9_.-]{3,24}$/, description: "Valid Codeforces handle (3-24 characters) required" },
+  LEETCODE: { regex: /^[a-zA-Z0-9_-]{3,30}$/, description: "Valid LeetCode username required" },
+  GFG: { regex: /^[a-zA-Z0-9_-]{3,50}$/, description: "Valid GeeksForGeeks username required" },
+  HTB: { regex: /^\d{1,10}$/, description: "HackTheBox numeric user ID required" },
+  THM: { regex: /^[a-zA-Z0-9_.-]{3,30}$/, description: "Valid TryHackMe username required" },
+};
+
 const LinkSchema = z.object({
   provider: ProviderSchema,
   externalHandle: z.string().min(1).max(100),
+}).superRefine((data, ctx) => {
+  const validator = ProviderRegex[data.provider];
+  if (validator && !validator.regex.test(data.externalHandle)) {
+    ctx.addIssue({
+      code: "custom",
+      message: validator.description || "Invalid handle format",
+      path: ["externalHandle"],
+    });
+  }
 });
 
 router.post("/link", requireAuth, async (req: Request, res: Response): Promise<void> => {
@@ -87,16 +106,42 @@ router.post("/sync/:provider", requireAuth, async (req: Request, res: Response):
       return;
     }
 
-    const queue = getQueue(provider);
-    await queue.add(`sync-${provider}-${userId}`, {
-      userId,
-      provider,
-      handle: link.externalHandle,
+    // Rate-limit check: 60-second cooldown between syncs for the same provider
+    const existingSync = await prisma.profileSync.findUnique({
+      where: { userId_provider: { userId, provider } },
+      select: { lastSyncedAt: true, status: true },
     });
 
+    if (existingSync?.lastSyncedAt) {
+      const COOLDOWN_MS = 60 * 1000; // 60 seconds
+      const timeSinceSync = Date.now() - existingSync.lastSyncedAt.getTime();
+      if (timeSinceSync < COOLDOWN_MS) {
+        const remainingSecs = Math.ceil((COOLDOWN_MS - timeSinceSync) / 1000);
+        res.status(429).json({ 
+          error: `Please wait ${remainingSecs}s before syncing ${provider} again.` 
+        });
+        return;
+      }
+    }
+
+    const queue = getQueue(provider);
+    await queue.add(
+      `sync-${provider}-${userId}`,
+      {
+        userId,
+        provider,
+        handle: link.externalHandle,
+      },
+      {
+        jobId: `sync-${provider}-${userId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    );
+
     res.json({ message: `Sync job enqueued for ${provider}` });
-  } catch {
-    res.status(400).json({ error: "Invalid sync request" });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Invalid sync request" });
   }
 });
 
@@ -152,6 +197,19 @@ router.post("/certs/verify", requireAuth, async (req: Request, res: Response): P
     const cert = await prisma.certificate.findUnique({ where: { fileKey } });
     if (!cert || cert.userId !== req.user!.userId) {
       res.status(403).json({ error: "Forbidden or not found" });
+      return;
+    }
+
+    // Enforce 10MB file size limit
+    const MAX_CERT_SIZE = 10 * 1024 * 1024; // 10MB
+    const metadata = await fetchObjectMetadata(fileKey);
+    if (metadata.size > MAX_CERT_SIZE) {
+      await deleteFile(fileKey);
+      await prisma.certificate.update({
+        where: { fileKey },
+        data: { status: "REJECTED_EXCEEDED_SIZE" },
+      });
+      res.status(400).json({ error: "File size exceeds the 10MB maximum limit. File deleted." });
       return;
     }
 
@@ -212,9 +270,17 @@ router.delete("/certs/:id", requireAuth, async (req: Request, res: Response): Pr
       return;
     }
 
+    // If deleting an approved certificate, deduct the awarded points
+    if (cert.status === "APPROVED") {
+      const certUser = await prisma.user.findUnique({ where: { id: cert.userId }, select: { house: true } });
+      if (certUser) {
+        await awardPoints(cert.userId, certUser.house, -100, `Certificate Removed: ${cert.name}`, "CERTIFICATE", cert.id);
+      }
+    }
+
     await deleteFile(cert.fileKey);
     await prisma.certificate.delete({ where: { id: certId } });
-    res.json({ success: true });
+    res.json({ success: true, message: cert.status === "APPROVED" ? "Certificate deleted and points adjusted." : "Certificate deleted." });
   } catch {
     res.status(500).json({ error: "Failed to delete certificate" });
   }
@@ -249,8 +315,8 @@ router.patch("/certs/reorder", requireAuth, async (req: Request, res: Response):
 
     res.json({ success: true });
   } catch (e: any) {
-    if (e.name === "ZodError") {
-      res.status(400).json({ error: e.errors[0]?.message });
+    if (e.name === "ZodError" || e.issues) {
+      res.status(400).json({ error: e.issues?.[0]?.message || e.errors?.[0]?.message || "Invalid input" });
       return;
     }
     res.status(500).json({ error: "Failed to reorder certificates" });

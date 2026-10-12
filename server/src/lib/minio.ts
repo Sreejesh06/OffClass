@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const s3Client = new S3Client({
@@ -35,12 +35,16 @@ export const generatePresignedGet = async (fileKey: string): Promise<string> => 
 };
 
 export const deleteFile = async (fileKey: string): Promise<void> => {
-  if (process.env.MOCK_MINIO === 'true') return;
-  const command = new DeleteObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: fileKey,
-  });
-  await s3Client.send(command);
+  if (process.env.MOCK_MINIO === 'true' || process.env.NODE_ENV === 'test') return;
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileKey,
+    });
+    await s3Client.send(command);
+  } catch (err) {
+    console.error(`Warning: Failed to delete object ${fileKey} from MinIO:`, err);
+  }
 };
 
 export const fetchFileHeaderBytes = async (fileKey: string): Promise<Buffer> => {
@@ -60,4 +64,21 @@ export const fetchFileHeaderBytes = async (fileKey: string): Promise<Buffer> => 
   if (!byteArray) throw new Error("Failed to read file bytes from MinIO");
   
   return Buffer.from(byteArray);
+};
+
+export const fetchObjectMetadata = async (fileKey: string): Promise<{ size: number; contentType?: string }> => {
+  if (process.env.MOCK_MINIO === 'true' || process.env.NODE_ENV === 'test') {
+    return { size: 1024, contentType: 'application/pdf' };
+  }
+
+  const command = new HeadObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: fileKey,
+  });
+
+  const response = await s3Client.send(command);
+  return {
+    size: response.ContentLength ?? 0,
+    contentType: response.ContentType,
+  };
 };

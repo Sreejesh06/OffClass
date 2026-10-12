@@ -47,26 +47,9 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
       return;
     }
 
-    // Check per-user claim cap (e.g., max 5 OD passes per term)
-    if (item.claimLimit !== null) {
-      const existingCount = await prisma.redemption.count({
-        where: {
-          userId,
-          perkItemId: itemId,
-          status: { in: ["PENDING", "FULFILLED"] }
-        }
-      });
-      if (existingCount >= item.claimLimit) {
-        res.status(400).json({ 
-          error: `You have reached the maximum claim limit (${item.claimLimit}) for this item.` 
-        });
-        return;
-      }
-    }
-
     // Wrap the entire redemption in an interactive transaction with row-level locking
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Lock the user row (SELECT ... FOR UPDATE) to serialize balance checks
+      // 1. Lock the user row (SELECT ... FOR UPDATE) to serialize balance and claim checks
       const user = await tx.$queryRaw<any[]>`
         SELECT id, points, house FROM "User" 
         WHERE id = ${userId} 
@@ -79,6 +62,20 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
 
       if (currentPoints < item.cost) {
         throw new Error("Insufficient points");
+      }
+
+      // Check per-user claim cap inside the serialized transaction
+      if (item.claimLimit !== null) {
+        const existingCount = await tx.redemption.count({
+          where: {
+            userId,
+            perkItemId: itemId,
+            status: { in: ["PENDING", "FULFILLED"] }
+          }
+        });
+        if (existingCount >= item.claimLimit) {
+          throw new Error(`You have reached the maximum claim limit (${item.claimLimit}) for this item.`);
+        }
       }
 
       // 2. Check and decrement stock using atomic update constraint
@@ -147,7 +144,7 @@ router.post("/:id/redeem", requireAuth, async (req: Request, res: Response): Pro
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed";
-    if (message === "Insufficient points" || message === "Item out of stock") {
+    if (message === "Insufficient points" || message === "Item out of stock" || message.includes("maximum claim limit")) {
       res.status(400).json({ error: message });
     } else if ((err as any).code === "P2002") {
       // Unique constraint failed (idempotency key)
@@ -210,7 +207,7 @@ router.post("/", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Req
     const perk = await prisma.perkItem.create({ data });
     res.json({ perk });
   } catch (e: any) {
-    res.status(400).json({ error: "Invalid data", details: e.errors });
+    res.status(400).json({ error: "Invalid data", details: e.issues || e.errors || e.message });
   }
 });
 
@@ -224,7 +221,7 @@ router.put("/:id", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: R
     });
     res.json({ perk });
   } catch (e: any) {
-    res.status(400).json({ error: "Invalid data", details: e.errors });
+    res.status(400).json({ error: "Invalid data", details: e.issues || e.errors || e.message });
   }
 });
 
