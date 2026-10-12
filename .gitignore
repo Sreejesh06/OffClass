@@ -33,3 +33,7 @@ client/test-results/
 # Graphify timestamped backups
 graphify-out/20*
 graphify-out/cache/
+
+# Credentials
+STUDENT_CREDENTIALS.md
+*CREDENTIALS*.md

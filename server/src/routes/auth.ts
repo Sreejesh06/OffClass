@@ -100,9 +100,16 @@ router.post("/signup", authLimiter, async (req, res): Promise<void> => {
 router.post("/login", authLimiter, async (req, res): Promise<void> => {
   try {
     const payload = LoginPayloadSchema.parse(req.body);
-    
-    const user = await prisma.user.findUnique({
-      where: { email: payload.email },
+    const rawIdentifier = (payload.username || payload.email || "").trim();
+
+    // Look up user by roll number (case-insensitive) or email (case-insensitive)
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { rollNo: { equals: rawIdentifier, mode: "insensitive" } },
+          { email: { equals: rawIdentifier.toLowerCase(), mode: "insensitive" } },
+        ],
+      },
     });
 
     if (!user) {
