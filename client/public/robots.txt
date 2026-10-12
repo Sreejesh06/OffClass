@@ -1,0 +1,15 @@
+# Cryptid Cybersecurity Portal — Robots Policy
+User-agent: *
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /complaints/admin
+Disallow: /settings
+Disallow: /reset-password
+Disallow: /verify-email
+
+# Allow public Hall of Fame and profile showcase pages
+Allow: /
+Allow: /leaderboard
+Allow: /hall-of-fame
+Allow: /u/

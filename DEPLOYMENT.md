@@ -154,8 +154,9 @@ docker compose exec api npx prisma migrate deploy
 
 ---
 
-## 5. Automated Midnight Database Backups
+## 5. Automated Database Backups & Disaster Recovery
 
+### Automated Nightly Backups
 A backup script is provided at `scripts/backup.sh`. To configure automated nightly backups:
 
 ```bash
@@ -165,6 +166,23 @@ Add the following line to run every night at 2:00 AM:
 ```cron
 0 2 * * * cd /opt/cryptid && bash scripts/backup.sh >> /var/log/cryptid-backup.log 2>&1
 ```
+
+### Database Restoration & Verification
+In the event of a disaster, data corruption, or testing recovery procedures:
+
+1. Locate the desired encrypted snapshot from `/var/backups/cryptid/`:
+   ```bash
+   ls -la /var/backups/cryptid/
+   ```
+2. Execute the restore script with the backup file and secret key:
+   ```bash
+   bash scripts/restore.sh /var/backups/cryptid/cryptid_backup_YYYYMMDD_HHMMSS.sql.age --key /root/.cryptid-backup-key.txt
+   ```
+   *(Pass `--force` if running non-interactively in an automated DR test).*
+3. Verify data restoration:
+   ```bash
+   docker compose exec api npx prisma db execute --stdin <<< "SELECT count(*) FROM \"User\";"
+   ```
 
 ---
 
