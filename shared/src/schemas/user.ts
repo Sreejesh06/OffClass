@@ -41,8 +41,12 @@ export const SignupPayloadSchema = z.object({
 export type SignupPayload = z.infer<typeof SignupPayloadSchema>;
 
 export const LoginPayloadSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  username: z.string().min(1).optional(),
+  email: z.string().min(1).optional(),
+  password: z.string().min(1, "Password is required"),
+}).refine((data) => Boolean(data.username || data.email), {
+  message: "Username or email is required",
+  path: ["username"],
 });
 export type LoginPayload = z.infer<typeof LoginPayloadSchema>;
 

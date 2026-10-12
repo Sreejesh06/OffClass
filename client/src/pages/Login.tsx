@@ -70,7 +70,7 @@ export function Login() {
   const location = useLocation();
   const { login, isLoading } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,18 +81,19 @@ export function Login() {
     e.preventDefault();
     setError(null);
 
-    if (!email) {
-      setError("Email is required.");
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setError("Roll Number or College Email is required.");
       return;
     }
 
-    if (!email.endsWith('@sece.ac.in')) {
-      setError("Only @sece.ac.in emails are permitted.");
+    if (!password) {
+      setError("Password is required.");
       return;
     }
 
     try {
-      await login(email, password);
+      await login(trimmed, password);
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.error || "Invalid credentials.");
@@ -106,7 +107,7 @@ export function Login() {
         {/* Left: Branding & ASCII Showcase */}
         <div className="hidden md:flex flex-1 bg-crypto-purple relative overflow-hidden flex-col justify-between p-12 text-white border-r border-gray-100">
           <div className="relative z-10">
-            <h2 className="font-heading font-extrabold text-4xl mb-2 text-white">Offclass</h2>
+            <h2 className="font-heading font-extrabold text-4xl mb-2 text-white">Cryptid</h2>
             <p className="font-display font-bold text-purple-200 text-lg max-w-sm leading-tight">
               The central hub for the cybersecurity department.
             </p>
@@ -130,19 +131,19 @@ export function Login() {
             
             <div className="mb-10 text-center md:text-left">
               <h1 className="font-heading font-extrabold text-3xl text-foreground mb-2">Sign In</h1>
-              <p className="text-muted-foreground font-medium text-sm">Enter your SECE email to continue.</p>
+              <p className="text-muted-foreground font-medium text-sm">Enter your Roll Number or college email to continue.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               
               <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-bold text-foreground">College Email</label>
+                <label htmlFor="identifier" className="block text-sm font-bold text-foreground">Roll Number / College Email</label>
                 <input 
-                  id="email"
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@sece.ac.in"
+                  id="identifier"
+                  type="text" 
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="e.g. 24SY052 or sreejesh.s2024csecs@sece.ac.in"
                   className={`w-full px-4 py-3 rounded-xl border-2 font-mono text-sm outline-none transition-all ${
                     error ? 'border-red-500 bg-red-50 text-red-900' : 'border-border focus:border-foreground bg-muted/50 text-foreground'
                   }`}

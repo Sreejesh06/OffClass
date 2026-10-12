@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, isLoading, setHouse]);
 
-  const login = async (email: string, password?: string) => {
-    await api.post('/auth/login', { email, password });
+  const login = async (usernameOrEmail: string, password?: string) => {
+    await api.post('/auth/login', { username: usernameOrEmail, email: usernameOrEmail, password });
     await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
 
