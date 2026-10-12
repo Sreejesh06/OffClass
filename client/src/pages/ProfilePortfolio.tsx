@@ -279,6 +279,9 @@ export function ProfilePortfolio() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err: any) => {
+      alert(err?.response?.data?.error || "Failed to delete certificate");
     }
   });
 

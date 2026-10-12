@@ -35,6 +35,9 @@ async function getTransporter() {
 }
 
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  if (process.env.NODE_ENV === "test") {
+    return { messageId: "test-mock-id", accepted: [to], rejected: [] };
+  }
   try {
     const mailer = await getTransporter();
     const info = await mailer.sendMail({

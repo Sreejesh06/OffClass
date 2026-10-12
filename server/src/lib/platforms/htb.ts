@@ -16,6 +16,10 @@ export const fetchHtb = async (numericId: string): Promise<HtbRaw> => {
   const token = process.env.HTB_APP_TOKEN;
   if (!token) throw new Error("HTB_APP_TOKEN not configured");
 
+  if (!/^\d+$/.test(numericId)) {
+    throw new Error("Invalid HackTheBox ID: must be digits only");
+  }
+
   const res = await axios.get(
     `https://app.hackthebox.com/api/v4/user/profile/basic/${numericId}`,
     { headers: { Authorization: `Bearer ${token}` } }

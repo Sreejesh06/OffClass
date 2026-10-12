@@ -80,10 +80,13 @@ export function AccountLinker() {
 
   const linkMutation = useMutation({
     mutationFn: async (platformId: string) => {
-      const handle = prompt(`Enter your ${platformId} handle:`);
+      const promptMsg = platformId === 'HTB'
+        ? 'Enter your HackTheBox numeric User ID (from your HTB profile URL, e.g. 142512):'
+        : `Enter your ${platformId} handle:`;
+      const handle = prompt(promptMsg);
       if (!handle) throw new Error('Handle is required');
 
-      await api.post('/integrations/link', { provider: platformId, externalHandle: handle });
+      await api.post('/integrations/link', { provider: platformId, externalHandle: handle.trim() });
       await api.post(`/integrations/sync/${platformId}`);
     },
     onSuccess: () => {
@@ -91,8 +94,9 @@ export function AccountLinker() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       setLinkingPlatform(null);
     },
-    onError: () => {
-      alert("Failed to link account");
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || err?.message || "Failed to link account";
+      alert(msg);
       setLinkingPlatform(null);
     }
   });
@@ -105,8 +109,9 @@ export function AccountLinker() {
       refetch();
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
-    onError: () => {
-      alert("Failed to sync account");
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || "Failed to sync account";
+      alert(msg);
     }
   });
 

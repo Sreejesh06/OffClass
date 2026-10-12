@@ -5,13 +5,22 @@ import { requireAuth, requireRole } from "../middlewares/requireAuth.js";
 import { z } from "zod";
 import crypto from "crypto";
 import { notifyAdminsAndTeachers } from "../lib/notifications.js";
+import rateLimit from "express-rate-limit";
 
 const router: IRouter = Router();
+
+const statusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: "Too many tracking status checks, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.get("/challenge", async (_req: Request, res: Response): Promise<void> => {
   try {
     const seed = await generateChallenge();
-    const difficulty = (process.env.NODE_ENV === 'test' || process.env.MOCK_MINIO === 'true') ? 1 : 5;
+    const difficulty = (process.env.NODE_ENV === 'test' || process.env.POW_TEST_MODE === 'true') ? 1 : 3;
     res.json({ seed, difficulty });
   } catch {
     res.status(500).json({ error: "Failed to generate challenge" });
@@ -43,8 +52,8 @@ router.post("/submit", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 2. Generate secure tracking code
-    const trackingCode = crypto.randomBytes(4).toString("hex").toUpperCase(); // 8 chars
+    // 2. Generate clean, user-friendly 8-character tracking code
+    const trackingCode = crypto.randomBytes(4).toString("hex").toUpperCase();
 
     // 3. Time bucket to destroy second-level correlation attacks
     const reportedDay = new Date().toISOString().split("T")[0]!; // YYYY-MM-DD
@@ -67,7 +76,7 @@ router.post("/submit", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.get("/status/:trackingCode", async (req: Request, res: Response): Promise<void> => {
+router.get("/status/:trackingCode", statusLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const trackingCode = req.params.trackingCode;
     if (typeof trackingCode !== "string") {

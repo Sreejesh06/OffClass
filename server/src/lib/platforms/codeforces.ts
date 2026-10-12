@@ -10,9 +10,10 @@ interface CodeforcesRaw {
 
 // aislop-ignore: ai-slop/hardcoded-url — stable public API
 export const fetchCodeforces = async (handle: string): Promise<CodeforcesRaw> => {
+  const encodedHandle = encodeURIComponent(handle);
   const [infoRes, statusRes] = await Promise.all([
-    axios.get(`https://codeforces.com/api/user.info?handles=${handle}`),
-    axios.get(`https://codeforces.com/api/user.status?handle=${handle}&from=1&count=500`),
+    axios.get(`https://codeforces.com/api/user.info?handles=${encodedHandle}`),
+    axios.get(`https://codeforces.com/api/user.status?handle=${encodedHandle}&from=1&count=500`),
   ]);
 
   if (infoRes.data.status !== "OK") throw new Error("Codeforces user.info failed");

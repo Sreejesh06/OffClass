@@ -600,8 +600,15 @@ router.get("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async 
 router.post("/discipline", requireAuth, requireRole(["ADMIN", "TEACHER"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, violation, pointsDeducted, evidence, termName } = req.body;
-    if (!userId || !violation || typeof pointsDeducted !== "number" || pointsDeducted <= 0) {
-      res.status(400).json({ error: "Invalid discipline payload: userId, violation, and positive pointsDeducted required." });
+    if (
+      !userId ||
+      !violation ||
+      typeof pointsDeducted !== "number" ||
+      !Number.isFinite(pointsDeducted) ||
+      pointsDeducted <= 0 ||
+      pointsDeducted > 10000
+    ) {
+      res.status(400).json({ error: "Invalid discipline payload: userId, violation, and positive finite pointsDeducted (max 10000) required." });
       return;
     }
 
@@ -682,15 +689,19 @@ router.post("/term/reset", requireAuth, requireRole(["ADMIN"]), async (req: Requ
 
     // 2. Snapshot current ranks per house and overall
     const houseRankCounters: Record<string, number> = { RED: 1, BLUE: 1, GREEN: 1, PURPLE: 1 };
-    const snapshots = students.map((s, idx) => ({
-      termName,
-      userId: s.id,
-      house: s.house,
-      points: s.points,
-      rankOverall: idx + 1,
-      rankInHouse: houseRankCounters[s.house] ? houseRankCounters[s.house]++ : 1,
-      snapshotDate: new Date(),
-    }));
+    const snapshots = students.map((s, idx) => {
+      const currentRank = houseRankCounters[s.house] ?? 1;
+      houseRankCounters[s.house] = currentRank + 1;
+      return {
+        termName,
+        userId: s.id,
+        house: s.house,
+        points: s.points,
+        rankOverall: idx + 1,
+        rankInHouse: currentRank,
+        snapshotDate: new Date(),
+      };
+    });
 
     if (snapshots.length > 0) {
       await prisma.leaderboardSnapshot.createMany({

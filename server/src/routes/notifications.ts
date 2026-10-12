@@ -8,7 +8,7 @@ const router = Router();
 router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId: (req as any).user.id },
+      where: { userId: req.user!.userId },
       orderBy: { createdAt: "desc" }
     });
     res.json({ notifications });
@@ -21,7 +21,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 router.put("/read", requireAuth, async (req: Request, res: Response) => {
   try {
     await prisma.notification.updateMany({
-      where: { userId: (req as any).user.id, isRead: false },
+      where: { userId: req.user!.userId, isRead: false },
       data: { isRead: true }
     });
     res.json({ success: true });
@@ -36,7 +36,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     await prisma.notification.deleteMany({
       where: { 
         id: req.params.id as string,
-        userId: (req as any).user.id // ensure ownership
+        userId: req.user!.userId // ensure ownership
       }
     });
     res.json({ success: true });
@@ -49,7 +49,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
 router.delete("/", requireAuth, async (req: Request, res: Response) => {
   try {
     await prisma.notification.deleteMany({
-      where: { userId: (req as any).user.id }
+      where: { userId: req.user!.userId }
     });
     res.json({ success: true });
   } catch (error) {
